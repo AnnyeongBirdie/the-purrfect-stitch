@@ -102,10 +102,8 @@ class BackRoomScene: SKScene {
         let zone = SKShapeNode(rectOf: CGSize(width: 150, height: 200), cornerRadius: 12)
         zone.position = CGPoint(x: 190, y: 0)
 
-        // Debug overlay
-        zone.fillColor = .blue.withAlphaComponent(0.3)
-        zone.strokeColor = .cyan
-        zone.lineWidth = 3
+        zone.fillColor = .clear
+        zone.strokeColor = .clear
 
         zone.name = "sewingStation"
         zone.zPosition = 5
@@ -118,10 +116,8 @@ class BackRoomScene: SKScene {
         let zone = SKShapeNode(rectOf: CGSize(width: 150, height: 200), cornerRadius: 12)
         zone.position = CGPoint(x: 300, y: 0)
 
-        // Debug overlay
-        zone.fillColor = .purple.withAlphaComponent(0.3)
-        zone.strokeColor = .cyan
-        zone.lineWidth = 3
+        zone.fillColor = .clear
+        zone.strokeColor = .clear
 
         zone.name = "buttonStation"
         zone.zPosition = 5
@@ -584,10 +580,8 @@ class BackRoomScene: SKScene {
         let zone = SKShapeNode(rectOf: CGSize(width: 120, height: 220), cornerRadius: 12)
         zone.position = CGPoint(x: 0, y: 10)
 
-        // Debug overlay
-        zone.fillColor = .green.withAlphaComponent(0.25)
-        zone.strokeColor = .green
-        zone.lineWidth = 3
+        zone.fillColor = .clear
+        zone.strokeColor = .clear
 
         zone.name = "mannequin"
         zone.zPosition = 5
