@@ -64,3 +64,23 @@ Scene-to-scene communication is a plain property set on the destination before `
 - Fabric selection in the back room only advances on `pinkFabric`; blue and yellow display a retry message.
 - `BackRoomScene` has visible debug overlays (colored semi-transparent boxes) on the sewing station, button station, and mannequin zone — these are `fillColor`/`strokeColor` set directly in `setupSewingStationZone()`, `setupButtonZone()`, and `setupMannequinZone()`.
 - `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code.
+
+## Roadmap
+
+### Phase 1 — Current prototype
+Fixed pink-dress flow. Fabric and button choices in the back room are hardcoded; the `Order` from the front shop is never forwarded.
+
+### Phase 2 — Game loop expansion
+- Pass `Order` from `FrontShopScene` into `BackRoomScene` via the existing property-set pattern.
+- Support multiple clothing types (dress, shirt, pants) and fabric colors (pink, blue, yellow).
+- Fabric and button selections in the back room must match what the customer ordered.
+
+### Phase 3 — Station minigames
+Each station (fabric cabinet, sewing station, button station, mannequin) gates progress with a Super Mario–style platformer minigame. The player navigates a small dungeon, defeats a monster, and reaches a treasure chest containing the needed item (fabric, thread, buttons, finished dress) before that station unlocks.
+
+### Currency & economy (cross-cutting)
+- **Wallet:** `playerMoney: Int` on `FrontShopScene`, starting at 200냥, depleted by deposits. Already implemented.
+- **Earning paths to add:**
+  - Bonus 냥 for completing each station minigame (Phase 3).
+  - Riddle fallback: when the wallet runs low at the front shop, the NPC shopkeeper offers simple math or trivia questions (sourced from external curriculum content, TBD) and awards 냥 for correct answers.
+- **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards must share a single currency system — no duplicated transaction logic across scenes.
