@@ -42,8 +42,6 @@ Scene-to-scene communication is a plain property set on the destination before `
 **FrontShopScene** uses the `FrontShopState` enum (in `Model/`):
 `greeting → choosingClothing → reviewingOrder → awaitingPayment → sendingOrder`
 
-`readyForTransition` is defined in the enum but is never assigned anywhere.
-
 **BackRoomScene** uses a private nested `BackRoomState` enum with this linear progression:
 `waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → sewing → waitingForButtons → walkingToButtons → addingButtons → waitingForMannequin → walkingToMannequin → completed`
 
@@ -54,7 +52,7 @@ Scene-to-scene communication is a plain property set on the destination before `
 | Type | Key fields |
 |---|---|
 | `Order` (struct) | `clothingType: String`, `depositAmount: Int` |
-| `FrontShopState` (enum) | six cases, drives UI in FrontShopScene |
+| `FrontShopState` (enum) | five cases, drives UI in FrontShopScene |
 
 `playerMoney: Int` (starts at 200냥) and `currentOrder: Order?` are instance vars on `FrontShopScene`, not persisted across launches.
 

@@ -13,5 +13,4 @@ enum FrontShopState {
     case reviewingOrder
     case awaitingPayment
     case sendingOrder
-    case readyForTransition
 }
