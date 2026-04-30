@@ -62,6 +62,7 @@ Scene-to-scene communication is a plain property set on the destination before `
 - Fabric selection in the back room only advances on `pinkFabric`; blue and yellow display a retry message.
 - `BackRoomScene` has visible debug overlays (colored semi-transparent boxes) on the sewing station, button station, and mannequin zone — these are `fillColor`/`strokeColor` set directly in `setupSewingStationZone()`, `setupButtonZone()`, and `setupMannequinZone()`.
 - `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code.
+- State checks in `FrontShopScene` use `if currentState == .case` guards instead of exhaustive switches; this loses Swift's compile-time exhaustiveness check.
 
 ## Roadmap
 
