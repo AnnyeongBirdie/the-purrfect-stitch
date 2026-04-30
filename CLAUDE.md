@@ -70,9 +70,20 @@ Scene-to-scene communication is a plain property set on the destination before `
 Fixed pink-dress flow. Fabric and button choices in the back room are hardcoded; the `Order` from the front shop is never forwarded.
 
 ### Phase 2 — Game loop expansion
-- Pass `Order` from `FrontShopScene` into `BackRoomScene` via the existing property-set pattern.
-- Support multiple clothing types (dress, shirt, pants) and fabric colors (pink, blue, yellow).
-- Fabric and button selections in the back room must match what the customer ordered.
+
+The NPC shopkeeper guides the player through four ordering steps in sequence:
+1. Pick clothing type (dress, shirt, pants)
+2. Pick fabric color (pink, blue, yellow)
+3. Pick button type (regular or fancy)
+4. Pay deposit
+
+`Order` will grow to carry `fabricColor` and `buttonType` alongside the existing `clothingType` and `depositAmount`. Back-room stations must match what the customer ordered rather than using hardcoded values.
+
+Work is split into three sub-phases, each delivered end-to-end before the next begins:
+
+- **Phase 2a — Fabric color:** Front shop asks for fabric color, `Order` carries it, back room gates the fabric cabinet on the ordered color. (First deliverable.)
+- **Phase 2b — Clothing type:** Front shop asks for clothing type, `Order` carries it, back room produces the matching garment.
+- **Phase 2c — Button type:** Front shop asks for button type (regular / fancy), `Order` carries it, back room gates the button station on it.
 
 ### Phase 3 — Station minigames
 Each station (fabric cabinet, sewing station, button station, mannequin) gates progress with a Super Mario–style platformer minigame. The player navigates a small dungeon, defeats a monster, and reaches a treasure chest containing the needed item (fabric, thread, buttons, finished dress) before that station unlocks.
