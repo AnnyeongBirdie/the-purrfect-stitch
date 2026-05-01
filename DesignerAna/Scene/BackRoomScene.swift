@@ -34,14 +34,6 @@ class BackRoomScene: SKScene {
         }
     }
 
-    private var fabricUIColor: UIColor {
-        switch order?.fabricColor {
-        case "파랑": return .systemBlue
-        case "노랑": return .systemYellow
-        default:     return .systemPink
-        }
-    }
-
     private var finishedDressImageName: String {
         switch order?.fabricColor {
         case "파랑": return "Mannequin_Dress_Blue"
@@ -52,6 +44,28 @@ class BackRoomScene: SKScene {
 
     private let cabinetInteractionX: CGFloat = -180
 
+    private var haloLight: UIColor {
+        switch order?.fabricColor {
+        case "파랑": return UIColor(red: 0.75, green: 0.88, blue: 1.00, alpha: 1.0)
+        case "노랑": return UIColor(red: 1.00, green: 0.97, blue: 0.65, alpha: 1.0)
+        default:     return UIColor(red: 1.00, green: 0.80, blue: 0.86, alpha: 1.0)
+        }
+    }
+    private var haloMedium: UIColor {
+        switch order?.fabricColor {
+        case "파랑": return UIColor(red: 0.20, green: 0.50, blue: 0.95, alpha: 1.0)
+        case "노랑": return UIColor(red: 0.95, green: 0.80, blue: 0.10, alpha: 1.0)
+        default:     return UIColor(red: 0.95, green: 0.38, blue: 0.60, alpha: 1.0)
+        }
+    }
+    private var haloDark: UIColor {
+        switch order?.fabricColor {
+        case "파랑": return UIColor(red: 0.05, green: 0.15, blue: 0.70, alpha: 1.0)
+        case "노랑": return UIColor(red: 0.75, green: 0.50, blue: 0.00, alpha: 1.0)
+        default:     return UIColor(red: 0.70, green: 0.05, blue: 0.28, alpha: 1.0)
+        }
+    }
+
     private var tailor: SKSpriteNode!
     private var fabricCabinet: SKShapeNode?
     private var instructionLabel: SKLabelNode!
@@ -60,10 +74,9 @@ class BackRoomScene: SKScene {
     private var blueFabricButton: SKShapeNode?
     private var yellowFabricButton: SKShapeNode?
     
-    private var foldedDressNode: SKShapeNode?
+    private var tailorHaloNode: SKShapeNode?
     private var mannequinZone: SKShapeNode?
-    private var mannequinDressNode: SKShapeNode?
-    
+
     private var sewingStation: SKShapeNode?
     private var scissorsNode: SKSpriteNode?
     private var threadNode: SKSpriteNode?
@@ -184,6 +197,10 @@ class BackRoomScene: SKScene {
             cabinet.strokeColor = .clear
             cabinet.lineWidth = 0
         }
+
+        if let halo = tailorHaloNode {
+            halo.position = CGPoint(x: tailor.position.x, y: tailor.position.y)
+        }
     }
     
     private func handleInteraction(at location: CGPoint) -> Bool {
@@ -301,14 +318,9 @@ class BackRoomScene: SKScene {
 
                 moveTailor(to: 0) { [weak self] in
                     guard let self = self else { return }
-
-                    self.placeDressOnMannequin()
                     self.currentState = .completed
                     self.instructionLabel.text = "드레스 완성!"
-
-                    self.run(SKAction.wait(forDuration: 0.8)) { [weak self] in
-                        self?.returnToFrontShop()
-                    }
+                    self.placeDressOnMannequin()
                 }
 
                 return true
@@ -466,6 +478,7 @@ class BackRoomScene: SKScene {
             instructionLabel.text = "좋아요! 원단을 골랐어요."
             hideFabricChoices()
             celebrateTailor()
+            showTailorHalo(color: haloLight)
             currentState = .waitingForSewing
             instructionLabel.text = "재봉대로 가보세요."
         } else {
@@ -529,6 +542,7 @@ class BackRoomScene: SKScene {
 
         currentState = .waitingForButtons
         instructionLabel.text = "단추를 달아볼까요?"
+        updateHaloColor(to: haloMedium)
     }
     
     private func playCutAnimation() {
@@ -592,7 +606,7 @@ class BackRoomScene: SKScene {
         regularButtonTapZone = nil
         fancyButtonTapZone = nil
 
-        showFoldedDressNearTailor()
+        updateHaloColor(to: haloDark)
 
         currentState = .waitingForMannequin
         instructionLabel.text = "완성된 드레스를 마네킹에 입혀볼까요?"
@@ -616,49 +630,58 @@ class BackRoomScene: SKScene {
         addChild(zone)
     }
     
-    private func showFoldedDressNearTailor() {
-        foldedDressNode?.removeFromParent()
+    private func showTailorHalo(color: UIColor) {
+        tailorHaloNode?.removeFromParent()
 
-        let dress = SKShapeNode(rectOf: CGSize(width: 42, height: 26), cornerRadius: 6)
-        dress.fillColor = fabricUIColor
-        dress.strokeColor = fabricUIColor.withAlphaComponent(0.8)
-        dress.lineWidth = 2
+        let halo = SKShapeNode(rectOf: CGSize(width: 70, height: 200), cornerRadius: 35)
+        halo.fillColor = color.withAlphaComponent(0.45)
+        halo.strokeColor = color.withAlphaComponent(0.85)
+        halo.lineWidth = 3
+        halo.glowWidth = 24
+        halo.position = CGPoint(x: tailor.position.x, y: tailor.position.y)
+        halo.zPosition = 8
+        halo.name = "tailorHalo"
 
-        let xOffset: CGFloat = tailor.xScale < 0 ? -36 : 36
-        dress.position = CGPoint(x: tailor.position.x + xOffset, y: tailor.position.y - 8)
-        dress.zPosition = 11
-        dress.name = "foldedDress"
+        tailorHaloNode = halo
+        addChild(halo)
 
-        foldedDressNode = dress
-        addChild(dress)
+        let pulse = SKAction.sequence([
+            SKAction.fadeAlpha(to: 1.0, duration: 0.65),
+            SKAction.fadeAlpha(to: 0.10, duration: 0.65)
+        ])
+        halo.run(.repeatForever(pulse), withKey: "haloPulse")
     }
-    
-    private func updateFoldedDressPosition() {
-        guard let foldedDressNode else { return }
-        guard currentState == .waitingForMannequin else { return }
 
-        let xOffset: CGFloat = tailor.xScale < 0 ? -36 : 36
-        foldedDressNode.position = CGPoint(x: tailor.position.x + xOffset, y: tailor.position.y - 8)
+    private func updateHaloColor(to color: UIColor) {
+        let oldHalo = tailorHaloNode
+        tailorHaloNode = nil
+        oldHalo?.removeAllActions()
+        oldHalo?.run(.sequence([.fadeOut(withDuration: 0.25), .removeFromParent()]))
+
+        run(.wait(forDuration: 0.15)) { [weak self] in
+            self?.showTailorHalo(color: color)
+        }
     }
-    
+
     private func placeDressOnMannequin() {
-        foldedDressNode?.removeFromParent()
-        foldedDressNode = nil
-
-        mannequinDressNode?.removeFromParent()
-
-        let dress = SKShapeNode(rectOf: CGSize(width: 54, height: 78), cornerRadius: 12)
-        dress.fillColor = fabricUIColor
-        dress.strokeColor = fabricUIColor.withAlphaComponent(0.8)
-        dress.lineWidth = 2
-        dress.position = CGPoint(x: 0, y: 5)
-        dress.zPosition = 12
-        dress.name = "mannequinDress"
-
-        mannequinDressNode = dress
-        addChild(dress)
-
         celebrateTailor()
+
+        guard let halo = tailorHaloNode else {
+            returnToFrontShop()
+            return
+        }
+
+        tailorHaloNode = nil
+        halo.removeAllActions()
+        halo.alpha = 1.0
+
+        let targetScale = max(size.width, size.height) * 2.0 / 70.0
+        let expand = SKAction.scale(to: targetScale, duration: 0.85)
+        expand.timingMode = .easeIn
+
+        halo.run(expand) { [weak self] in
+            self?.returnToFrontShop()
+        }
     }
     
     private func returnToFrontShop() {
