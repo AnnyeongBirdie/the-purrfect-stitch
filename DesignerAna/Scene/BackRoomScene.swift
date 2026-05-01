@@ -23,7 +23,33 @@ class BackRoomScene: SKScene {
     }
 
     private var currentState: BackRoomState = .waitingForCabinetTap
-    
+
+    var order: Order?
+
+    private var expectedFabricNodeName: String {
+        switch order?.fabricColor {
+        case "파랑": return "blueFabric"
+        case "노랑": return "yellowFabric"
+        default:     return "pinkFabric"
+        }
+    }
+
+    private var fabricUIColor: UIColor {
+        switch order?.fabricColor {
+        case "파랑": return .systemBlue
+        case "노랑": return .systemYellow
+        default:     return .systemPink
+        }
+    }
+
+    private var finishedDressImageName: String {
+        switch order?.fabricColor {
+        case "파랑": return "Mannequin_Dress_Blue"
+        case "노랑": return "Mannequin_Dress_Yellow"
+        default:     return "Mannequin_Dress_Pink"
+        }
+    }
+
     private let cabinetInteractionX: CGFloat = -180
 
     private var tailor: SKSpriteNode!
@@ -436,7 +462,7 @@ class BackRoomScene: SKScene {
     }
 
     private func handleFabricChoice(named choice: String) {
-        if choice == "pinkFabric" {
+        if choice == expectedFabricNodeName {
             instructionLabel.text = "좋아요! 원단을 골랐어요."
             hideFabricChoices()
             celebrateTailor()
@@ -594,8 +620,8 @@ class BackRoomScene: SKScene {
         foldedDressNode?.removeFromParent()
 
         let dress = SKShapeNode(rectOf: CGSize(width: 42, height: 26), cornerRadius: 6)
-        dress.fillColor = UIColor.systemPink
-        dress.strokeColor = UIColor.systemPink.withAlphaComponent(0.8)
+        dress.fillColor = fabricUIColor
+        dress.strokeColor = fabricUIColor.withAlphaComponent(0.8)
         dress.lineWidth = 2
 
         let xOffset: CGFloat = tailor.xScale < 0 ? -36 : 36
@@ -622,8 +648,8 @@ class BackRoomScene: SKScene {
         mannequinDressNode?.removeFromParent()
 
         let dress = SKShapeNode(rectOf: CGSize(width: 54, height: 78), cornerRadius: 12)
-        dress.fillColor = UIColor.systemPink
-        dress.strokeColor = UIColor.systemPink.withAlphaComponent(0.8)
+        dress.fillColor = fabricUIColor
+        dress.strokeColor = fabricUIColor.withAlphaComponent(0.8)
         dress.lineWidth = 2
         dress.position = CGPoint(x: 0, y: 5)
         dress.zPosition = 12
@@ -644,7 +670,7 @@ class BackRoomScene: SKScene {
 
         scene.scaleMode = .resizeFill
         scene.shouldShowFinishedDress = true
-        scene.finishedDressImageName = "Mannequin_Dress_Pink"
+        scene.finishedDressImageName = finishedDressImageName
 
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)

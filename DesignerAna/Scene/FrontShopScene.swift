@@ -7,10 +7,17 @@ class FrontShopScene: SKScene {
     
     private var currentState: FrontShopState = .greeting
     private var currentOrder: Order?
-    
+    private var pendingClothingType: String = ""
+    private var pendingDeposit: Int = 0
+
     private var dressButton: SKShapeNode!
     private var shirtButton: SKShapeNode!
     private var pantsButton: SKShapeNode!
+
+    private var pinkColorButton: SKShapeNode?
+    private var blueColorButton: SKShapeNode?
+    private var yellowColorButton: SKShapeNode?
+    private var fabricBackButton: SKShapeNode?
     
     private var orderSheet: SKShapeNode?
     private var confirmButton: SKShapeNode?
@@ -161,56 +168,116 @@ class FrontShopScene: SKScene {
             return
         }
 
-        currentOrder = Order(clothingType: clothingType, depositAmount: deposit)
-        currentState = .reviewingOrder
+        pendingClothingType = clothingType
+        pendingDeposit = deposit
+        currentState = .choosingFabricColor
         hideClothingChoices()
-        dialogLabel.text = "\(clothingType) 주문서를 준비할게요."
-        showOrderSheet()
-        
-        print(currentOrder!)
+        dialogLabel.text = "어떤 색 원단으로 만들까요?"
+        showFabricColorChoices()
     
     }
     
+    private func showFabricColorChoices() {
+        pinkColorButton = createChoiceButton(
+            text: "분홍",
+            name: "pinkColorButton",
+            position: CGPoint(x: -180, y: frame.minY + 90)
+        )
+        blueColorButton = createChoiceButton(
+            text: "파랑",
+            name: "blueColorButton",
+            position: CGPoint(x: 0, y: frame.minY + 90)
+        )
+        yellowColorButton = createChoiceButton(
+            text: "노랑",
+            name: "yellowColorButton",
+            position: CGPoint(x: 180, y: frame.minY + 90)
+        )
+        fabricBackButton = createChoiceButton(
+            text: "← 다시",
+            name: "fabricBackButton",
+            position: CGPoint(x: 0, y: frame.minY + 155)
+        )
+    }
+
+    private func hideFabricColorChoices() {
+        pinkColorButton?.removeFromParent()
+        pinkColorButton = nil
+        blueColorButton?.removeFromParent()
+        blueColorButton = nil
+        yellowColorButton?.removeFromParent()
+        yellowColorButton = nil
+        fabricBackButton?.removeFromParent()
+        fabricBackButton = nil
+    }
+
+    private func handleFabricColorChoice(named nodeName: String) {
+        let fabricColor: String
+        switch nodeName {
+        case "pinkColorButton":  fabricColor = "분홍"
+        case "blueColorButton":  fabricColor = "파랑"
+        case "yellowColorButton": fabricColor = "노랑"
+        default: return
+        }
+
+        currentOrder = Order(clothingType: pendingClothingType,
+                             depositAmount: pendingDeposit,
+                             fabricColor: fabricColor)
+        currentState = .reviewingOrder
+        hideFabricColorChoices()
+        dialogLabel.text = "\(fabricColor) 원단으로 주문서를 준비할게요."
+        showOrderSheet()
+    }
+
     private func showOrderSheet() {
         guard let order = currentOrder else { return }
         
         let panelWidth: CGFloat = 250
-        let panelHeight: CGFloat = 150
-        
+        let panelHeight: CGFloat = 180
+
         let panel = SKShapeNode(rectOf: CGSize(width: panelWidth, height: panelHeight), cornerRadius: 24)
         panel.fillColor = UIColor(red: 0.96, green: 0.91, blue: 0.80, alpha: 0.98)
         panel.strokeColor = UIColor.brown
         panel.lineWidth = 4
-        panel.position = CGPoint(x: -120, y: -20)
+        panel.position = CGPoint(x: -120, y: -45)
         panel.zPosition = 80
         panel.name = "orderSheet"
-        
+
         let titleLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         titleLabel.text = "주문서"
         titleLabel.fontSize = 26
         titleLabel.fontColor = .black
-        titleLabel.position = CGPoint(x: 0, y: 40)
+        titleLabel.position = CGPoint(x: 0, y: 60)
         titleLabel.verticalAlignmentMode = .center
         titleLabel.zPosition = 81
-        
+
         let clothingLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
         clothingLabel.text = "의상: \(order.clothingType)"
         clothingLabel.fontSize = 20
         clothingLabel.fontColor = .black
-        clothingLabel.position = CGPoint(x: 0, y: 5)
+        clothingLabel.position = CGPoint(x: 0, y: 20)
         clothingLabel.verticalAlignmentMode = .center
         clothingLabel.zPosition = 81
-        
+
+        let fabricLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
+        fabricLabel.text = "원단: \(order.fabricColor)"
+        fabricLabel.fontSize = 20
+        fabricLabel.fontColor = .black
+        fabricLabel.position = CGPoint(x: 0, y: -15)
+        fabricLabel.verticalAlignmentMode = .center
+        fabricLabel.zPosition = 81
+
         let depositLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
         depositLabel.text = "선수금: \(order.depositAmount)냥"
         depositLabel.fontSize = 20
         depositLabel.fontColor = .black
-        depositLabel.position = CGPoint(x: 0, y: -28)
+        depositLabel.position = CGPoint(x: 0, y: -50)
         depositLabel.verticalAlignmentMode = .center
         depositLabel.zPosition = 81
-        
+
         panel.addChild(titleLabel)
         panel.addChild(clothingLabel)
+        panel.addChild(fabricLabel)
         panel.addChild(depositLabel)
         
         addChild(panel)
@@ -292,7 +359,22 @@ class FrontShopScene: SKScene {
                     handleChoice(named: nodeName)
                     return
                 }
-                
+
+            case "pinkColorButton", "blueColorButton", "yellowColorButton":
+                if currentState == .choosingFabricColor {
+                    handleFabricColorChoice(named: nodeName)
+                    return
+                }
+
+            case "fabricBackButton":
+                if currentState == .choosingFabricColor {
+                    hideFabricColorChoices()
+                    currentState = .choosingClothing
+                    showClothingChoicesAgain()
+                    dialogLabel.text = "어떤 옷을 만들어 드릴까요?"
+                    return
+                }
+
             case "confirmOrderButton":
                 if currentState == .reviewingOrder {
                     handleConfirmOrder()
@@ -467,7 +549,8 @@ class FrontShopScene: SKScene {
         
         let backRoomScene = BackRoomScene(size: self.size)
         backRoomScene.scaleMode = self.scaleMode
-        
+        backRoomScene.order = currentOrder
+
         let transition = SKTransition.fade(withDuration: 0.8)
         view.presentScene(backRoomScene, transition: transition)
     }

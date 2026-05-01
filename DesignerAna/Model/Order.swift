@@ -10,4 +10,5 @@ import Foundation
 struct Order {
     let clothingType: String
     let depositAmount: Int
+    let fabricColor: String   // "분홍" | "파랑" | "노랑"
 }

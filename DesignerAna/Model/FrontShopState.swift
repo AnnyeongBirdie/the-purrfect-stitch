@@ -10,6 +10,7 @@ import Foundation
 enum FrontShopState {
     case greeting
     case choosingClothing
+    case choosingFabricColor
     case reviewingOrder
     case awaitingPayment
     case sendingOrder
