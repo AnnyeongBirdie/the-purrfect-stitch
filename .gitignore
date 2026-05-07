@@ -30,3 +30,6 @@ Pods/
 
 # Cowork session handoff notes (local-only, not for version control)
 DesignerAna_handoff.md
+
+# Claude Code per-machine settings (absolute paths, machine-specific)
+.claude/settings.local.json
