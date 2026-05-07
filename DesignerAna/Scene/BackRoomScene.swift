@@ -76,6 +76,7 @@ class BackRoomScene: SKScene {
     
     private var tailorHaloNode: SKShapeNode?
     private var mannequinZone: SKShapeNode?
+    private var activeMinigame: MinigameNode?
 
     private var sewingStation: SKShapeNode?
     private var scissorsNode: SKSpriteNode?
@@ -177,6 +178,13 @@ class BackRoomScene: SKScene {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let minigame = activeMinigame {
+            for touch in touches {
+                minigame.handleTouchBegan(at: touch.location(in: self))
+            }
+            return
+        }
+
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
@@ -186,8 +194,26 @@ class BackRoomScene: SKScene {
 
         handleMovement(at: location)
     }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let minigame = activeMinigame {
+            for touch in touches {
+                minigame.handleTouchEnded(at: touch.location(in: self))
+            }
+        }
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let minigame = activeMinigame {
+            for touch in touches {
+                minigame.handleTouchEnded(at: touch.location(in: self))
+            }
+        }
+    }
     
     override func update(_ currentTime: TimeInterval) {
+        activeMinigame?.update(currentTime: currentTime)
+
         guard let cabinet = fabricCabinet else { return }
 
         if isTailorNearCabinet() {
@@ -212,18 +238,15 @@ class BackRoomScene: SKScene {
             switch nodeName {
             case "fabricCabinet":
                 guard currentState == .waitingForCabinetTap else { return true }
-                
+
                 instructionLabel.text = "원단 보관장으로 가는 중이에요."
                 currentState = .walkingToCabinet
-                
+
                 moveTailor(to: cabinetInteractionX) { [weak self] in
                     guard let self = self else { return }
-                    
-                    self.instructionLabel.text = "드레스에 맞는 원단을 골라주세요."
-                    self.showFabricChoices()
-                    self.currentState = .choosingFabric
+                    self.presentMinigame(for: .fabricCabinet)
                 }
-                
+
                 return true
                 
             case "pinkFabric", "blueFabric", "yellowFabric":
@@ -415,6 +438,71 @@ class BackRoomScene: SKScene {
         return distance < 120 // tweak this value
     }
 
+    // MARK: - Minigame overlay
+
+    private func presentMinigame(for station: MinigameStation) {
+        guard let scene = self.scene else { return }
+
+        // Pause back-room tailor while minigame runs
+        tailor.isPaused = true
+
+        // Save gravity and set platformer gravity
+        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
+
+        // Full-screen touch shield at zPosition 49
+        let shield = SKSpriteNode(color: .clear, size: scene.size)
+        shield.position = .zero
+        shield.zPosition = 49
+        shield.name = "minigameShield"
+        shield.isUserInteractionEnabled = false   // scene receives touches; shield blocks via zPos ordering
+        addChild(shield)
+
+        let config = MinigameConfig.make(for: station, order: order)
+        let minigame = MinigameNode(config: config) { [weak self] completedStation in
+            self?.handleMinigameCompletion(for: completedStation)
+        }
+        minigame.zPosition = 50
+        minigame.name = "minigame"
+        activeMinigame = minigame
+        addChild(minigame)
+        minigame.setup(in: scene)
+    }
+
+    private func handleMinigameCompletion(for station: MinigameStation) {
+        // Tear down overlay
+        activeMinigame?.removeFromParent()
+        activeMinigame = nil
+        childNode(withName: "minigameShield")?.removeFromParent()
+
+        // Restore gravity (back room has no physics bodies, so zero is correct)
+        scene?.physicsWorld.gravity = .zero
+
+        // Resume tailor
+        tailor.isPaused = false
+
+        // Advance back-room state machine
+        switch station {
+        case .fabricCabinet:
+            instructionLabel.text = "잘했어요! 보관장이 열렸으니 원단을 골라볼까요?"
+            showFabricChoices()
+            currentState = .choosingFabric
+        case .sewingStation:
+            instructionLabel.text = "가위를 먼저 사용해보세요."
+            showSewingTools()
+            currentState = .sewing
+        case .buttonStation:
+            instructionLabel.text = "버튼을 고르세요."
+            showButtonTypes()
+            currentState = .addingButtons
+        case .mannequin:
+            currentState = .finalCheck
+        }
+    }
+
+    // MARK: - Minigame touch/update forwarding
+
+    private func isMinigameActive() -> Bool { activeMinigame != nil }
+
     private func showFabricChoices() {
         hideFabricChoices()
 
@@ -482,7 +570,8 @@ class BackRoomScene: SKScene {
             currentState = .waitingForSewing
             instructionLabel.text = "재봉대로 가보세요."
         } else {
-            instructionLabel.text = "이 원단 말고 다른 걸 골라볼까요?"
+            let ordered = order?.fabricColor ?? "분홍"
+            instructionLabel.text = "고객이 주문한 건 \(ordered) 원단이에요. 다시 골라봐요!"
         }
     }
     
