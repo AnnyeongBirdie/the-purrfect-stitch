@@ -40,7 +40,7 @@ Scene-to-scene communication is a plain property set on the destination before `
 ### State machines
 
 **FrontShopScene** uses the `FrontShopState` enum (in `Model/`):
-`greeting → choosingClothing → reviewingOrder → awaitingPayment → sendingOrder`
+`greeting → choosingClothing → choosingFabricColor → reviewingOrder → awaitingPayment → sendingOrder`
 
 **BackRoomScene** uses a private nested `BackRoomState` enum with this linear progression:
 `waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → sewing → waitingForButtons → walkingToButtons → addingButtons → waitingForMannequin → walkingToMannequin → completed`
@@ -51,23 +51,21 @@ Scene-to-scene communication is a plain property set on the destination before `
 
 | Type | Key fields |
 |---|---|
-| `Order` (struct) | `clothingType: String`, `depositAmount: Int` |
+| `Order` (struct) | `clothingType: String`, `depositAmount: Int`, `fabricColor: String` |
 | `FrontShopState` (enum) | five cases, drives UI in FrontShopScene |
 
 `playerMoney: Int` (starts at 200냥) and `currentOrder: Order?` are instance vars on `FrontShopScene`, not persisted across launches.
 
 ### Known gaps / in-progress state
 
-- The `Order` chosen in `FrontShopScene` is **never forwarded to `BackRoomScene`** — the back room always crafts a pink dress regardless of what was ordered.
-- Fabric selection in the back room only advances on `pinkFabric`; blue and yellow display a retry message.
-- `BackRoomScene` has visible debug overlays (colored semi-transparent boxes) on the sewing station, button station, and mannequin zone — these are `fillColor`/`strokeColor` set directly in `setupSewingStationZone()`, `setupButtonZone()`, and `setupMannequinZone()`.
 - `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code.
 - State checks in `FrontShopScene` use `if currentState == .case` guards instead of exhaustive switches; this loses Swift's compile-time exhaustiveness check.
+- `Order.fabricColor` and `Order.clothingType` are typed as `String` rather than enum. Couples with the if-guards concern; both will likely be refactored together.
 
 ## Roadmap
 
-### Phase 1 — Current prototype
-Fixed pink-dress flow. Fabric and button choices in the back room are hardcoded; the `Order` from the front shop is never forwarded.
+### Phase 1 — Initial prototype (shipped)
+Fixed pink-dress flow. Fabric and button choices in the back room were hardcoded; the `Order` from the front shop was not forwarded. Cleanup work removed the dead `readyForTransition` enum case and the visible debug overlays on back-room zones.
 
 ### Phase 2 — Game loop expansion
 
@@ -81,7 +79,7 @@ The NPC shopkeeper guides the player through four ordering steps in sequence:
 
 Work is split into three sub-phases, each delivered end-to-end before the next begins:
 
-- **Phase 2a — Fabric color:** Front shop asks for fabric color, `Order` carries it, back room gates the fabric cabinet on the ordered color. (First deliverable.)
+- **Phase 2a — Fabric color (shipped):** Front shop asks for fabric color after clothing pick (new `choosingFabricColor` state). `Order` carries `fabricColor: String` and is forwarded to `BackRoomScene` via the `order` property. The fabric cabinet gates on the chosen color; mismatched colors trigger a retry message. Order-aware helpers in `BackRoomScene` default to pink when `order` is nil (defensive fallback to preserve pre-2a behavior).
 - **Phase 2b — Clothing type:** Front shop asks for clothing type, `Order` carries it, back room produces the matching garment.
 - **Phase 2c — Button type:** Front shop asks for button type (regular / fancy), `Order` carries it, back room gates the button station on it.
 
