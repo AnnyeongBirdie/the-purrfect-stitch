@@ -27,3 +27,6 @@ Pods/
 # Misc
 *.swp
 *~
+
+# Cowork session handoff notes (local-only, not for version control)
+DesignerAna_handoff.md
