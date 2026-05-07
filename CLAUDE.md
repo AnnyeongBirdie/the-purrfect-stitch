@@ -10,7 +10,7 @@ From the command line:
 ```bash
 # Build for simulator
 xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
-  -destination 'platform=iOS Simulator,name=iPhone 16' build
+  -destination 'platform=iOS Simulator,name=iPhone 16e' build
 
 # Clean build
 xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna clean
@@ -18,6 +18,7 @@ xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna clean
 
 - Swift 5.0, iOS 26.2 deployment target, supports iPhone + iPad
 - No CocoaPods, SPM packages, or external dependencies
+- Installed simulators on this machine: **iPhone 16e** (preferred default) and iPhone 17. iPhone 16 is *not* installed — do not target it.
 
 ## Architecture
 
