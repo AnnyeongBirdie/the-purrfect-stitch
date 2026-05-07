@@ -45,6 +45,10 @@ Scene-to-scene communication is a plain property set on the destination before `
 **BackRoomScene** uses a private nested `BackRoomState` enum with this linear progression:
 `waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → sewing → waitingForButtons → walkingToButtons → addingButtons → waitingForMannequin → walkingToMannequin → completed`
 
+### Tailor halo
+
+A vertical pill-shaped halo behind the tailor sprite in `BackRoomScene` provides ambient visual feedback. Its color tracks `order?.fabricColor` and **deepens in shade with each station cleared** (light after fabric → medium after sewing → dark after buttons), pulsing via alpha breathing throughout. At completion, the pulse stops and the halo expands to fill the screen before the scene transitions back to the front shop. The three shades per color are hand-tuned `UIColor` values centralized as `haloLight` / `haloMedium` / `haloDark` computed properties.
+
 ### Model layer
 
 `Model/` has two files and is otherwise thin — all scene-specific state lives inside each scene class:
