@@ -498,7 +498,12 @@ class FrontShopScene: SKScene {
             hidePayButtons()
             sendOrderToBackRoom()
         } else {
-            dialogLabel.text = "냥이 부족해요."
+            currentState = .choosingClothing
+            hidePaymentPanel()
+            hidePayButtons()
+            currentOrder = nil
+            dialogLabel.text = "냥이 부족해요. 다시 골라주세요."
+            showClothingChoicesAgain()
         }
     }
     
