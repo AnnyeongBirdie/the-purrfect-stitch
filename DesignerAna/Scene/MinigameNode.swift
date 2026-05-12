@@ -10,9 +10,10 @@ class MinigameNode: SKNode {
     // MARK: - Physics categories
     private struct PhysicsCategory {
         static let none:     UInt32 = 0
-        static let hero:     UInt32 = 0b001
-        static let ground:   UInt32 = 0b010
-        static let monster:  UInt32 = 0b100
+        static let hero:     UInt32 = 0b0001
+        static let ground:   UInt32 = 0b0010
+        static let monster:  UInt32 = 0b0100
+        static let hazard:   UInt32 = 0b1000
     }
 
     // MARK: - Config + callback
@@ -33,12 +34,20 @@ class MinigameNode: SKNode {
     private var monsterDefeated = false
     private var chestOpened = false
     private var isCompleting = false
+    private var isDead = false
+
+    private var heroStartPosition: CGPoint = .zero
 
     // Horizontal movement direction: -1 left, 0 none, +1 right
     private var moveDirection: CGFloat = 0
     private var leftArrowTouches = 0
     private var rightArrowTouches = 0
     private var lastUpdateTime: TimeInterval = 0
+
+    // Pacing monster state
+    private var monsterStartX: CGFloat = 0
+    private var monsterPaceOffset: CGFloat = 0
+    private var monsterPaceDirection: CGFloat = 1
 
     // MARK: - Layout constants (sceneW/sceneH set at runtime in setup(in:))
     private var sceneW: CGFloat = 0
@@ -71,6 +80,7 @@ class MinigameNode: SKNode {
         buildDungeon()
         buildHero()
         buildMonster()
+        buildHazards()
         buildDirectionalButtons()
         buildJumpButton()
         buildInstructionLabel()
@@ -169,7 +179,8 @@ class MinigameNode: SKNode {
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
         hero.setScale(0.075)
-        hero.position = CGPoint(x: -sceneW * 0.38, y: -sceneH * 0.28)
+        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: -sceneH * 0.28)
+        hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
         addChild(hero)
@@ -181,7 +192,7 @@ class MinigameNode: SKNode {
         body.linearDamping = 0
         body.usesPreciseCollisionDetection = true
         body.categoryBitMask = PhysicsCategory.hero
-        body.contactTestBitMask = PhysicsCategory.ground | PhysicsCategory.monster
+        body.contactTestBitMask = PhysicsCategory.ground | PhysicsCategory.monster | PhysicsCategory.hazard
         body.collisionBitMask = PhysicsCategory.ground
         hero.physicsBody = body
     }
@@ -210,12 +221,39 @@ class MinigameNode: SKNode {
         node.physicsBody = body
 
         monster = node
+        monsterStartX = node.position.x
         addChild(node)
     }
 
+    private func buildHazards() {
+        guard case .scissorBlades(let count, let spacing) = config.hazardKind else { return }
+
+        // Place scissors on the floor surface between hero start and monster.
+        // Floor top is at -sceneH*0.40 + 9 (half of floor height 18). Sprite sits on top.
+        let floorTop = -sceneH * 0.40 + 9
+        let startX: CGFloat = -sceneW * 0.20  // first blade slightly past hero start
+        for i in 0..<count {
+            let blade = SKSpriteNode(imageNamed: "Scissors")
+            blade.setScale(0.12)
+            blade.position = CGPoint(x: startX + CGFloat(i) * spacing, y: floorTop + 18)
+            blade.zPosition = 2
+            blade.name = "scissorHazard"
+
+            let hitSize = CGSize(width: 24, height: 24)
+            let body = SKPhysicsBody(rectangleOf: hitSize)
+            body.isDynamic = false
+            body.categoryBitMask = PhysicsCategory.hazard
+            body.contactTestBitMask = PhysicsCategory.hero
+            body.collisionBitMask = PhysicsCategory.none
+            blade.physicsBody = body
+
+            addChild(blade)
+        }
+    }
+
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.35, y: -sceneH * 0.42)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.18, y: -sceneH * 0.42)
+        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -241,7 +279,7 @@ class MinigameNode: SKNode {
 
     private func buildJumpButton() {
         let btn = SKShapeNode(circleOfRadius: 34)
-        btn.position = CGPoint(x: sceneW * 0.38, y: -sceneH * 0.38)
+        btn.position = CGPoint(x: sceneW * 0.42, y: -sceneH * 0.39)
         btn.fillColor = UIColor.white.withAlphaComponent(0.25)
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
@@ -350,6 +388,7 @@ class MinigameNode: SKNode {
         guard lastUpdateTime > 0 else { lastUpdateTime = currentTime; return }
         let dt = currentTime - lastUpdateTime
         lastUpdateTime = currentTime
+        guard !isDead, !isCompleting else { return }
 
         if moveDirection != 0 {
             let dx = moveDirection * heroSpeed * CGFloat(dt)
@@ -386,9 +425,57 @@ class MinigameNode: SKNode {
                 defeatMonster()
             }
         }
+
+        // Pacing monster movement
+        if !monsterDefeated, let monster = monster,
+           case .pacing(let speed, let range) = config.monsterBehavior {
+            monsterPaceOffset += monsterPaceDirection * speed * CGFloat(dt)
+            if abs(monsterPaceOffset) >= range {
+                monsterPaceDirection *= -1
+                monsterPaceOffset = monsterPaceOffset > 0 ? range : -range
+            }
+            monster.position.x = monsterStartX + monsterPaceOffset
+            monster.xScale = monsterPaceDirection > 0 ? 1 : -1
+        }
     }
 
     // MARK: - Defeat + chest
+
+    private func handleDeath() {
+        guard !isDead, !isCompleting else { return }
+        isDead = true
+        moveDirection = 0
+        leftArrowTouches = 0
+        rightArrowTouches = 0
+        hero.physicsBody?.velocity = .zero
+
+        let deathLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        deathLabel.text = "다시 도전해봐요!"
+        deathLabel.fontSize = 26
+        deathLabel.fontColor = UIColor(red: 1.0, green: 0.9, blue: 0.3, alpha: 1)
+        deathLabel.position = CGPoint(x: 0, y: sceneH * 0.05)
+        deathLabel.zPosition = 6
+        addChild(deathLabel)
+
+        hero.run(.sequence([
+            .fadeAlpha(to: 0.2, duration: 0.15),
+            .wait(forDuration: 0.7),
+            .fadeIn(withDuration: 0.2)
+        ]))
+
+        run(.wait(forDuration: 1.1)) { [weak self] in
+            guard let self else { return }
+            deathLabel.removeFromParent()
+            self.hero.position = self.heroStartPosition
+            self.monsterPaceOffset = 0
+            self.monsterPaceDirection = 1
+            if let monster = self.monster {
+                monster.position.x = self.monsterStartX
+            }
+            self.isDead = false
+            self.instructionLabel.text = "괴물을 물리치고 보물 상자를 찾아라!"
+        }
+    }
 
     private func defeatMonster() {
         guard !monsterDefeated else { return }
@@ -506,6 +593,28 @@ class MinigameNode: SKNode {
 
         if isHeroGroundContact {
             isOnGround = true
+        }
+
+        let isHeroHazardContact =
+            (maskA == PhysicsCategory.hero && maskB == PhysicsCategory.hazard) ||
+            (maskA == PhysicsCategory.hazard && maskB == PhysicsCategory.hero)
+
+        if isHeroHazardContact {
+            handleDeath()
+        }
+
+        // Hero walks into monster from the side (not a stomp) — treated as death
+        let isHeroMonsterContact =
+            (maskA == PhysicsCategory.hero && maskB == PhysicsCategory.monster) ||
+            (maskA == PhysicsCategory.monster && maskB == PhysicsCategory.hero)
+
+        if isHeroMonsterContact, !monsterDefeated {
+            let heroFeet = hero.position.y - 22
+            let monsterTop = (monster?.position.y ?? 0) + 22
+            let isStormp = heroFeet <= monsterTop && (hero.physicsBody?.velocity.dy ?? 0) < -50
+            if !isStormp {
+                handleDeath()
+            }
         }
     }
 }

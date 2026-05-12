@@ -9,8 +9,7 @@ class BackRoomScene: SKScene {
         
         case waitingForSewing
         case walkingToSewing
-        case sewing
-        
+
         case waitingForButtons
         case walkingToButtons
         case addingButtons
@@ -79,13 +78,7 @@ class BackRoomScene: SKScene {
     private var activeMinigame: MinigameNode?
 
     private var sewingStation: SKShapeNode?
-    private var scissorsNode: SKSpriteNode?
-    private var threadNode: SKSpriteNode?
-    private var hasCutFabric = false
-    
-    private var scissorsTapZone: SKShapeNode?
-    private var threadTapZone: SKShapeNode?
-    
+
     private var buttonStation: SKShapeNode?
     private var regularButtonNode: SKSpriteNode?
     private var fancyButtonNode: SKSpriteNode?
@@ -262,35 +255,9 @@ class BackRoomScene: SKScene {
 
                 moveTailor(to: 120) { [weak self] in
                     guard let self = self else { return }
-
-                    self.instructionLabel.text = "가위를 먼저 사용해보세요."
-                    self.showSewingTools()
-                    self.currentState = .sewing
+                    self.presentMinigame(for: .sewingStation)
                 }
 
-                return true
-            
-            case "scissors":
-                guard currentState == .sewing else { return true }
-
-                hasCutFabric = true
-                instructionLabel.text = "잘랐어요! 이제 바느질해볼까요?"
-                playCutAnimation()
-                return true
-
-            case "thread":
-                guard currentState == .sewing else { return true }
-
-                if hasCutFabric {
-                    instructionLabel.text = "좋아요! 재봉이 끝났어요."
-                    playSewAnimation()
-
-                    run(SKAction.wait(forDuration: 0.2)) { [weak self] in
-                        self?.finishSewingStep()
-                    }
-                } else {
-                    instructionLabel.text = "먼저 가위를 사용해보세요."
-                }
                 return true
                 
             case "buttonStation":
@@ -487,9 +454,9 @@ class BackRoomScene: SKScene {
             showFabricChoices()
             currentState = .choosingFabric
         case .sewingStation:
-            instructionLabel.text = "가위를 먼저 사용해보세요."
-            showSewingTools()
-            currentState = .sewing
+            instructionLabel.text = "단추를 달아볼까요?"
+            updateHaloColor(to: haloMedium)
+            currentState = .waitingForButtons
         case .buttonStation:
             instructionLabel.text = "버튼을 고르세요."
             showButtonTypes()
@@ -569,73 +536,6 @@ class BackRoomScene: SKScene {
             let ordered = order?.fabricColor ?? "분홍"
             instructionLabel.text = "고객이 주문한 건 \(ordered) 원단이에요. 다시 골라봐요!"
         }
-    }
-    
-    private func showSewingTools() {
-        scissorsTapZone?.removeFromParent()
-        threadTapZone?.removeFromParent()
-        scissorsNode?.removeFromParent()
-        threadNode?.removeFromParent()
-
-        let scissorsZone = SKShapeNode(rectOf: CGSize(width: 100, height: 100), cornerRadius: 16)
-        scissorsZone.position = CGPoint(x: 110, y: -110)
-        scissorsZone.fillColor = .red.withAlphaComponent(0.2)
-        scissorsZone.strokeColor = .red
-        scissorsZone.lineWidth = 2
-        scissorsZone.name = "scissors"
-        scissorsZone.zPosition = 19
-        addChild(scissorsZone)
-        scissorsTapZone = scissorsZone
-
-        let threadZone = SKShapeNode(rectOf: CGSize(width: 100, height: 100), cornerRadius: 16)
-        threadZone.position = CGPoint(x: 230, y: -110)
-        threadZone.fillColor = .yellow.withAlphaComponent(0.2)
-        threadZone.strokeColor = .yellow
-        threadZone.lineWidth = 2
-        threadZone.name = "thread"
-        threadZone.zPosition = 19
-        addChild(threadZone)
-        threadTapZone = threadZone
-
-        scissorsNode = SKSpriteNode(imageNamed: "Scissors")
-        scissorsNode?.position = scissorsZone.position
-        scissorsNode?.setScale(0.10)
-        scissorsNode?.name = "scissors"
-        scissorsNode?.zPosition = 20
-
-        threadNode = SKSpriteNode(imageNamed: "Thread_Gold")
-        threadNode?.position = threadZone.position
-        threadNode?.setScale(0.10)
-        threadNode?.name = "thread"
-        threadNode?.zPosition = 20
-
-        if let scissorsNode { addChild(scissorsNode) }
-        if let threadNode { addChild(threadNode) }
-    }
-    
-    private func finishSewingStep() {
-        scissorsNode?.removeFromParent()
-        threadNode?.removeFromParent()
-        scissorsTapZone?.removeFromParent()
-        threadTapZone?.removeFromParent()
-
-        scissorsNode = nil
-        threadNode = nil
-        scissorsTapZone = nil
-        threadTapZone = nil
-        hasCutFabric = false
-
-        currentState = .waitingForButtons
-        instructionLabel.text = "단추를 달아볼까요?"
-        updateHaloColor(to: haloMedium)
-    }
-    
-    private func playCutAnimation() {
-        playWiggleAnimation(on: scissorsNode)
-    }
-
-    private func playSewAnimation() {
-        playWiggleAnimation(on: threadNode)
     }
     
     private func showButtonTypes() {

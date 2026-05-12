@@ -23,12 +23,24 @@ enum DefeatMechanism {
     case tapOnly
 }
 
+enum MonsterBehavior {
+    case stationary                                  // fabric cabinet — tutorial, doesn't move
+    case pacing(speed: CGFloat, range: CGFloat)      // sewing — walks back and forth
+}
+
+enum HazardKind {
+    case none                                        // fabric cabinet — no floor obstacles
+    case scissorBlades(count: Int, spacing: CGFloat) // sewing — scissors to jump over
+}
+
 struct MinigameConfig {
     let station: MinigameStation
     let levelSeed: Int                  // 1–4; selects a hardcoded platform layout
     let enemyKind: EnemyKind
     let enemyCount: Int
     let defeatMechanism: DefeatMechanism
+    let monsterBehavior: MonsterBehavior
+    let hazardKind: HazardKind
     let chestRewardLabel: String        // shown when chest opens, e.g. "원단 획득!"
     let chestRewardImageName: String    // item sprite inside the chest
     let backgroundTint: UIColor         // dungeon atmosphere, derived from fabricColor
@@ -40,25 +52,26 @@ struct MinigameConfig {
         case .fabricCabinet:
             return MinigameConfig(
                 station: station, levelSeed: 1, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either,
+                defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
                 chestRewardLabel: "원단 획득!", chestRewardImageName: "pinkFabric",
                 backgroundTint: bgTint, accentColor: accent)
         case .sewingStation:
             return MinigameConfig(
                 station: station, levelSeed: 2, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either,
+                defeatMechanism: .either, monsterBehavior: .pacing(speed: 80, range: 70),
+                hazardKind: .scissorBlades(count: 2, spacing: 90),
                 chestRewardLabel: "실 획득!", chestRewardImageName: "Thread_Gold",
                 backgroundTint: bgTint, accentColor: accent)
         case .buttonStation:
             return MinigameConfig(
                 station: station, levelSeed: 3, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either,
+                defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
                 chestRewardLabel: "단추 획득!", chestRewardImageName: "Buttons_Regular",
                 backgroundTint: bgTint, accentColor: accent)
         case .mannequin:
             return MinigameConfig(
                 station: station, levelSeed: 4, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either,
+                defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
                 chestRewardLabel: "드레스 완성!", chestRewardImageName: "Mannequin_Dress_Pink",
                 backgroundTint: bgTint, accentColor: accent)
         }
