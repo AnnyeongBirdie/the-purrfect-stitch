@@ -82,6 +82,7 @@ class MinigameNode: SKNode {
         buildHero()
         buildMonster()
         buildHazards()
+        startDynamicBehaviors()
         buildDirectionalButtons()
         buildJumpButton()
         buildInstructionLabel()
@@ -224,6 +225,102 @@ class MinigameNode: SKNode {
         monster = node
         monsterStartX = node.position.x
         addChild(node)
+    }
+
+    private func startDynamicBehaviors() {
+        if case .lunging(let interval) = config.monsterBehavior {
+            startLungePattern(interval: interval)
+        }
+        if case .fallingButtons(let interval) = config.hazardKind {
+            startFallingButtonSpawn(interval: interval)
+        }
+    }
+
+    private func startLungePattern(interval: TimeInterval) {
+        guard let monster = monster else { return }
+
+        let telegraph = SKAction.sequence([
+            .fadeAlpha(to: 0.25, duration: 0.12),
+            .fadeAlpha(to: 1.00, duration: 0.12),
+            .fadeAlpha(to: 0.25, duration: 0.12),
+            .fadeAlpha(to: 1.00, duration: 0.12),
+        ])
+        let charge = SKAction.run { [weak self] in
+            guard let self, let monster = self.monster else { return }
+            let targetX = self.hero.position.x
+            let dist = abs(targetX - monster.position.x)
+            let duration = max(0.12, TimeInterval(dist / 400))
+            monster.run(.moveTo(x: targetX, duration: duration), withKey: "lunge")
+        }
+        let pause = SKAction.wait(forDuration: 0.35)
+        let returnHome = SKAction.run { [weak self] in
+            guard let self, let monster = self.monster else { return }
+            monster.run(.moveTo(x: self.monsterStartX, duration: 0.45), withKey: "lunge")
+        }
+        let rest = SKAction.wait(forDuration: interval)
+
+        monster.run(.repeatForever(.sequence([rest, telegraph, charge, pause, returnHome])),
+                    withKey: "lungePattern")
+    }
+
+    private func startFallingButtonSpawn(interval: TimeInterval) {
+        let spawn = SKAction.run { [weak self] in self?.spawnFallingButton() }
+        run(.repeatForever(.sequence([spawn, .wait(forDuration: interval)])),
+            withKey: "spawnButtons")
+    }
+
+    private func spawnFallingButton() {
+        guard !monsterDefeated else { return }
+
+        let radius: CGFloat = 20
+        let btn = makeButtonIcon(radius: radius)
+        btn.position = CGPoint(x: CGFloat.random(in: -sceneW * 0.40 ... sceneW * 0.40),
+                               y: sceneH * 0.46)
+        btn.zPosition = 2
+        btn.name = "fallingButton"
+
+        let body = SKPhysicsBody(circleOfRadius: radius)
+        body.isDynamic = true
+        body.affectedByGravity = false
+        body.velocity = CGVector(dx: 0, dy: -190)
+        body.categoryBitMask = PhysicsCategory.hazard
+        body.contactTestBitMask = PhysicsCategory.hero
+        body.collisionBitMask = PhysicsCategory.none
+        btn.physicsBody = body
+
+        addChild(btn)
+        btn.run(.sequence([.wait(forDuration: 3.5), .removeFromParent()]))
+    }
+
+    private func makeButtonIcon(radius: CGFloat) -> SKNode {
+        let container = SKNode()
+
+        // Button body
+        let body = SKShapeNode(circleOfRadius: radius)
+        body.fillColor = config.accentColor
+        body.strokeColor = .clear
+        container.addChild(body)
+
+        // Inner ring
+        let ring = SKShapeNode(circleOfRadius: radius * 0.72)
+        ring.fillColor = .clear
+        ring.strokeColor = UIColor.white.withAlphaComponent(0.75)
+        ring.lineWidth = 2
+        container.addChild(ring)
+
+        // 4 thread holes in a 2×2 arrangement
+        let holeRadius = radius * 0.13
+        let offset = radius * 0.28
+        for (dx, dy): (CGFloat, CGFloat) in [(-offset,  offset), ( offset,  offset),
+                                              (-offset, -offset), ( offset, -offset)] {
+            let hole = SKShapeNode(circleOfRadius: holeRadius)
+            hole.fillColor = .white
+            hole.strokeColor = .clear
+            hole.position = CGPoint(x: dx, y: dy)
+            container.addChild(hole)
+        }
+
+        return container
     }
 
     private func buildHazards() {
@@ -481,6 +578,8 @@ class MinigameNode: SKNode {
             if let monster = self.monster {
                 monster.position.x = self.monsterStartX
             }
+            // Remove in-flight falling buttons
+            self.children.filter { $0.name == "fallingButton" }.forEach { $0.removeFromParent() }
             self.isDead = false
             self.instructionLabel.text = "괴물을 물리치고 보물 상자를 찾아라!"
         }
@@ -489,6 +588,8 @@ class MinigameNode: SKNode {
     private func defeatMonster() {
         guard !monsterDefeated else { return }
         monsterDefeated = true
+        removeAction(forKey: "spawnButtons")
+        monster?.removeAction(forKey: "lungePattern")
         instructionLabel.text = "해냈어요! 보물 상자를 찾아봐요!"
 
         let pop = SKAction.sequence([
