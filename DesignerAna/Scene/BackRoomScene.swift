@@ -173,7 +173,7 @@ class BackRoomScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let minigame = activeMinigame {
             for touch in touches {
-                minigame.handleTouchBegan(at: touch.location(in: self))
+                minigame.handleTouchBegan(touch)
             }
             return
         }
@@ -191,7 +191,7 @@ class BackRoomScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let minigame = activeMinigame {
             for touch in touches {
-                minigame.handleTouchEnded(at: touch.location(in: self))
+                minigame.handleTouchEnded(touch)
             }
         }
     }
@@ -199,7 +199,7 @@ class BackRoomScene: SKScene {
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let minigame = activeMinigame {
             for touch in touches {
-                minigame.handleTouchEnded(at: touch.location(in: self))
+                minigame.handleTouchEnded(touch)
             }
         }
     }

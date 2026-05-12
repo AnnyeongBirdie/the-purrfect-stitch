@@ -31,6 +31,7 @@ class MinigameNode: SKNode {
 
     // MARK: - State
     private var isOnGround = false
+    private var isJumping = false
     private var monsterDefeated = false
     private var chestOpened = false
     private var isCompleting = false
@@ -40,8 +41,8 @@ class MinigameNode: SKNode {
 
     // Horizontal movement direction: -1 left, 0 none, +1 right
     private var moveDirection: CGFloat = 0
-    private var leftArrowTouches = 0
-    private var rightArrowTouches = 0
+    private var leftButtonTouch: UITouch?
+    private var rightButtonTouch: UITouch?
     private var lastUpdateTime: TimeInterval = 0
 
     // Pacing monster state
@@ -319,18 +320,20 @@ class MinigameNode: SKNode {
 
     // MARK: - Touch handling (called by BackRoomScene.touchesBegan)
 
-    func handleTouchBegan(at location: CGPoint) {
-        guard !isCompleting else { return }
+    func handleTouchBegan(_ touch: UITouch) {
+        guard !isCompleting, !isDead else { return }
+        guard let scene = sceneRef else { return }
+        let location = touch.location(in: scene)
 
         if jumpButton.contains(location) { tryJump(); return }
 
         if leftArrowButton.contains(location) {
-            leftArrowTouches += 1
+            leftButtonTouch = touch
             updateMoveDirection()
             return
         }
         if rightArrowButton.contains(location) {
-            rightArrowTouches += 1
+            rightButtonTouch = touch
             updateMoveDirection()
             return
         }
@@ -354,21 +357,23 @@ class MinigameNode: SKNode {
         }
     }
 
-    func handleTouchEnded(at location: CGPoint) {
-        if leftArrowButton.contains(location) {
-            leftArrowTouches = max(0, leftArrowTouches - 1)
+    func handleTouchEnded(_ touch: UITouch) {
+        if touch === leftButtonTouch {
+            leftButtonTouch = nil
             updateMoveDirection()
-        } else if rightArrowButton.contains(location) {
-            rightArrowTouches = max(0, rightArrowTouches - 1)
+        } else if touch === rightButtonTouch {
+            rightButtonTouch = nil
             updateMoveDirection()
         }
     }
 
     private func updateMoveDirection() {
-        if leftArrowTouches > 0 && rightArrowTouches == 0 {
+        let goLeft = leftButtonTouch != nil
+        let goRight = rightButtonTouch != nil
+        if goLeft && !goRight {
             moveDirection = -1
             hero.xScale = abs(hero.xScale)
-        } else if rightArrowTouches > 0 && leftArrowTouches == 0 {
+        } else if goRight && !goLeft {
             moveDirection = 1
             hero.xScale = -abs(hero.xScale)
         } else {
@@ -377,8 +382,10 @@ class MinigameNode: SKNode {
     }
 
     private func tryJump() {
-        guard isOnGround else { return }
+        guard isOnGround, !isJumping else { return }
         isOnGround = false
+        isJumping = true
+        hero.removeAction(forKey: "step")
         hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpImpulse))
     }
 
@@ -413,6 +420,7 @@ class MinigameNode: SKNode {
             hero.position.y = floorSurface
             hero.physicsBody?.velocity = CGVector(dx: hero.physicsBody?.velocity.dx ?? 0, dy: 0)
             isOnGround = true
+            isJumping = false
         }
 
         // Stomp detection: hero moving downward fast enough while overlapping monster
@@ -444,9 +452,10 @@ class MinigameNode: SKNode {
     private func handleDeath() {
         guard !isDead, !isCompleting else { return }
         isDead = true
+        isJumping = false
         moveDirection = 0
-        leftArrowTouches = 0
-        rightArrowTouches = 0
+        leftButtonTouch = nil
+        rightButtonTouch = nil
         hero.physicsBody?.velocity = .zero
 
         let deathLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
@@ -592,7 +601,11 @@ class MinigameNode: SKNode {
             (maskA == PhysicsCategory.ground && maskB == PhysicsCategory.hero)
 
         if isHeroGroundContact {
-            isOnGround = true
+            let vy = hero.physicsBody?.velocity.dy ?? 0
+            if vy <= 0 {
+                isOnGround = true
+                isJumping = false
+            }
         }
 
         let isHeroHazardContact =
