@@ -597,6 +597,9 @@ class MinigameNode: SKNode {
         monsterDefeated = true
         removeAction(forKey: "spawnButtons")
         monster?.removeAction(forKey: "lungePattern")
+        // Sweep already-airborne falling buttons so they can't kill the hero
+        // in the ~3.5s window between defeating the monster and reaching the chest.
+        children.filter { $0.name == "fallingButton" }.forEach { $0.removeFromParent() }
         instructionLabel.text = "해냈어요! 보물 상자를 찾아봐요!"
 
         let pop = SKAction.sequence([
