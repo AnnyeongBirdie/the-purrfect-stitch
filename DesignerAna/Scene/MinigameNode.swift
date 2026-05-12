@@ -383,7 +383,10 @@ class MinigameNode: SKNode {
 
     private func buildJumpButton() {
         let btn = SKShapeNode(circleOfRadius: 34)
-        btn.position = CGPoint(x: sceneW * 0.42, y: -sceneH * 0.39)
+        // x = sceneW * 0.36 (not 0.42) keeps the jump button reachable for a
+        // wrap-grip with a shorter right thumb — the thumb bends in toward
+        // center rather than extending out toward the edge.
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.39)
         btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
