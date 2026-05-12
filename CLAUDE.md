@@ -101,3 +101,9 @@ Each station (fabric cabinet, sewing station, button station, mannequin) gates p
   - Bonus 냥 for completing each station minigame (Phase 3).
   - Riddle fallback: when the wallet runs low at the front shop, the NPC shopkeeper offers simple math or trivia questions (sourced from external curriculum content, TBD) and awards 냥 for correct answers.
 - **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards must share a single currency system — no duplicated transaction logic across scenes.
+
+### V2 expansion ideas (post-roadmap)
+
+Captured here so they're not lost; not planned for current phases.
+
+- **Adaptive difficulty easing for station minigames.** Track death count per minigame attempt and reduce hazard density after N deaths (fewer chasms, slower monsters, longer safe gaps in button rain) so kids don't get stuck. Auto-reset to default difficulty on success. The 냥 reward should not scale down with eased difficulty — the easing exists to keep play sessions positive, not to discourage skill development.
