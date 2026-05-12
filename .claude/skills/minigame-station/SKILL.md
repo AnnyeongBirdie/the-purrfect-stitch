@@ -38,7 +38,7 @@ Each station gets a unique theme and hazard pattern; mechanics stay the same. Kn
 
 - **Hazard type and pattern** — a thematic obstacle on a fixed axis.
   - Fabric cabinet: ground chasms / fissures to jump over.
-  - Sewing station: scissors and/or needle-and-thread obstacles to jump over. *(TBD: is sewing one minigame or two sequential minigames? Resolve this before implementing.)*
+  - Sewing station: scissor-blade obstacles to jump over (single minigame — the "cut + sew" two-minigame split was considered and rejected as adding complexity without clear gameplay value).
   - Button station: buttons fall from the ceiling to dodge.
   - Mannequin: boss arena — see "Boss exception" below.
 - **Monster behavior** — difficulty curves across stations: static for the fabric cabinet (tutorial), pacing back-and-forth for sewing, brief lunges for button, full telegraphed attack patterns for mannequin.

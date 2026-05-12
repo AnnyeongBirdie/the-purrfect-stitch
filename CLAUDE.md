@@ -44,7 +44,9 @@ Scene-to-scene communication is a plain property set on the destination before `
 `greeting → choosingClothing → choosingFabricColor → reviewingOrder → awaitingPayment → sendingOrder`
 
 **BackRoomScene** uses a private nested `BackRoomState` enum with this linear progression:
-`waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → sewing → waitingForButtons → walkingToButtons → addingButtons → waitingForMannequin → walkingToMannequin → completed`
+`waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → waitingForButtons → walkingToButtons → waitingForMannequin → walkingToMannequin → completed`
+
+The fabric cabinet, sewing station, and button station each gate on a platformer minigame (`MinigameNode` + `MinigameConfig`) — the tap walks the tailor over, then `presentMinigame` hands control to a station-specific config; the minigame's completion callback advances the state. The mannequin station still uses the direct-tap flow; the `.finalCheck` enum case is a placeholder for when a boss minigame replaces that path (see the boss exception in `.claude/skills/minigame-station/SKILL.md`).
 
 ### Tailor halo
 
@@ -94,6 +96,8 @@ Work is split into three sub-phases, each delivered end-to-end before the next b
 
 ### Phase 3 — Station minigames
 Each station (fabric cabinet, sewing station, button station, mannequin) gates progress with a Super Mario–style platformer minigame. The player navigates a small dungeon, defeats a monster, and reaches a treasure chest containing the needed item (fabric, thread, buttons, finished dress) before that station unlocks.
+
+**Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling). The mannequin station (station 4) is the planned "boss" climax and is intentionally deferred until its design lands — see SKILL.md's boss exception. All station-specific behavior lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`.
 
 ### Currency & economy (cross-cutting)
 - **Wallet:** `playerMoney: Int` on `FrontShopScene`, starting at 200냥, depleted by deposits. Already implemented.
