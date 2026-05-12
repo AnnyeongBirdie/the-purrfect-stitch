@@ -46,12 +46,18 @@ class BackRoomScene: SKScene {
         }
     }
 
-    private var garmentCompletionText: String {
+    // Korean noun for the ordered garment. All three values end in a vowel,
+    // so the object-marker particle 를 works uniformly downstream.
+    private var garmentNoun: String {
         switch order?.clothingType {
-        case "셔츠": return "셔츠 완성!"
-        case "바지": return "바지 완성!"
-        default:     return "드레스 완성!"
+        case "셔츠": return "셔츠"
+        case "바지": return "바지"
+        default:     return "드레스"
         }
+    }
+
+    private var garmentCompletionText: String {
+        "\(garmentNoun) 완성!"
     }
 
     private let cabinetInteractionX: CGFloat = -180
@@ -433,7 +439,7 @@ class BackRoomScene: SKScene {
             updateHaloColor(to: haloMedium)
             currentState = .waitingForButtons
         case .buttonStation:
-            instructionLabel.text = "완성된 드레스를 마네킹에 입혀볼까요?"
+            instructionLabel.text = "완성된 \(garmentNoun)를 마네킹에 입혀볼까요?"
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
         case .mannequin:
