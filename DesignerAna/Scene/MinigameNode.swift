@@ -194,7 +194,7 @@ class MinigameNode: SKNode {
         body.linearDamping = 0
         body.usesPreciseCollisionDetection = true
         body.categoryBitMask = PhysicsCategory.hero
-        body.contactTestBitMask = PhysicsCategory.ground | PhysicsCategory.monster | PhysicsCategory.hazard
+        body.contactTestBitMask = PhysicsCategory.ground | PhysicsCategory.hazard
         body.collisionBitMask = PhysicsCategory.ground
         hero.physicsBody = body
     }
@@ -520,14 +520,21 @@ class MinigameNode: SKNode {
             isJumping = false
         }
 
-        // Stomp detection: hero moving downward fast enough while overlapping monster
-        if !monsterDefeated, let monster = monster {
-            let heroFeet = hero.position.y - 22
-            let monsterTop = monster.position.y + 22
+        // Stomp + side-contact detection — both done here rather than in the physics
+        // contact delegate because hero.position.x is set manually each frame, which
+        // can cause the physics engine to miss contacts between simulation steps.
+        if !monsterDefeated, !isDead, let monster = monster {
             let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - monster.position.x)
-            if vdy < -50 && heroFeet <= monsterTop && heroFeet >= monsterTop - 30 && dx < 40 {
-                defeatMonster()
+            let dy = abs(hero.position.y - monster.position.y)
+            let heroFeet = hero.position.y - 11
+            let monsterTop = monster.position.y + 22
+
+            let overlapping = dx < 29 && dy < 33  // hero half(7,11) + monster half(22,22)
+            let isStomp = vdy < -50 && heroFeet <= monsterTop && heroFeet >= monsterTop - 30
+
+            if overlapping {
+                if isStomp { defeatMonster() } else { handleDeath() }
             }
         }
 
@@ -715,20 +722,6 @@ class MinigameNode: SKNode {
 
         if isHeroHazardContact {
             handleDeath()
-        }
-
-        // Hero walks into monster from the side (not a stomp) — treated as death
-        let isHeroMonsterContact =
-            (maskA == PhysicsCategory.hero && maskB == PhysicsCategory.monster) ||
-            (maskA == PhysicsCategory.monster && maskB == PhysicsCategory.hero)
-
-        if isHeroMonsterContact, !monsterDefeated {
-            let heroFeet = hero.position.y - 22
-            let monsterTop = (monster?.position.y ?? 0) + 22
-            let isStormp = heroFeet <= monsterTop && (hero.physicsBody?.velocity.dy ?? 0) < -50
-            if !isStormp {
-                handleDeath()
-            }
         }
     }
 }

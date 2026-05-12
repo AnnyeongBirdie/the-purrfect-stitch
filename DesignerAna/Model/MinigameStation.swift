@@ -26,11 +26,13 @@ enum DefeatMechanism {
 enum MonsterBehavior {
     case stationary                                  // fabric cabinet — tutorial, doesn't move
     case pacing(speed: CGFloat, range: CGFloat)      // sewing — walks back and forth
+    case lunging(lungeInterval: TimeInterval)        // button station — charges at hero periodically
 }
 
 enum HazardKind {
     case none                                        // fabric cabinet — no floor obstacles
     case scissorBlades(count: Int, spacing: CGFloat) // sewing — scissors to jump over
+    case fallingButtons(spawnInterval: TimeInterval) // button station — buttons rain from ceiling
 }
 
 struct MinigameConfig {
@@ -65,15 +67,39 @@ struct MinigameConfig {
         case .buttonStation:
             return MinigameConfig(
                 station: station, levelSeed: 3, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
+                defeatMechanism: .either, monsterBehavior: .lunging(lungeInterval: 3.0),
+                hazardKind: .fallingButtons(spawnInterval: 1.5),
                 chestRewardLabel: "단추 획득!", chestRewardImageName: "Buttons_Regular",
                 backgroundTint: bgTint, accentColor: accent)
         case .mannequin:
             return MinigameConfig(
                 station: station, levelSeed: 4, enemyKind: .dustMonster, enemyCount: 1,
                 defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
-                chestRewardLabel: "드레스 완성!", chestRewardImageName: "Mannequin_Dress_Pink",
+                chestRewardLabel: finishedGarmentLabel(for: order),
+                chestRewardImageName: finishedGarmentImageName(for: order),
                 backgroundTint: bgTint, accentColor: accent)
+        }
+    }
+
+    private static func finishedGarmentImageName(for order: Order?) -> String {
+        let garment: String
+        switch order?.clothingType {
+        case "셔츠": garment = "Shirt"
+        case "바지": garment = "Pants"
+        default:     garment = "Dress"
+        }
+        switch order?.fabricColor {
+        case "파랑": return "Mannequin_\(garment)_Blue"
+        case "노랑": return "Mannequin_\(garment)_Yellow"
+        default:     return "Mannequin_\(garment)_Pink"
+        }
+    }
+
+    private static func finishedGarmentLabel(for order: Order?) -> String {
+        switch order?.clothingType {
+        case "셔츠": return "셔츠 완성!"
+        case "바지": return "바지 완성!"
+        default:     return "드레스 완성!"
         }
     }
 

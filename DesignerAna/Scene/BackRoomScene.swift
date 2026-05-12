@@ -12,8 +12,7 @@ class BackRoomScene: SKScene {
 
         case waitingForButtons
         case walkingToButtons
-        case addingButtons
-        
+
         case waitingForMannequin
         case walkingToMannequin
         case finalCheck
@@ -33,11 +32,25 @@ class BackRoomScene: SKScene {
         }
     }
 
-    private var finishedDressImageName: String {
+    private var finishedGarmentImageName: String {
+        let garment: String
+        switch order?.clothingType {
+        case "셔츠": garment = "Shirt"
+        case "바지": garment = "Pants"
+        default:     garment = "Dress"
+        }
         switch order?.fabricColor {
-        case "파랑": return "Mannequin_Dress_Blue"
-        case "노랑": return "Mannequin_Dress_Yellow"
-        default:     return "Mannequin_Dress_Pink"
+        case "파랑": return "Mannequin_\(garment)_Blue"
+        case "노랑": return "Mannequin_\(garment)_Yellow"
+        default:     return "Mannequin_\(garment)_Pink"
+        }
+    }
+
+    private var garmentCompletionText: String {
+        switch order?.clothingType {
+        case "셔츠": return "셔츠 완성!"
+        case "바지": return "바지 완성!"
+        default:     return "드레스 완성!"
         }
     }
 
@@ -80,11 +93,6 @@ class BackRoomScene: SKScene {
     private var sewingStation: SKShapeNode?
 
     private var buttonStation: SKShapeNode?
-    private var regularButtonNode: SKSpriteNode?
-    private var fancyButtonNode: SKSpriteNode?
-    
-    private var regularButtonTapZone: SKShapeNode?
-    private var fancyButtonTapZone: SKShapeNode?
  
 
     override func didMove(to view: SKView) {
@@ -263,39 +271,12 @@ class BackRoomScene: SKScene {
             case "buttonStation":
                 guard currentState == .waitingForButtons else { return true }
 
-                instructionLabel.text = "바느질 공간으로 이동 중이에요."
+                instructionLabel.text = "단추 공간으로 이동 중이에요."
                 currentState = .walkingToButtons
 
                 moveTailor(to: 300) { [weak self] in
                     guard let self = self else { return }
-
-                    self.instructionLabel.text = "버튼을 고르세요."
-                    self.showButtonTypes()
-                    self.currentState = .addingButtons
-                }
-
-                return true
-            
-            case "regularButton":
-                guard currentState == .addingButtons else { return true }
-
-                instructionLabel.text = "단추를 달았어요!"
-                playButtonAnimation(node: regularButtonNode)
-
-                run(SKAction.wait(forDuration: 0.2)) { [weak self] in
-                    self?.finishButtonStep()
-                }
-
-                return true
-
-            case "fancyButton":
-                guard currentState == .addingButtons else { return true }
-
-                instructionLabel.text = "예쁜 단추를 달았어요!"
-                playButtonAnimation(node: fancyButtonNode)
-
-                run(SKAction.wait(forDuration: 0.2)) { [weak self] in
-                    self?.finishButtonStep()
+                    self.presentMinigame(for: .buttonStation)
                 }
 
                 return true
@@ -309,7 +290,7 @@ class BackRoomScene: SKScene {
                 moveTailor(to: 0) { [weak self] in
                     guard let self = self else { return }
                     self.currentState = .completed
-                    self.instructionLabel.text = "드레스 완성!"
+                    self.instructionLabel.text = self.garmentCompletionText
                     self.placeDressOnMannequin()
                 }
 
@@ -458,9 +439,9 @@ class BackRoomScene: SKScene {
             updateHaloColor(to: haloMedium)
             currentState = .waitingForButtons
         case .buttonStation:
-            instructionLabel.text = "버튼을 고르세요."
-            showButtonTypes()
-            currentState = .addingButtons
+            instructionLabel.text = "완성된 드레스를 마네킹에 입혀볼까요?"
+            updateHaloColor(to: haloDark)
+            currentState = .waitingForMannequin
         case .mannequin:
             currentState = .finalCheck
         }
@@ -536,69 +517,6 @@ class BackRoomScene: SKScene {
             let ordered = order?.fabricColor ?? "분홍"
             instructionLabel.text = "고객이 주문한 건 \(ordered) 원단이에요. 다시 골라봐요!"
         }
-    }
-    
-    private func showButtonTypes() {
-        regularButtonTapZone?.removeFromParent()
-        fancyButtonTapZone?.removeFromParent()
-        regularButtonNode?.removeFromParent()
-        fancyButtonNode?.removeFromParent()
-        
-        let regularButtonZone = SKShapeNode(rectOf: CGSize(width: 100, height: 100), cornerRadius: 16)
-        regularButtonZone.position = CGPoint(x: 220, y: -60)
-        regularButtonZone.fillColor = .red.withAlphaComponent(0.2)
-        regularButtonZone.strokeColor = .red
-        regularButtonZone.lineWidth = 2
-        regularButtonZone.name = "regularButton"
-        regularButtonZone.zPosition = 19
-        addChild(regularButtonZone)
-        regularButtonTapZone = regularButtonZone
-
-        let fancyButtonZone = SKShapeNode(rectOf: CGSize(width: 100, height: 100), cornerRadius: 16)
-        fancyButtonZone.position = CGPoint(x: 340, y: -60)
-        fancyButtonZone.fillColor = .yellow.withAlphaComponent(0.2)
-        fancyButtonZone.strokeColor = .yellow
-        fancyButtonZone.lineWidth = 2
-        fancyButtonZone.name = "fancyButton"
-        fancyButtonZone.zPosition = 19
-        addChild(fancyButtonZone)
-        fancyButtonTapZone = fancyButtonZone
-
-        regularButtonNode = SKSpriteNode(imageNamed: "Buttons_Regular")
-        regularButtonNode?.position = regularButtonZone.position
-        regularButtonNode?.setScale(0.10)
-        regularButtonNode?.name = "regularButton"
-        regularButtonNode?.zPosition = 20
-
-        fancyButtonNode = SKSpriteNode(imageNamed: "Buttons_Fancy")
-        fancyButtonNode?.position = fancyButtonZone.position
-        fancyButtonNode?.setScale(0.10)
-        fancyButtonNode?.name = "fancyButton"
-        fancyButtonNode?.zPosition = 20
-
-        if let regularButtonNode { addChild(regularButtonNode) }
-        if let fancyButtonNode { addChild(fancyButtonNode) }
-    }
-    
-    private func finishButtonStep() {
-        regularButtonNode?.removeFromParent()
-        fancyButtonNode?.removeFromParent()
-        regularButtonTapZone?.removeFromParent()
-        fancyButtonTapZone?.removeFromParent()
-
-        regularButtonNode = nil
-        fancyButtonNode = nil
-        regularButtonTapZone = nil
-        fancyButtonTapZone = nil
-
-        updateHaloColor(to: haloDark)
-
-        currentState = .waitingForMannequin
-        instructionLabel.text = "완성된 드레스를 마네킹에 입혀볼까요?"
-    }
-    
-    private func playButtonAnimation(node: SKSpriteNode?) {
-        playWiggleAnimation(on: node)
     }
     
     private func setupMannequinZone() {
@@ -678,7 +596,7 @@ class BackRoomScene: SKScene {
 
         scene.scaleMode = .resizeFill
         scene.shouldShowFinishedDress = true
-        scene.finishedDressImageName = finishedDressImageName
+        scene.finishedDressImageName = finishedGarmentImageName
 
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)
