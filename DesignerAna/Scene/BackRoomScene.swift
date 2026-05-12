@@ -499,10 +499,6 @@ class BackRoomScene: SKScene {
         }
     }
 
-    // MARK: - Minigame touch/update forwarding
-
-    private func isMinigameActive() -> Bool { activeMinigame != nil }
-
     private func showFabricChoices() {
         hideFabricChoices()
 

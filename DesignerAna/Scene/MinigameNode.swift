@@ -40,7 +40,7 @@ class MinigameNode: SKNode {
     private var rightArrowTouches = 0
     private var lastUpdateTime: TimeInterval = 0
 
-    // MARK: - Layout constants (relative to this node — scene is 390×844 pts portrait)
+    // MARK: - Layout constants (sceneW/sceneH set at runtime in setup(in:))
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
     private let heroSpeed: CGFloat = 160      // pts/sec
@@ -64,7 +64,6 @@ class MinigameNode: SKNode {
         // derived from kinematics: v = sqrt(2 * |g| * desiredHeight)
         jumpImpulse = (2.0 * 18.0 * sceneH * 0.0175).squareRoot()
         scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
-        scene.physicsWorld.contactDelegate = self as? SKPhysicsContactDelegate
         // ContactDelegate needs to be set on the scene; we bridge through a stored ref.
         sceneRef = scene
         scene.physicsWorld.contactDelegate = contactBridge
