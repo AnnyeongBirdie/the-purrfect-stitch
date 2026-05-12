@@ -43,7 +43,13 @@ class MinigameNode: SKNode {
     private var moveDirection: CGFloat = 0
     private var leftButtonTouch: UITouch?
     private var rightButtonTouch: UITouch?
+    private var jumpButtonTouch: UITouch?
     private var lastUpdateTime: TimeInterval = 0
+
+    // D-pad button fill colors — buttons darken when held so a thumb sliding
+    // off has visible feedback instead of relying on the hero stopping.
+    private let buttonRestingFill = UIColor.white.withAlphaComponent(0.25)
+    private let buttonPressedFill = UIColor.black.withAlphaComponent(0.35)
 
     // Pacing monster state
     private var monsterStartX: CGFloat = 0
@@ -359,7 +365,7 @@ class MinigameNode: SKNode {
     private func makeArrowButton(label text: String, x: CGFloat, y: CGFloat) -> SKShapeNode {
         let btn = SKShapeNode(circleOfRadius: 34)
         btn.position = CGPoint(x: x, y: y)
-        btn.fillColor = UIColor.white.withAlphaComponent(0.25)
+        btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
         btn.zPosition = 5
@@ -378,7 +384,7 @@ class MinigameNode: SKNode {
     private func buildJumpButton() {
         let btn = SKShapeNode(circleOfRadius: 34)
         btn.position = CGPoint(x: sceneW * 0.42, y: -sceneH * 0.39)
-        btn.fillColor = UIColor.white.withAlphaComponent(0.25)
+        btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
         btn.zPosition = 5
@@ -395,6 +401,10 @@ class MinigameNode: SKNode {
 
         jumpButton = btn
         addChild(btn)
+    }
+
+    private func setPressed(_ button: SKShapeNode?, _ pressed: Bool) {
+        button?.fillColor = pressed ? buttonPressedFill : buttonRestingFill
     }
 
     private func buildInstructionLabel() {
@@ -422,15 +432,22 @@ class MinigameNode: SKNode {
         guard let scene = sceneRef else { return }
         let location = touch.location(in: scene)
 
-        if jumpButton.contains(location) { tryJump(); return }
+        if jumpButton.contains(location) {
+            jumpButtonTouch = touch
+            setPressed(jumpButton, true)
+            tryJump()
+            return
+        }
 
         if leftArrowButton.contains(location) {
             leftButtonTouch = touch
+            setPressed(leftArrowButton, true)
             updateMoveDirection()
             return
         }
         if rightArrowButton.contains(location) {
             rightButtonTouch = touch
+            setPressed(rightArrowButton, true)
             updateMoveDirection()
             return
         }
@@ -457,10 +474,15 @@ class MinigameNode: SKNode {
     func handleTouchEnded(_ touch: UITouch) {
         if touch === leftButtonTouch {
             leftButtonTouch = nil
+            setPressed(leftArrowButton, false)
             updateMoveDirection()
         } else if touch === rightButtonTouch {
             rightButtonTouch = nil
+            setPressed(rightArrowButton, false)
             updateMoveDirection()
+        } else if touch === jumpButtonTouch {
+            jumpButtonTouch = nil
+            setPressed(jumpButton, false)
         }
     }
 
@@ -560,6 +582,10 @@ class MinigameNode: SKNode {
         moveDirection = 0
         leftButtonTouch = nil
         rightButtonTouch = nil
+        jumpButtonTouch = nil
+        setPressed(leftArrowButton, false)
+        setPressed(rightArrowButton, false)
+        setPressed(jumpButton, false)
         hero.physicsBody?.velocity = .zero
 
         let deathLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
