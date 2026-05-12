@@ -47,16 +47,10 @@ class FrontShopScene: SKScene {
 
         if let shopkeeper = childNode(withName: "shopkeeper") as? SKSpriteNode {
             shopkeeper.zPosition = 20
-            print("shopkeeper position:", shopkeeper.position)
-            print("shopkeeper zPosition:", shopkeeper.zPosition)
-            print("shopkeeper alpha:", shopkeeper.alpha)
         }
 
         if let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode {
             mannequin.zPosition = 20
-            print("mannequin position:", mannequin.position)
-            print("mannequin zPosition:", mannequin.zPosition)
-            print("mannequin alpha:", mannequin.alpha)
         }
     }
     

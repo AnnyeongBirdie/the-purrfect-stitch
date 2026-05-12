@@ -397,13 +397,8 @@ class BackRoomScene: SKScene {
         // Save gravity and set platformer gravity
         scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
 
-        // Full-screen touch shield at zPosition 49
-        let shield = SKSpriteNode(color: .clear, size: scene.size)
-        shield.position = .zero
-        shield.zPosition = 49
-        shield.name = "minigameShield"
-        shield.isUserInteractionEnabled = false   // scene receives touches; shield blocks via zPos ordering
-        addChild(shield)
+        // Back-room touches are intercepted in touchesBegan via the activeMinigame
+        // early-return, so no separate touch-shield node is needed.
 
         let config = MinigameConfig.make(for: station, order: order)
         let minigame = MinigameNode(config: config) { [weak self] completedStation in
@@ -420,7 +415,6 @@ class BackRoomScene: SKScene {
         // Tear down overlay
         activeMinigame?.removeFromParent()
         activeMinigame = nil
-        childNode(withName: "minigameShield")?.removeFromParent()
 
         // Restore gravity (back room has no physics bodies, so zero is correct)
         scene?.physicsWorld.gravity = .zero
@@ -602,28 +596,9 @@ class BackRoomScene: SKScene {
         view.presentScene(scene, transition: transition)
     }
     
-    private func playWiggleAnimation(on node: SKNode?) {
-        let rotateRight = SKAction.rotate(byAngle: 0.12, duration: 0.08)
-        let rotateLeft = SKAction.rotate(byAngle: -0.24, duration: 0.08)
-        let backToCenter = SKAction.rotate(byAngle: 0.12, duration: 0.08)
-
-        node?.run(SKAction.sequence([rotateRight, rotateLeft, backToCenter]))
-    }
-
     private func celebrateTailor() {
         let up = SKAction.moveBy(x: 0, y: 12, duration: 0.1)
         let down = SKAction.moveBy(x: 0, y: -12, duration: 0.1)
         tailor.run(SKAction.sequence([up, down]))
-    }
-    
-    private func addDebugBox(at position: CGPoint, size: CGSize, color: UIColor, name: String) {
-        let box = SKShapeNode(rectOf: size, cornerRadius: 12)
-        box.position = position
-        box.fillColor = color.withAlphaComponent(0.25)
-        box.strokeColor = color
-        box.lineWidth = 2
-        box.name = name
-        box.zPosition = 19
-        addChild(box)
     }
 }
