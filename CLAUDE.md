@@ -44,9 +44,9 @@ Scene-to-scene communication is a plain property set on the destination before `
 `greeting → choosingClothing → choosingFabricColor → reviewingOrder → awaitingPayment → sendingOrder`
 
 **BackRoomScene** uses a private nested `BackRoomState` enum with this linear progression:
-`waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → waitingForButtons → walkingToButtons → waitingForMannequin → walkingToMannequin → completed`
+`waitingForCabinetTap → walkingToCabinet → choosingFabric → waitingForSewing → walkingToSewing → waitingForButtons → walkingToButtons → waitingForMannequin → walkingToMannequin → finalCheck → completed`
 
-The fabric cabinet, sewing station, and button station each gate on a platformer minigame (`MinigameNode` + `MinigameConfig`) — the tap walks the tailor over, then `presentMinigame` hands control to a station-specific config; the minigame's completion callback advances the state. The mannequin station still uses the direct-tap flow; the `.finalCheck` enum case is a placeholder for when a boss minigame replaces that path (see the boss exception in `.claude/skills/minigame-station/SKILL.md`).
+The fabric cabinet, sewing station, and button station each gate on a platformer minigame (`MinigameNode` + `MinigameConfig`) — the tap walks the tailor over, then `presentMinigame` hands control to a station-specific config; the minigame's completion callback advances the state. The mannequin station uses `BossMinigameNode` (a sibling to `MinigameNode`, not routed through `MinigameConfig`) — on boss defeat the state advances to `.finalCheck`, the brief beat between the chest opening and the dress appearing on the mannequin, before the scene transitions back to the front shop.
 
 ### Tailor halo
 
@@ -91,13 +91,13 @@ The NPC shopkeeper guides the player through four ordering steps in sequence:
 Work is split into three sub-phases, each delivered end-to-end before the next begins:
 
 - **Phase 2a — Fabric color (shipped):** Front shop asks for fabric color after clothing pick (new `choosingFabricColor` state). `Order` carries `fabricColor: String` and is forwarded to `BackRoomScene` via the `order` property. The fabric cabinet gates on the chosen color; mismatched colors trigger a retry message. Order-aware helpers in `BackRoomScene` default to pink when `order` is nil (defensive fallback to preserve pre-2a behavior).
-- **Phase 2b — Clothing type:** Front shop asks for clothing type, `Order` carries it, back room produces the matching garment.
+- **Phase 2b — Clothing type (shipped):** Front shop asks for clothing type, `Order` carries it, back room produces the matching garment.
 - **Phase 2c — Button type:** Front shop asks for button type (regular / fancy), `Order` carries it, back room gates the button station on it.
 
 ### Phase 3 — Station minigames
 Each station (fabric cabinet, sewing station, button station, mannequin) gates progress with a Super Mario–style platformer minigame. The player navigates a small dungeon, defeats a monster, and reaches a treasure chest containing the needed item (fabric, thread, buttons, finished dress) before that station unlocks.
 
-**Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling). The mannequin station (station 4) is the planned "boss" climax and is intentionally deferred until its design lands — see SKILL.md's boss exception. All station-specific behavior lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`.
+**Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
 
 ### Currency & economy (cross-cutting)
 - **Wallet:** `playerMoney: Int` on `FrontShopScene`, starting at 200냥, depleted by deposits. Already implemented.
