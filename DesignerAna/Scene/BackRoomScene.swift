@@ -5,8 +5,7 @@ class BackRoomScene: SKScene {
     private enum BackRoomState {
         case waitingForCabinetTap
         case walkingToCabinet
-        case choosingFabric
-        
+
         case waitingForSewing
         case walkingToSewing
 
@@ -23,14 +22,6 @@ class BackRoomScene: SKScene {
     private var currentState: BackRoomState = .waitingForCabinetTap
 
     var order: Order?
-
-    private var expectedFabricNodeName: String {
-        switch order?.fabricColor {
-        case "파랑": return "blueFabric"
-        case "노랑": return "yellowFabric"
-        default:     return "pinkFabric"
-        }
-    }
 
     private var finishedGarmentImageName: String {
         let garment: String
@@ -88,10 +79,6 @@ class BackRoomScene: SKScene {
     private var fabricCabinet: SKShapeNode?
     private var instructionLabel: SKLabelNode!
 
-    private var pinkFabricButton: SKShapeNode?
-    private var blueFabricButton: SKShapeNode?
-    private var yellowFabricButton: SKShapeNode?
-    
     private var tailorHaloNode: SKShapeNode?
     private var mannequinZone: SKShapeNode?
     private var activeMinigame: MinigameNode?
@@ -262,11 +249,6 @@ class BackRoomScene: SKScene {
                     self.presentMinigame(for: .fabricCabinet)
                 }
 
-                return true
-                
-            case "pinkFabric", "blueFabric", "yellowFabric":
-                guard currentState == .choosingFabric else { return true }
-                handleFabricChoice(named: nodeName)
                 return true
                 
             case "sewingStation":
@@ -464,9 +446,10 @@ class BackRoomScene: SKScene {
         // Advance back-room state machine
         switch station {
         case .fabricCabinet:
-            instructionLabel.text = "잘했어요! 보관장이 열렸으니 원단을 골라볼까요?"
-            showFabricChoices()
-            currentState = .choosingFabric
+            celebrateTailor()
+            showTailorHalo(color: haloLight)
+            instructionLabel.text = "잘했어요! 재봉대로 가보세요."
+            currentState = .waitingForSewing
         case .sewingStation:
             instructionLabel.text = "단추를 달아볼까요?"
             updateHaloColor(to: haloMedium)
@@ -481,78 +464,6 @@ class BackRoomScene: SKScene {
         }
     }
 
-    private func showFabricChoices() {
-        hideFabricChoices()
-
-        pinkFabricButton = createFabricButton(
-            text: "분홍 원단",
-            name: "pinkFabric",
-            position: CGPoint(x: -120, y: -50)
-        )
-
-        blueFabricButton = createFabricButton(
-            text: "파랑 원단",
-            name: "blueFabric",
-            position: CGPoint(x: 0, y: -50)
-        )
-
-        yellowFabricButton = createFabricButton(
-            text: "노랑 원단",
-            name: "yellowFabric",
-            position: CGPoint(x: 120, y: -50)
-        )
-    }
-
-    private func createFabricButton(text: String, name: String, position: CGPoint) -> SKShapeNode {
-        let button = SKShapeNode(rectOf: CGSize(width: 110, height: 46), cornerRadius: 14)
-        button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
-        button.strokeColor = .brown
-        button.lineWidth = 3
-        button.position = position
-        button.name = name
-        button.zPosition = 20
-
-        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        label.text = text
-        label.fontSize = 16
-        label.fontColor = .white
-        label.verticalAlignmentMode = .center
-        label.horizontalAlignmentMode = .center
-        label.position = CGPoint.zero
-        label.name = name
-        label.zPosition = 21
-
-        button.addChild(label)
-        addChild(button)
-
-        return button
-    }
-
-    private func hideFabricChoices() {
-        pinkFabricButton?.removeFromParent()
-        pinkFabricButton = nil
-
-        blueFabricButton?.removeFromParent()
-        blueFabricButton = nil
-
-        yellowFabricButton?.removeFromParent()
-        yellowFabricButton = nil
-    }
-
-    private func handleFabricChoice(named choice: String) {
-        if choice == expectedFabricNodeName {
-            instructionLabel.text = "좋아요! 원단을 골랐어요."
-            hideFabricChoices()
-            celebrateTailor()
-            showTailorHalo(color: haloLight)
-            currentState = .waitingForSewing
-            instructionLabel.text = "재봉대로 가보세요."
-        } else {
-            let ordered = order?.fabricColor ?? "분홍"
-            instructionLabel.text = "고객이 주문한 건 \(ordered) 원단이에요. 다시 골라봐요!"
-        }
-    }
-    
     private func setupMannequinZone() {
         let zone = SKShapeNode(rectOf: CGSize(width: 120, height: 220), cornerRadius: 12)
         zone.position = CGPoint(x: 0, y: 10)
