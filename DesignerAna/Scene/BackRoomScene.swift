@@ -103,6 +103,7 @@ class BackRoomScene: SKScene {
         setupMannequinZone()
         setupInstructionLabel()
         setupWalletHUD()
+        setupStationFireflies()
     }
 
     private func setupBackground() {
@@ -173,6 +174,55 @@ class BackRoomScene: SKScene {
         instructionLabel.position = CGPoint(x: 0, y: 150)
         instructionLabel.zPosition = 20
         addChild(instructionLabel)
+    }
+
+    private func setupStationFireflies() {
+        let centers: [CGPoint] = [
+            CGPoint(x: -280, y: 20),   // fabric cabinet
+            CGPoint(x: 190, y: 0),     // sewing station
+            CGPoint(x: 300, y: 0),     // button station
+            CGPoint(x: 0, y: 10),      // mannequin
+        ]
+        let fireflyColor = UIColor(red: 1.0, green: 0.95, blue: 0.5, alpha: 1.0)
+
+        for center in centers {
+            for i in 0..<4 {
+                let firefly = SKShapeNode(circleOfRadius: 3.5)
+                firefly.fillColor = fireflyColor
+                firefly.strokeColor = .clear
+                firefly.glowWidth = 6
+                firefly.zPosition = 4
+                firefly.alpha = 0
+                firefly.position = CGPoint(
+                    x: center.x + CGFloat.random(in: -40...40),
+                    y: center.y + CGFloat.random(in: -60...30)
+                )
+                addChild(firefly)
+
+                let cycle = SKAction.sequence([
+                    SKAction.run { [weak firefly] in
+                        firefly?.position = CGPoint(
+                            x: center.x + CGFloat.random(in: -40...40),
+                            y: center.y + CGFloat.random(in: -60...30)
+                        )
+                        firefly?.alpha = 0
+                    },
+                    SKAction.fadeIn(withDuration: 0.5),
+                    SKAction.group([
+                        SKAction.moveBy(x: 0, y: 55, duration: 1.6),
+                        SKAction.sequence([
+                            SKAction.wait(forDuration: 0.9),
+                            SKAction.fadeOut(withDuration: 0.7)
+                        ])
+                    ]),
+                    SKAction.wait(forDuration: 0.3)
+                ])
+                firefly.run(.sequence([
+                    .wait(forDuration: Double(i) * 0.6),
+                    .repeatForever(cycle)
+                ]))
+            }
+        }
     }
 
     private func setupWalletHUD() {
