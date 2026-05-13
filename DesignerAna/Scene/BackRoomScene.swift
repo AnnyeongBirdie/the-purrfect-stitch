@@ -242,14 +242,24 @@ class BackRoomScene: SKScene {
         activeMinigame?.update(currentTime: currentTime)
         activeBossMinigame?.update(currentTime: currentTime)
 
-        guard let cabinet = fabricCabinet else { return }
+        // Clear all rings, then light up the currently active target if the tailor is close.
+        fabricCabinet?.strokeColor = .clear
+        sewingStation?.strokeColor = .clear
+        buttonStation?.strokeColor = .clear
+        mannequinZone?.strokeColor = .clear
 
-        if isTailorNearCabinet() {
-            cabinet.strokeColor = .yellow
-            cabinet.lineWidth = 3
-        } else {
-            cabinet.strokeColor = .clear
-            cabinet.lineWidth = 0
+        let activeZone: SKShapeNode?
+        switch currentState {
+        case .waitingForCabinetTap: activeZone = fabricCabinet
+        case .waitingForSewing:     activeZone = sewingStation
+        case .waitingForButtons:    activeZone = buttonStation
+        case .waitingForMannequin:  activeZone = mannequinZone
+        default:                    activeZone = nil
+        }
+
+        if let zone = activeZone, abs(tailor.position.x - zone.position.x) < 120 {
+            zone.strokeColor = .yellow
+            zone.lineWidth = 3
         }
 
         if let halo = tailorHaloNode {
@@ -399,13 +409,6 @@ class BackRoomScene: SKScene {
         }
     }
     
-    private func isTailorNearCabinet() -> Bool {
-        guard let cabinet = fabricCabinet else { return false }
-        
-        let distance = abs(tailor.position.x - cabinet.position.x)
-        return distance < 120 // tweak this value
-    }
-
     // MARK: - Minigame overlay
 
     private func presentMinigame(for station: MinigameStation) {
