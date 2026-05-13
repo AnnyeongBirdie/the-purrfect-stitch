@@ -28,8 +28,10 @@ Pods/
 *.swp
 *~
 
-# Cowork session handoff notes (local-only, not for version control)
+# Working documents (local-only; will inform README when ready)
 DesignerAna_handoff.md
+GAME_VOCABULARY.md
+BossMinigame_prompt.md
 
 # Claude Code per-machine settings (absolute paths, machine-specific)
 .claude/settings.local.json
