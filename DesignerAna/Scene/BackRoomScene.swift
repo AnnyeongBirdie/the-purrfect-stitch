@@ -104,6 +104,7 @@ class BackRoomScene: SKScene {
 
 
     override func didMove(to view: SKView) {
+        view.isMultipleTouchEnabled = true
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
         setupBackground()

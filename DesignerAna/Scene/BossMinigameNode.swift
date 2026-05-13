@@ -793,9 +793,13 @@ class BossMinigameNode: SKNode {
                 if isStomp {
                     hitBoss()
                 } else {
-                    // Bounce the hero away so they can't camp on the boss
+                    // Slide hero to just outside the overlap zone and pop them
+                    // upward slightly. Using a position nudge (not velocity) avoids
+                    // the zero-damping drift that sent the hero flying to the wall.
                     let pushDir: CGFloat = hero.position.x < boss.position.x ? -1 : 1
-                    hero.physicsBody?.velocity = CGVector(dx: pushDir * 260, dy: 120)
+                    hero.position.x = boss.position.x + pushDir * 55
+                    let curDx = hero.physicsBody?.velocity.dx ?? 0
+                    hero.physicsBody?.velocity = CGVector(dx: curDx, dy: 90)
                 }
             }
         }
