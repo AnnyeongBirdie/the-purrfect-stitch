@@ -23,7 +23,6 @@ class FrontShopScene: SKScene {
     private var confirmButton: SKShapeNode?
     private var cancelButton: SKShapeNode?
     
-    private var playerMoney = 200
     private var paymentPanel: SKShapeNode?
     private var payButton: SKShapeNode?
     
@@ -442,7 +441,7 @@ class FrontShopScene: SKScene {
         titleLabel.zPosition = 81
         
         let clothingLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        clothingLabel.text = "보유 냥: \(playerMoney)냥"
+        clothingLabel.text = "보유 냥: \(Wallet.shared.balance)냥"
         clothingLabel.fontSize = 20
         clothingLabel.fontColor = .black
         clothingLabel.position = CGPoint(x: 0, y: 5)
@@ -486,7 +485,7 @@ class FrontShopScene: SKScene {
         guard let order = currentOrder else { return }
 
         if canAffordCurrentOrder() {
-            playerMoney -= order.depositAmount
+            Wallet.shared.balance -= order.depositAmount
             currentState = .sendingOrder
             hidePaymentPanel()
             hidePayButtons()
@@ -524,7 +523,7 @@ class FrontShopScene: SKScene {
    
     private func canAffordCurrentOrder() -> Bool {
         guard let order = currentOrder else { return false }
-        return playerMoney >= order.depositAmount
+        return Wallet.shared.balance >= order.depositAmount
     }
 
     
