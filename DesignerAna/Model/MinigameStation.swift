@@ -72,6 +72,7 @@ struct MinigameConfig {
                 chestRewardLabel: "단추 획득!", chestRewardImageName: "Buttons_Regular",
                 backgroundTint: bgTint, accentColor: accent)
         case .mannequin:
+            // deprecated — boss uses BossMinigameNode; this stub is never called
             return MinigameConfig(
                 station: station, levelSeed: 4, enemyKind: .dustMonster, enemyCount: 1,
                 defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,

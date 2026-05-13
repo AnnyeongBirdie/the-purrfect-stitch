@@ -99,7 +99,9 @@ class BackRoomScene: SKScene {
     private var sewingStation: SKShapeNode?
 
     private var buttonStation: SKShapeNode?
- 
+
+    private var activeBossMinigame: BossMinigameNode?
+
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -186,9 +188,11 @@ class BackRoomScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let minigame = activeMinigame {
-            for touch in touches {
-                minigame.handleTouchBegan(touch)
-            }
+            for touch in touches { minigame.handleTouchBegan(touch) }
+            return
+        }
+        if let boss = activeBossMinigame {
+            for touch in touches { boss.handleTouchBegan(touch) }
             return
         }
 
@@ -204,22 +208,25 @@ class BackRoomScene: SKScene {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let minigame = activeMinigame {
-            for touch in touches {
-                minigame.handleTouchEnded(touch)
-            }
+            for touch in touches { minigame.handleTouchEnded(touch) }
+        }
+        if let boss = activeBossMinigame {
+            for touch in touches { boss.handleTouchEnded(touch) }
         }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let minigame = activeMinigame {
-            for touch in touches {
-                minigame.handleTouchEnded(touch)
-            }
+            for touch in touches { minigame.handleTouchEnded(touch) }
+        }
+        if let boss = activeBossMinigame {
+            for touch in touches { boss.handleTouchEnded(touch) }
         }
     }
     
     override func update(_ currentTime: TimeInterval) {
         activeMinigame?.update(currentTime: currentTime)
+        activeBossMinigame?.update(currentTime: currentTime)
 
         guard let cabinet = fabricCabinet else { return }
 
@@ -295,9 +302,7 @@ class BackRoomScene: SKScene {
 
                 moveTailor(to: 0) { [weak self] in
                     guard let self = self else { return }
-                    self.currentState = .completed
-                    self.instructionLabel.text = self.garmentCompletionText
-                    self.placeDressOnMannequin()
+                    self.presentBossMinigame()
                 }
 
                 return true
@@ -417,6 +422,33 @@ class BackRoomScene: SKScene {
         minigame.setup(in: scene)
     }
 
+    private func presentBossMinigame() {
+        guard let scene = self.scene else { return }
+        tailor.isPaused = true
+        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
+
+        let boss = BossMinigameNode(order: order) { [weak self] in
+            self?.handleBossCompletion()
+        }
+        boss.zPosition = 50
+        boss.name = "bossMinigame"
+        activeBossMinigame = boss
+        addChild(boss)
+        boss.setup(in: scene)
+    }
+
+    private func handleBossCompletion() {
+        activeBossMinigame?.removeFromParent()
+        activeBossMinigame = nil
+        scene?.physicsWorld.gravity = .zero
+        tailor.isPaused = false
+
+        // .finalCheck: the brief beat between boss defeat and the dress appearing.
+        currentState = .finalCheck
+        instructionLabel.text = garmentCompletionText
+        placeDressOnMannequin()
+    }
+
     private func handleMinigameCompletion(for station: MinigameStation) {
         // Tear down overlay
         activeMinigame?.removeFromParent()
@@ -443,6 +475,7 @@ class BackRoomScene: SKScene {
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
         case .mannequin:
+            // Boss uses BossMinigameNode; this case is not reached in normal play.
             currentState = .finalCheck
         }
     }
