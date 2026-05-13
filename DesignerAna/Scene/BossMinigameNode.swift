@@ -788,7 +788,7 @@ class BossMinigameNode: SKNode {
             let bossTop = boss.position.y + 44
             let dy = abs(hero.position.y - boss.position.y)
             let overlapping = dx < 52 && dy < 56
-            let isStomp = vdy < -50 && heroFeet <= bossTop && heroFeet >= bossTop - 40
+            let isStomp = vdy < -50 && heroFeet <= bossTop && heroFeet >= bossTop - 70
             if overlapping {
                 if isStomp {
                     hitBoss()
