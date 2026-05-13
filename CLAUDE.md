@@ -36,7 +36,7 @@ GameViewController
                  with shouldShowFinishedDress = true
 ```
 
-Scene-to-scene communication is a plain property set on the destination before `presentScene()`. There is no shared coordinator, singleton, or persistent storage.
+Scene-to-scene communication is a plain property set on the destination before `presentScene()`. Currency state lives in a `Wallet.shared` singleton, read directly from both scenes. There is no shared coordinator or persistent storage across launches.
 
 ### State machines
 
@@ -58,14 +58,16 @@ Characters and props live in zPosition 0–15 (e.g., the tailor sprite is at 10,
 
 ### Model layer
 
-`Model/` has two files and is otherwise thin — all scene-specific state lives inside each scene class:
+`Model/` has four files; scene-specific state still lives inside each scene class.
 
 | Type | Key fields |
 |---|---|
 | `Order` (struct) | `clothingType: String`, `depositAmount: Int`, `fabricColor: String` |
-| `FrontShopState` (enum) | five cases, drives UI in FrontShopScene |
+| `FrontShopState` (enum) | six cases, drives UI in FrontShopScene |
+| `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
+| `Wallet` (singleton) | `balance: Int` (starts at 200냥, not persisted across launches) |
 
-`playerMoney: Int` (starts at 200냥) and `currentOrder: Order?` are instance vars on `FrontShopScene`, not persisted across launches.
+`currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state is `Wallet.shared.balance` — same value read from both scenes, no property handoff needed.
 
 ### Known gaps / in-progress state
 
@@ -96,16 +98,19 @@ Each station (fabric cabinet, sewing station, button station, mannequin) gates p
 
 **Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
 
-### Currency & economy — active work
+### Currency & economy
 
-- **Wallet:** `playerMoney: Int` on `FrontShopScene`, starting at 200냥, depleted by deposits. Already implemented.
+- **Wallet:** `Wallet.shared.balance: Int`, starting at 200냥 per launch (not persisted), depleted by deposits in the front shop. Read directly from both scenes — no property handoff between scenes.
 - **Earning paths:**
-  - **Minigame rewards (next):** award 냥 on completing each station minigame. The reward amount and display are TBD; see design notes below.
+  - **Minigame rewards (shipped):** 10 / 20 / 30 / 50 냥 awarded on chest open at cabinet / sewing / buttons / boss respectively. Shown as a gold pop-up rising from the chest; tracked in the back-room wallet HUD.
   - **Riddle fallback (later):** when the wallet runs low, the NPC shopkeeper offers simple math or trivia questions and awards 냥 for correct answers. Question content sourced from external curriculum, TBD.
-- **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards must share a single currency system — no duplicated transaction logic across scenes. `playerMoney` lives on `FrontShopScene`; the back room receives it via a property set before `presentScene()`, the same pattern used for `order`.
+- **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards share a single currency system (`Wallet.shared`) — no duplicated transaction logic across scenes.
+- **Not yet persisted:** the wallet resets to 200냥 on every launch. Persistence (likely UserDefaults + Codable) will be bundled with the wardrobe persistence work.
 
 ### V2 expansion ideas (post-roadmap)
 
 Captured here so they're not lost; not planned for current phases.
 
 - **Adaptive difficulty easing for station minigames.** Track death count per minigame attempt and reduce hazard density after N deaths (fewer chasms, slower monsters, longer safe gaps in button rain) so kids don't get stuck. Auto-reset to default difficulty on success. The 냥 reward should not scale down with eased difficulty — the easing exists to keep play sessions positive, not to discourage skill development.
+
+- **Guardian reframe for the mannequin level (visual seed already in place).** The boss-on-chest reveal animation that plays on boss defeat in `BossMinigameNode` was deliberately planted as a seed for a future "guardian" iteration of the same level: replace the fight with a puzzle where the player lures a giant dust monster off the chest into a trap, rather than damaging it. Educational angle — observation and planning over reflexes. The visual continuity (boss-on-chest at defeat) makes the reframe feel like a deepening of the same level rather than a contradiction.
