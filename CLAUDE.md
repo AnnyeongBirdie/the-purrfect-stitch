@@ -78,19 +78,16 @@ Characters and props live in zPosition 0–15 (e.g., the tailor sprite is at 10,
 ### Phase 1 — Initial prototype (shipped)
 Fixed pink-dress flow. Fabric and button choices in the back room were hardcoded; the `Order` from the front shop was not forwarded. Cleanup work removed the dead `readyForTransition` enum case and the visible debug overlays on back-room zones.
 
-### Phase 2 — Game loop expansion
+### Phase 2 — Game loop expansion (shipped)
 
-The NPC shopkeeper guides the player through four ordering steps in sequence:
+The NPC shopkeeper guides the player through three ordering steps in sequence:
 1. Pick clothing type (dress, shirt, pants)
 2. Pick fabric color (pink, blue, yellow)
-3. Pick button type (regular or fancy)
-4. Pay deposit
+3. Pay deposit
 
-`Order` will grow to carry `fabricColor` and `buttonType` alongside the existing `clothingType` and `depositAmount`. Back-room stations must match what the customer ordered rather than using hardcoded values.
+`Order` carries `clothingType: String`, `fabricColor: String`, and `depositAmount: Int`. The back room uses `clothingType` and `fabricColor` to produce the correct finished garment and to theme all four minigames.
 
-Work is split into three sub-phases, each delivered end-to-end before the next begins:
-
-- **Phase 2a — Fabric color (shipped):** Front shop asks for fabric color after clothing pick (new `choosingFabricColor` state). `Order` carries `fabricColor: String` and is forwarded to `BackRoomScene` via the `order` property. The fabric cabinet gates on the chosen color; mismatched colors trigger a retry message. Order-aware helpers in `BackRoomScene` default to pink when `order` is nil (defensive fallback to preserve pre-2a behavior).
+- **Phase 2a — Fabric color (shipped):** Front shop asks for fabric color after clothing pick (`choosingFabricColor` state). `Order` carries `fabricColor: String`, forwarded to `BackRoomScene` via the `order` property. Used for minigame theming, halo color, and the finished-garment image name.
 - **Phase 2b — Clothing type (shipped):** Front shop asks for clothing type, `Order` carries it, back room produces the matching garment.
 - **Phase 2c — Button type (cancelled):** Dropped — button type choice doesn't add meaningful player agency at this stage of the game.
 
@@ -99,12 +96,13 @@ Each station (fabric cabinet, sewing station, button station, mannequin) gates p
 
 **Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
 
-### Currency & economy (cross-cutting)
+### Currency & economy — active work
+
 - **Wallet:** `playerMoney: Int` on `FrontShopScene`, starting at 200냥, depleted by deposits. Already implemented.
-- **Earning paths to add:**
-  - Bonus 냥 for completing each station minigame (Phase 3).
-  - Riddle fallback: when the wallet runs low at the front shop, the NPC shopkeeper offers simple math or trivia questions (sourced from external curriculum content, TBD) and awards 냥 for correct answers.
-- **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards must share a single currency system — no duplicated transaction logic across scenes.
+- **Earning paths:**
+  - **Minigame rewards (next):** award 냥 on completing each station minigame. The reward amount and display are TBD; see design notes below.
+  - **Riddle fallback (later):** when the wallet runs low, the NPC shopkeeper offers simple math or trivia questions and awards 냥 for correct answers. Question content sourced from external curriculum, TBD.
+- **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards must share a single currency system — no duplicated transaction logic across scenes. `playerMoney` lives on `FrontShopScene`; the back room receives it via a property set before `presentScene()`, the same pattern used for `order`.
 
 ### V2 expansion ideas (post-roadmap)
 
