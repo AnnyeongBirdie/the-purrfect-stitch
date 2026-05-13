@@ -176,15 +176,24 @@ class BackRoomScene: SKScene {
     }
 
     private func setupWalletHUD() {
+        let bubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
+        bubble.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
+        bubble.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+        bubble.lineWidth = 2
+        bubble.position = CGPoint(x: size.width * 0.36, y: size.height * 0.44)
+        bubble.zPosition = 20
+        addChild(bubble)
+
         let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         lbl.text = "💰 \(Wallet.shared.balance)냥"
-        lbl.fontSize = 18
-        lbl.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
-        lbl.horizontalAlignmentMode = .right
-        lbl.position = CGPoint(x: size.width * 0.47, y: size.height * 0.44)
-        lbl.zPosition = 20
+        lbl.fontSize = 17
+        lbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
+        lbl.horizontalAlignmentMode = .center
+        lbl.verticalAlignmentMode = .center
+        lbl.position = .zero
+        lbl.zPosition = 1
+        bubble.addChild(lbl)
         walletLabel = lbl
-        addChild(lbl)
     }
 
     private func updateWalletHUD() {

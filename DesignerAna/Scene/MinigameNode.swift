@@ -101,6 +101,55 @@ class MinigameNode: SKNode {
 
     // MARK: - Build
 
+    // Adds stone-brick lines, a ceiling shadow, and a floor-edge highlight so
+    // the dungeon reads as an enclosed room rather than an abstract void.
+    private func buildDungeonAtmosphere() {
+        let lineColor = UIColor.white.withAlphaComponent(0.07)
+        let brickH: CGFloat = 44
+        let floorY = -sceneH * 0.40
+
+        // Horizontal mortar lines + staggered vertical joints
+        var y = floorY + brickH
+        var row = 0
+        while y < sceneH * 0.52 {
+            let h = SKShapeNode(rectOf: CGSize(width: sceneW, height: 1.5))
+            h.position = CGPoint(x: 0, y: y)
+            h.fillColor = lineColor
+            h.strokeColor = .clear
+            h.zPosition = 0.1
+            addChild(h)
+
+            let offset: CGFloat = row % 2 == 0 ? 0 : 52
+            var x = -sceneW * 0.5 + offset
+            while x < sceneW * 0.5 {
+                let v = SKShapeNode(rectOf: CGSize(width: 1.5, height: brickH))
+                v.position = CGPoint(x: x, y: y - brickH / 2)
+                v.fillColor = lineColor
+                v.strokeColor = .clear
+                v.zPosition = 0.1
+                addChild(v)
+                x += 104
+            }
+            y += brickH
+            row += 1
+        }
+
+        // Ceiling shadow band
+        let ceiling = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.28),
+                                   size: CGSize(width: sceneW, height: 55))
+        ceiling.position = CGPoint(x: 0, y: sceneH * 0.5 - 27)
+        ceiling.zPosition = 0.2
+        addChild(ceiling)
+
+        // Bright edge strip on top of the floor so it reads as a solid surface
+        let floorEdge = SKShapeNode(rectOf: CGSize(width: sceneW, height: 4))
+        floorEdge.position = CGPoint(x: 0, y: floorY + 9 + 2)
+        floorEdge.fillColor = UIColor.white.withAlphaComponent(0.18)
+        floorEdge.strokeColor = .clear
+        floorEdge.zPosition = 1.5
+        addChild(floorEdge)
+    }
+
     private func buildDungeon() {
         // Full-screen dark background panel
         let bg = SKSpriteNode(color: config.backgroundTint, size: CGSize(width: sceneW, height: sceneH))
@@ -108,6 +157,8 @@ class MinigameNode: SKNode {
         bg.zPosition = 0
         bg.name = "minigameBg"
         addChild(bg)
+
+        buildDungeonAtmosphere()
 
         // Title card
         let title = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
