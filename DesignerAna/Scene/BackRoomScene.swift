@@ -88,6 +88,7 @@ class BackRoomScene: SKScene {
     private var buttonStation: SKShapeNode?
 
     private var activeBossMinigame: BossMinigameNode?
+    private var walletLabel: SKLabelNode?
 
 
     override func didMove(to view: SKView) {
@@ -101,6 +102,7 @@ class BackRoomScene: SKScene {
         setupButtonZone()
         setupMannequinZone()
         setupInstructionLabel()
+        setupWalletHUD()
     }
 
     private func setupBackground() {
@@ -170,8 +172,23 @@ class BackRoomScene: SKScene {
         instructionLabel.fontColor = .white
         instructionLabel.position = CGPoint(x: 0, y: 150)
         instructionLabel.zPosition = 20
-
         addChild(instructionLabel)
+    }
+
+    private func setupWalletHUD() {
+        let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        lbl.text = "💰 \(Wallet.shared.balance)냥"
+        lbl.fontSize = 18
+        lbl.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+        lbl.horizontalAlignmentMode = .right
+        lbl.position = CGPoint(x: size.width * 0.47, y: size.height * 0.44)
+        lbl.zPosition = 20
+        walletLabel = lbl
+        addChild(lbl)
+    }
+
+    private func updateWalletHUD() {
+        walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -429,6 +446,7 @@ class BackRoomScene: SKScene {
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
         instructionLabel.text = garmentCompletionText
+        updateWalletHUD()
         placeDressOnMannequin()
     }
 
@@ -462,6 +480,7 @@ class BackRoomScene: SKScene {
             // Boss uses BossMinigameNode; this case is not reached in normal play.
             currentState = .finalCheck
         }
+        updateWalletHUD()
     }
 
     private func setupMannequinZone() {

@@ -45,6 +45,7 @@ struct MinigameConfig {
     let hazardKind: HazardKind
     let chestRewardLabel: String        // shown when chest opens, e.g. "원단 획득!"
     let chestRewardImageName: String    // item sprite inside the chest
+    let completionReward: Int           // 냥 awarded when chest is opened
     let backgroundTint: UIColor         // dungeon atmosphere, derived from fabricColor
     let accentColor: UIColor            // platform tint and UI accents
 
@@ -56,21 +57,21 @@ struct MinigameConfig {
                 station: station, levelSeed: 1, enemyKind: .dustMonster, enemyCount: 1,
                 defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
                 chestRewardLabel: "원단 획득!", chestRewardImageName: "pinkFabric",
-                backgroundTint: bgTint, accentColor: accent)
+                completionReward: 10, backgroundTint: bgTint, accentColor: accent)
         case .sewingStation:
             return MinigameConfig(
                 station: station, levelSeed: 2, enemyKind: .dustMonster, enemyCount: 1,
                 defeatMechanism: .either, monsterBehavior: .pacing(speed: 80, range: 70),
                 hazardKind: .scissorBlades(count: 2, spacing: 90),
                 chestRewardLabel: "실 획득!", chestRewardImageName: "Thread_Gold",
-                backgroundTint: bgTint, accentColor: accent)
+                completionReward: 20, backgroundTint: bgTint, accentColor: accent)
         case .buttonStation:
             return MinigameConfig(
                 station: station, levelSeed: 3, enemyKind: .dustMonster, enemyCount: 1,
                 defeatMechanism: .either, monsterBehavior: .lunging(lungeInterval: 3.0),
                 hazardKind: .fallingButtons(spawnInterval: 1.5),
                 chestRewardLabel: "단추 획득!", chestRewardImageName: "Buttons_Regular",
-                backgroundTint: bgTint, accentColor: accent)
+                completionReward: 30, backgroundTint: bgTint, accentColor: accent)
         case .mannequin:
             // deprecated — boss uses BossMinigameNode; this stub is never called
             return MinigameConfig(
@@ -78,7 +79,7 @@ struct MinigameConfig {
                 defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
                 chestRewardLabel: finishedGarmentLabel(for: order),
                 chestRewardImageName: finishedGarmentImageName(for: order),
-                backgroundTint: bgTint, accentColor: accent)
+                completionReward: 0, backgroundTint: bgTint, accentColor: accent)
         }
     }
 

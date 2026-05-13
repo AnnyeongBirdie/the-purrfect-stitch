@@ -686,12 +686,14 @@ class MinigameNode: SKNode {
         ])
         chestNode?.run(bounce)
 
-        // Reward item pops out
+        let chestPos = chestNode?.position ?? .zero
+
+        // Reward item label rises from chest
         let reward = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         reward.text = config.chestRewardLabel
         reward.fontSize = 26
         reward.fontColor = .white
-        reward.position = chestNode?.position ?? .zero
+        reward.position = chestPos
         reward.zPosition = 6
         addChild(reward)
 
@@ -699,7 +701,21 @@ class MinigameNode: SKNode {
         rise.timingMode = .easeOut
         reward.run(.sequence([rise, .fadeOut(withDuration: 0.3), .removeFromParent()]))
 
-        spawnSparkles(at: chestNode?.position ?? .zero)
+        // 냥 reward awarded and displayed
+        Wallet.shared.balance += config.completionReward
+        let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        coinPop.text = "+\(config.completionReward)냥"
+        coinPop.fontSize = 28
+        coinPop.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+        coinPop.position = CGPoint(x: chestPos.x, y: chestPos.y + 40)
+        coinPop.zPosition = 7
+        addChild(coinPop)
+
+        let coinRise = SKAction.moveBy(x: 0, y: 70, duration: 0.7)
+        coinRise.timingMode = .easeOut
+        coinPop.run(.sequence([coinRise, .fadeOut(withDuration: 0.3), .removeFromParent()]))
+
+        spawnSparkles(at: chestPos)
 
         run(.wait(forDuration: 1.0)) { [weak self] in
             guard let self else { return }
