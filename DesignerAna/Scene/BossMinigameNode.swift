@@ -789,7 +789,15 @@ class BossMinigameNode: SKNode {
             let dy = abs(hero.position.y - boss.position.y)
             let overlapping = dx < 52 && dy < 56
             let isStomp = vdy < -50 && heroFeet <= bossTop && heroFeet >= bossTop - 40
-            if overlapping && isStomp { hitBoss() }
+            if overlapping {
+                if isStomp {
+                    hitBoss()
+                } else {
+                    // Bounce the hero away so they can't camp on the boss
+                    let pushDir: CGFloat = hero.position.x < boss.position.x ? -1 : 1
+                    hero.physicsBody?.velocity = CGVector(dx: pushDir * 260, dy: 120)
+                }
+            }
         }
 
         // Add movement + hero/add collision
