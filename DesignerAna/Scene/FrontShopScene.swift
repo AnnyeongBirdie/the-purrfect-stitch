@@ -452,7 +452,7 @@ class FrontShopScene: SKScene {
 
             switch nodeName {
             case "wardrobeNode":
-                if currentState == .greeting {
+                if currentState == .greeting || currentState == .choosingClothing {
                     Store.saveLastSeenCount(Store.loadGarmentCount())
                     transitionToDressingRoom()
                     return
@@ -907,11 +907,6 @@ class FrontShopScene: SKScene {
 
         shouldShowFinishedGarment = false
         completedOrder = nil
-
-        if let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode {
-            mannequin.texture = SKTexture(imageNamed: "Mannequin_White")
-            mannequin.setScale(0.3)
-        }
 
         currentState = .choosingClothing
         showGreeting()

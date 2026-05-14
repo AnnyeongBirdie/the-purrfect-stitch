@@ -720,7 +720,7 @@ class BackRoomScene: SKScene {
         let button = SKShapeNode(rectOf: CGSize(width: 108, height: 40), cornerRadius: 12)
         button.fillColor = UIColor(red: 0.55, green: 0.20, blue: 0.15, alpha: 0.88)
         button.strokeColor = .clear
-        button.position = CGPoint(x: size.width / 2 - 70, y: size.height / 2 - 40)
+        button.position = CGPoint(x: size.width * 0.36, y: size.height * 0.44 - 55)
         button.zPosition = 20
         button.name = "quitButton"
         addChild(button)
