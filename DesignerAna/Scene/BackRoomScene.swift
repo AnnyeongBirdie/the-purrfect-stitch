@@ -62,6 +62,10 @@ class BackRoomScene: SKScene {
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
 
+    private var earnedMinigameRewards: Int = 0
+    private var quitButton: SKShapeNode?
+    private var exitDialogNode: SKNode?
+
 
     override func didMove(to view: SKView) {
         view.isMultipleTouchEnabled = true
@@ -76,6 +80,7 @@ class BackRoomScene: SKScene {
         setupInstructionLabel()
         setupWalletHUD()
         setupStationFireflies()
+        setupQuitButton()
     }
 
     private func setupBackground() {
@@ -235,11 +240,50 @@ class BackRoomScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
+        // Exit dialog intercepts all taps when visible
+        if exitDialogNode != nil {
+            handleExitDialogTap(at: location)
+            return
+        }
+
+        // Quit button
+        if let qBtn = quitButton, !qBtn.isHidden,
+           qBtn.contains(touch.location(in: self)) {
+            showExitDialog()
+            return
+        }
+
         if handleInteraction(at: location) {
             return
         }
 
         handleMovement(at: location)
+    }
+
+    private func handleExitDialogTap(at location: CGPoint) {
+        guard let order = order else { return }
+        for node in nodes(at: location) {
+            guard let name = node.name else { continue }
+            switch name {
+            case "exitRefund":
+                exitDialogNode?.removeFromParent()
+                exitDialogNode = nil
+                Wallet.shared.balance += order.depositAmount - earnedMinigameRewards
+                returnToFrontShopEmpty()
+                return
+            case "exitCashOut":
+                exitDialogNode?.removeFromParent()
+                exitDialogNode = nil
+                returnToFrontShopEmpty()
+                return
+            case "exitCancel":
+                exitDialogNode?.removeFromParent()
+                exitDialogNode = nil
+                return
+            default:
+                continue
+            }
+        }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -438,6 +482,7 @@ class BackRoomScene: SKScene {
 
         // Pause back-room tailor while minigame runs
         tailor.isPaused = true
+        quitButton?.isHidden = true
 
         // Save gravity and set platformer gravity
         scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
@@ -459,6 +504,7 @@ class BackRoomScene: SKScene {
     private func presentBossMinigame() {
         guard let scene = self.scene else { return }
         tailor.isPaused = true
+        quitButton?.isHidden = true
         scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
 
         let boss = BossMinigameNode(order: order) { [weak self] in
@@ -476,6 +522,9 @@ class BackRoomScene: SKScene {
         activeBossMinigame = nil
         scene?.physicsWorld.gravity = .zero
         tailor.isPaused = false
+        updateQuitButtonVisibility()
+
+        earnedMinigameRewards += 50
 
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
@@ -498,19 +547,23 @@ class BackRoomScene: SKScene {
         // Advance back-room state machine
         switch station {
         case .fabricCabinet:
+            earnedMinigameRewards += 10
             celebrateTailor()
             showTailorHalo(color: haloLight)
             instructionLabel.text = "잘했어요! 재봉대로 가보세요."
             currentState = .waitingForSewing
         case .sewingStation:
+            earnedMinigameRewards += 20
             instructionLabel.text = "단추를 달아볼까요?"
             updateHaloColor(to: haloMedium)
             currentState = .waitingForButtons
         case .buttonStation:
+            earnedMinigameRewards += 30
             instructionLabel.text = "완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?"
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
         }
+        updateQuitButtonVisibility()
         updateWalletHUD()
     }
 
@@ -602,5 +655,133 @@ class BackRoomScene: SKScene {
         let up = SKAction.moveBy(x: 0, y: 12, duration: 0.1)
         let down = SKAction.moveBy(x: 0, y: -12, duration: 0.1)
         tailor.run(SKAction.sequence([up, down]))
+    }
+
+    // MARK: - Quit button
+
+    private func setupQuitButton() {
+        let button = SKShapeNode(rectOf: CGSize(width: 108, height: 40), cornerRadius: 12)
+        button.fillColor = UIColor(red: 0.55, green: 0.20, blue: 0.15, alpha: 0.88)
+        button.strokeColor = .clear
+        button.position = CGPoint(x: size.width / 2 - 70, y: size.height / 2 - 40)
+        button.zPosition = 20
+        button.name = "quitButton"
+        addChild(button)
+        quitButton = button
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = "그만할래"
+        label.fontSize = 18
+        label.fontColor = .white
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.name = "quitButton"
+        label.zPosition = 1
+        button.addChild(label)
+    }
+
+    private func updateQuitButtonVisibility() {
+        let visibleStates: [BackRoomState] = [
+            .waitingForCabinetTap, .walkingToCabinet,
+            .waitingForSewing,     .walkingToSewing,
+            .waitingForButtons,    .walkingToButtons,
+            .waitingForMannequin,  .walkingToMannequin
+        ]
+        let minigameActive = (activeMinigame != nil || activeBossMinigame != nil)
+        quitButton?.isHidden = minigameActive || !visibleStates.contains(currentState)
+    }
+
+    private func showExitDialog() {
+        guard let order = order else { return }
+
+        exitDialogNode?.removeFromParent()
+
+        let deposit = order.depositAmount
+        let refundedBalance  = Wallet.shared.balance + deposit - earnedMinigameRewards
+        let currentBalance   = Wallet.shared.balance
+
+        let overlay = SKNode()
+        overlay.zPosition = 60
+        overlay.name = "exitDialog"
+        addChild(overlay)
+        exitDialogNode = overlay
+
+        // Dim background
+        let dim = SKShapeNode(rectOf: size)
+        dim.fillColor = UIColor(white: 0, alpha: 0.55)
+        dim.strokeColor = .clear
+        dim.zPosition = -1
+        overlay.addChild(dim)
+
+        // Panel
+        let panel = SKShapeNode(rectOf: CGSize(width: 320, height: 280), cornerRadius: 24)
+        panel.fillColor = UIColor(red: 0.96, green: 0.91, blue: 0.80, alpha: 0.98)
+        panel.strokeColor = UIColor.brown
+        panel.lineWidth = 4
+        panel.zPosition = 1
+        overlay.addChild(panel)
+
+        let title = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        title.text = "정말 그만할래요?"
+        title.fontSize = 24
+        title.fontColor = .black
+        title.position = CGPoint(x: 0, y: 100)
+        title.verticalAlignmentMode = .center
+        panel.addChild(title)
+
+        // Option A: refund deposit
+        let btnA = makeDialogButton(
+            text: "보증금 환불 → 지갑 \(refundedBalance)냥",
+            name: "exitRefund",
+            position: CGPoint(x: 0, y: 30),
+            width: 280
+        )
+        panel.addChild(btnA)
+
+        // Option B: cash out
+        let btnB = makeDialogButton(
+            text: "지금까지 모은 거 챙기기 → 지갑 \(currentBalance)냥",
+            name: "exitCashOut",
+            position: CGPoint(x: 0, y: -45),
+            width: 280
+        )
+        panel.addChild(btnB)
+
+        // Cancel
+        let btnC = makeDialogButton(
+            text: "취소",
+            name: "exitCancel",
+            position: CGPoint(x: 0, y: -115),
+            width: 160
+        )
+        panel.addChild(btnC)
+    }
+
+    private func makeDialogButton(text: String, name: String, position: CGPoint, width: CGFloat) -> SKShapeNode {
+        let button = SKShapeNode(rectOf: CGSize(width: width, height: 50), cornerRadius: 14)
+        button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
+        button.strokeColor = UIColor.brown
+        button.lineWidth = 2
+        button.position = position
+        button.name = name
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = text
+        label.fontSize = 15
+        label.fontColor = .white
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.name = name
+        label.zPosition = 1
+        button.addChild(label)
+        return button
+    }
+
+    private func returnToFrontShopEmpty() {
+        guard let view = self.view else { return }
+        guard let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+        scene.scaleMode = .resizeFill
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
     }
 }
