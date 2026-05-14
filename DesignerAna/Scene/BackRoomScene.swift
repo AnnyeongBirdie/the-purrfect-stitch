@@ -2,7 +2,7 @@ import SpriteKit
 
 class BackRoomScene: SKScene {
 
-    private enum BackRoomState {
+    private enum BackRoomState: String {
         case waitingForCabinetTap
         case walkingToCabinet
 
@@ -15,13 +15,17 @@ class BackRoomScene: SKScene {
         case waitingForMannequin
         case walkingToMannequin
         case finalCheck
-        
+
         case completed
     }
 
-    private var currentState: BackRoomState = .waitingForCabinetTap
+    private var currentState: BackRoomState = .waitingForCabinetTap {
+        didSet { saveActiveOrderSnapshot() }
+    }
 
     var order: Order?
+    var resumeStateName: String?
+    var resumeEarnedRewards: Int = 0
 
     private let cabinetInteractionX: CGFloat = -180
 
@@ -81,6 +85,8 @@ class BackRoomScene: SKScene {
         setupWalletHUD()
         setupStationFireflies()
         setupQuitButton()
+        applyResumeStateIfNeeded()
+        saveActiveOrderSnapshot()
     }
 
     private func setupBackground() {
@@ -269,11 +275,13 @@ class BackRoomScene: SKScene {
                 exitDialogNode?.removeFromParent()
                 exitDialogNode = nil
                 Wallet.shared.balance += order.depositAmount - earnedMinigameRewards
+                Store.clearActiveOrder()
                 returnToFrontShopEmpty()
                 return
             case "exitCashOut":
                 exitDialogNode?.removeFromParent()
                 exitDialogNode = nil
+                Store.clearActiveOrder()
                 returnToFrontShopEmpty()
                 return
             case "exitCancel":
@@ -525,6 +533,7 @@ class BackRoomScene: SKScene {
         updateQuitButtonVisibility()
 
         earnedMinigameRewards += 50
+        Store.clearActiveOrder()
 
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
@@ -655,6 +664,54 @@ class BackRoomScene: SKScene {
         let up = SKAction.moveBy(x: 0, y: 12, duration: 0.1)
         let down = SKAction.moveBy(x: 0, y: -12, duration: 0.1)
         tailor.run(SKAction.sequence([up, down]))
+    }
+
+    // MARK: - Active order persistence
+
+    private func saveActiveOrderSnapshot() {
+        guard let order = order else { return }
+        // Don't overwrite a cleared record after order completes
+        let snapshot = ActiveOrder(
+            clothingType: order.clothingType,
+            fabricColor: order.fabricColor,
+            depositAmount: order.depositAmount,
+            backRoomStateName: currentState.rawValue,
+            earnedMinigameRewards: earnedMinigameRewards,
+            savedAt: Date()
+        )
+        Store.saveActiveOrder(snapshot)
+    }
+
+    private func applyResumeStateIfNeeded() {
+        guard let stateName = resumeStateName,
+              let saved = BackRoomState(rawValue: stateName) else { return }
+
+        earnedMinigameRewards = resumeEarnedRewards
+
+        // Map saved state → nearest forward .waitingForX station
+        let resumeTarget: BackRoomState
+        switch saved {
+        case .waitingForCabinetTap, .walkingToCabinet:
+            resumeTarget = .waitingForCabinetTap
+        case .waitingForSewing, .walkingToSewing:
+            resumeTarget = .waitingForSewing
+            showTailorHalo(color: haloLight)
+            instructionLabel.text = "재봉대로 가보세요."
+        case .waitingForButtons, .walkingToButtons:
+            resumeTarget = .waitingForButtons
+            showTailorHalo(color: haloMedium)
+            instructionLabel.text = "단추를 달아볼까요?"
+        case .waitingForMannequin, .walkingToMannequin:
+            resumeTarget = .waitingForMannequin
+            showTailorHalo(color: haloDark)
+            instructionLabel.text = "완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?"
+        default:
+            resumeTarget = .waitingForCabinetTap
+        }
+
+        // Set without triggering didSet save (order not yet serialized at this point)
+        currentState = resumeTarget
+        updateQuitButtonVisibility()
     }
 
     // MARK: - Quit button

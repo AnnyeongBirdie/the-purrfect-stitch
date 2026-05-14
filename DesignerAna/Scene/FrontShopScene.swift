@@ -32,6 +32,7 @@ class FrontShopScene: SKScene {
 
     private var wardrobeNode: SKSpriteNode!
     private var saveTrophyButton: SKShapeNode?
+    private var relaunchDialogNode: SKNode?
 
     override func didMove(to view: SKView) {
         fitBackgroundToScene()
@@ -44,6 +45,11 @@ class FrontShopScene: SKScene {
             showCompletionGreeting()
             showSaveTrophyButton()
             currentState = .greeting
+        } else if let saved = Store.loadActiveOrder(),
+                  Date().timeIntervalSince(saved.savedAt) < 30 * 24 * 3600 {
+            showGreeting()
+            currentState = .greeting
+            showRelaunchDialog(for: saved)
         } else {
             showGreeting()
             showClothingChoices()
@@ -435,6 +441,15 @@ class FrontShopScene: SKScene {
         for node in tappedNodes {
             guard let nodeName = node.name else { continue }
             
+            // Relaunch dialog intercepts all taps when visible
+            switch nodeName {
+            case "relaunchContinue", "relaunchRefund", "relaunchCashOut":
+                handleRelaunchTap(nodeName: nodeName)
+                return
+            default:
+                break
+            }
+
             switch nodeName {
             case "wardrobeNode":
                 if currentState == .greeting {
@@ -710,6 +725,147 @@ class FrontShopScene: SKScene {
 
         shopkeeper.position = CGPoint(x: 0, y: -60)     // adjust Y
         mannequin.position = CGPoint(x: 200, y: -60)    // adjust Y
+    }
+
+    // MARK: - Relaunch dialog (active order recovery)
+
+    private func showRelaunchDialog(for saved: ActiveOrder) {
+        relaunchDialogNode?.removeFromParent()
+
+        let refundedBalance = Wallet.shared.balance + saved.depositAmount - saved.earnedMinigameRewards
+        let currentBalance  = Wallet.shared.balance
+
+        let overlay = SKNode()
+        overlay.zPosition = 60
+        overlay.name = "relaunchDialog"
+        addChild(overlay)
+        relaunchDialogNode = overlay
+
+        let dim = SKShapeNode(rectOf: size)
+        dim.fillColor = UIColor(white: 0, alpha: 0.55)
+        dim.strokeColor = .clear
+        dim.zPosition = -1
+        overlay.addChild(dim)
+
+        let panel = SKShapeNode(rectOf: CGSize(width: 340, height: 320), cornerRadius: 24)
+        panel.fillColor = UIColor(red: 0.96, green: 0.91, blue: 0.80, alpha: 0.98)
+        panel.strokeColor = UIColor.brown
+        panel.lineWidth = 4
+        panel.zPosition = 1
+        overlay.addChild(panel)
+
+        let title = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        title.text = "이전에 하던 게 있어요!"
+        title.fontSize = 22
+        title.fontColor = .black
+        title.position = CGPoint(x: 0, y: 120)
+        title.verticalAlignmentMode = .center
+        panel.addChild(title)
+
+        let subtitle = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
+        subtitle.text = "\(saved.fabricColor) \(saved.clothingType)"
+        subtitle.fontSize = 18
+        subtitle.fontColor = UIColor(red: 0.4, green: 0.2, blue: 0.0, alpha: 1.0)
+        subtitle.position = CGPoint(x: 0, y: 88)
+        subtitle.verticalAlignmentMode = .center
+        panel.addChild(subtitle)
+
+        // Button A: continue
+        let btnA = makeFrontShopDialogButton(
+            text: "이어서 만들래 → 지갑 \(currentBalance)냥",
+            name: "relaunchContinue",
+            position: CGPoint(x: 0, y: 35),
+            width: 300
+        )
+        panel.addChild(btnA)
+
+        // Button B: refund
+        let btnB = makeFrontShopDialogButton(
+            text: "보증금 환불 → 지갑 \(refundedBalance)냥",
+            name: "relaunchRefund",
+            position: CGPoint(x: 0, y: -45),
+            width: 300
+        )
+        panel.addChild(btnB)
+
+        // Button C: cash out
+        let btnC = makeFrontShopDialogButton(
+            text: "지금까지 모은 거 챙기기 → 지갑 \(currentBalance)냥",
+            name: "relaunchCashOut",
+            position: CGPoint(x: 0, y: -120),
+            width: 300
+        )
+        panel.addChild(btnC)
+    }
+
+    private func makeFrontShopDialogButton(text: String, name: String,
+                                           position: CGPoint, width: CGFloat) -> SKShapeNode {
+        let button = SKShapeNode(rectOf: CGSize(width: width, height: 50), cornerRadius: 14)
+        button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
+        button.strokeColor = UIColor.brown
+        button.lineWidth = 2
+        button.position = position
+        button.name = name
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = text
+        label.fontSize = 14
+        label.fontColor = .white
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.name = name
+        label.zPosition = 1
+        button.addChild(label)
+        return button
+    }
+
+    private func handleRelaunchTap(nodeName: String) {
+        guard let saved = Store.loadActiveOrder() else { return }
+
+        switch nodeName {
+        case "relaunchContinue":
+            relaunchDialogNode?.removeFromParent()
+            relaunchDialogNode = nil
+            resumeSavedOrder(saved)
+
+        case "relaunchRefund":
+            relaunchDialogNode?.removeFromParent()
+            relaunchDialogNode = nil
+            Wallet.shared.balance += saved.depositAmount - saved.earnedMinigameRewards
+            Store.clearActiveOrder()
+            showGreeting()
+            showClothingChoices()
+            currentState = .choosingClothing
+
+        case "relaunchCashOut":
+            relaunchDialogNode?.removeFromParent()
+            relaunchDialogNode = nil
+            Store.clearActiveOrder()
+            showGreeting()
+            showClothingChoices()
+            currentState = .choosingClothing
+
+        default:
+            break
+        }
+    }
+
+    private func resumeSavedOrder(_ saved: ActiveOrder) {
+        guard let view = self.view else { return }
+        Store.clearActiveOrder()
+
+        let order = Order(clothingType: saved.clothingType,
+                          depositAmount: saved.depositAmount,
+                          fabricColor: saved.fabricColor)
+
+        let backRoom = BackRoomScene(size: self.size)
+        backRoom.scaleMode = self.scaleMode
+        backRoom.order = order
+        backRoom.resumeStateName = saved.backRoomStateName
+        backRoom.resumeEarnedRewards = saved.earnedMinigameRewards
+
+        let transition = SKTransition.fade(withDuration: 0.8)
+        view.presentScene(backRoom, transition: transition)
     }
 
     private func showSaveTrophyButton() {

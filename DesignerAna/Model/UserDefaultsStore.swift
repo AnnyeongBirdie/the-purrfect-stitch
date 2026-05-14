@@ -12,6 +12,7 @@ enum UserDefaultsKey {
     static let wardrobeGarments     = "wardrobe.garments"
     static let garmentCount         = "wardrobe.garmentCount"
     static let lastSeenGarmentCount = "wardrobe.lastSeenCount"
+    static let activeOrder          = "order.active"
 }
 
 enum Store {
@@ -52,5 +53,19 @@ enum Store {
     }
     static func saveLastSeenCount(_ count: Int) {
         defaults.set(count, forKey: UserDefaultsKey.lastSeenGarmentCount)
+    }
+
+    // MARK: - Active order (crash / force-quit recovery)
+
+    static func loadActiveOrder() -> ActiveOrder? {
+        guard let data = defaults.data(forKey: UserDefaultsKey.activeOrder) else { return nil }
+        return try? decoder.decode(ActiveOrder.self, from: data)
+    }
+    static func saveActiveOrder(_ activeOrder: ActiveOrder) {
+        guard let data = try? encoder.encode(activeOrder) else { return }
+        defaults.set(data, forKey: UserDefaultsKey.activeOrder)
+    }
+    static func clearActiveOrder() {
+        defaults.removeObject(forKey: UserDefaultsKey.activeOrder)
     }
 }
