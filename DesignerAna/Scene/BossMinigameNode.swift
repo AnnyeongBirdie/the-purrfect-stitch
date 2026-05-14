@@ -96,7 +96,7 @@ class BossMinigameNode: SKNode {
         sceneRef = scene
         scene.physicsWorld.contactDelegate = contactBridge
 
-        (bgTint, accentColor) = colors(for: order?.fabricColor)
+        (bgTint, accentColor) = fabricColors(for: order)
 
         buildArena()
         buildHero()
@@ -633,7 +633,7 @@ class BossMinigameNode: SKNode {
         chestOpened = true
         isCompleting = true
 
-        let label = garmentLabel(for: order)
+        let label = garmentCompletionText(for: order)
         instructionLabel.text = label
 
         chestNode?.run(.sequence([.scale(to: 1.3, duration: 0.12), .scale(to: 1.0, duration: 0.10)]))
@@ -936,26 +936,6 @@ class BossMinigameNode: SKNode {
         }
     }
 
-    // MARK: - Garment helpers
-
-    private func garmentLabel(for order: Order?) -> String {
-        switch order?.clothingType {
-        case "셔츠": return "셔츠 완성!"
-        case "바지": return "바지 완성!"
-        default:     return "드레스 완성!"
-        }
-    }
-
-    private func colors(for fabricColor: String?) -> (UIColor, UIColor) {
-        switch fabricColor {
-        case "파랑": return (UIColor(red: 0.10, green: 0.15, blue: 0.35, alpha: 1.0),
-                             UIColor(red: 0.20, green: 0.50, blue: 0.95, alpha: 1.0))
-        case "노랑": return (UIColor(red: 0.30, green: 0.25, blue: 0.05, alpha: 1.0),
-                             UIColor(red: 0.95, green: 0.80, blue: 0.10, alpha: 1.0))
-        default:     return (UIColor(red: 0.30, green: 0.10, blue: 0.18, alpha: 1.0),
-                             UIColor(red: 0.95, green: 0.38, blue: 0.60, alpha: 1.0))
-        }
-    }
 }
 
 // MARK: - BossContactBridge

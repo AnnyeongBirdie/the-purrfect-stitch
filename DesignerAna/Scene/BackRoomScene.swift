@@ -23,34 +23,6 @@ class BackRoomScene: SKScene {
 
     var order: Order?
 
-    private var finishedGarmentImageName: String {
-        let garment: String
-        switch order?.clothingType {
-        case "셔츠": garment = "Shirt"
-        case "바지": garment = "Pants"
-        default:     garment = "Dress"
-        }
-        switch order?.fabricColor {
-        case "파랑": return "Mannequin_\(garment)_Blue"
-        case "노랑": return "Mannequin_\(garment)_Yellow"
-        default:     return "Mannequin_\(garment)_Pink"
-        }
-    }
-
-    // Korean noun for the ordered garment. All three values end in a vowel,
-    // so the object-marker particle 를 works uniformly downstream.
-    private var garmentNoun: String {
-        switch order?.clothingType {
-        case "셔츠": return "셔츠"
-        case "바지": return "바지"
-        default:     return "드레스"
-        }
-    }
-
-    private var garmentCompletionText: String {
-        "\(garmentNoun) 완성!"
-    }
-
     private let cabinetInteractionX: CGFloat = -180
 
     private var haloLight: UIColor {
@@ -507,7 +479,7 @@ class BackRoomScene: SKScene {
 
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
-        instructionLabel.text = garmentCompletionText
+        instructionLabel.text = garmentCompletionText(for: order)
         updateWalletHUD()
         placeDressOnMannequin()
     }
@@ -535,7 +507,7 @@ class BackRoomScene: SKScene {
             updateHaloColor(to: haloMedium)
             currentState = .waitingForButtons
         case .buttonStation:
-            instructionLabel.text = "완성된 \(garmentNoun)를 마네킹에 입혀볼까요?"
+            instructionLabel.text = "완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?"
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
         }
@@ -619,7 +591,7 @@ class BackRoomScene: SKScene {
 
         scene.scaleMode = .resizeFill
         scene.shouldShowFinishedGarment = true
-        scene.finishedGarmentImageName = finishedGarmentImageName
+        scene.finishedGarmentImageName = garmentImageName(for: order)
 
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)

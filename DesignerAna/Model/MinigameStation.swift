@@ -49,7 +49,7 @@ struct MinigameConfig {
     let accentColor: UIColor            // platform tint and UI accents
 
     static func make(for station: MinigameStation, order: Order?) -> MinigameConfig {
-        let (bgTint, accent) = colors(for: order?.fabricColor)
+        let (bgTint, accent) = fabricColors(for: order)
         switch station {
         case .fabricCabinet:
             return MinigameConfig(
@@ -74,17 +74,4 @@ struct MinigameConfig {
         }
     }
 
-    private static func colors(for fabricColor: String?) -> (UIColor, UIColor) {
-        switch fabricColor {
-        case "파랑": return (
-            UIColor(red: 0.10, green: 0.15, blue: 0.35, alpha: 1.0),
-            UIColor(red: 0.20, green: 0.50, blue: 0.95, alpha: 1.0))
-        case "노랑": return (
-            UIColor(red: 0.30, green: 0.25, blue: 0.05, alpha: 1.0),
-            UIColor(red: 0.95, green: 0.80, blue: 0.10, alpha: 1.0))
-        default: return (   // 분홍 or nil
-            UIColor(red: 0.30, green: 0.10, blue: 0.18, alpha: 1.0),
-            UIColor(red: 0.95, green: 0.38, blue: 0.60, alpha: 1.0))
-        }
-    }
 }
