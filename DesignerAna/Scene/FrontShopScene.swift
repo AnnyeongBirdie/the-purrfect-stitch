@@ -28,11 +28,14 @@ class FrontShopScene: SKScene {
     
     var shouldShowFinishedGarment = false
     var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
-    
+
+    private var wardrobeNode: SKSpriteNode!
+
     override func didMove(to view: SKView) {
         fitBackgroundToScene()
         setupDialogueUI()
         fixCharacterLayout()
+        setupWardrobeNode()
 
         if shouldShowFinishedGarment {
             showFinishedGarmentOnFrontMannequin()
@@ -50,6 +53,85 @@ class FrontShopScene: SKScene {
 
         if let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode {
             mannequin.zPosition = 20
+        }
+    }
+
+    private func setupWardrobeNode() {
+        wardrobeNode = SKSpriteNode(imageNamed: "Wardrobe")
+        let targetHeight: CGFloat = 280
+        let tex = wardrobeNode.texture ?? SKTexture(imageNamed: "Wardrobe")
+        let scale = targetHeight / tex.size().height
+        wardrobeNode.setScale(scale)
+        wardrobeNode.position = CGPoint(x: frame.minX + wardrobeNode.size.width * 0.55, y: -50)
+        wardrobeNode.zPosition = 5
+        wardrobeNode.name = "wardrobeNode"
+        addChild(wardrobeNode)
+
+        addFireflies(at: wardrobeNode.position)
+    }
+
+    private func addFireflies(at center: CGPoint) {
+        let fireflyColor = UIColor(red: 1.0, green: 0.95, blue: 0.5, alpha: 1.0)
+        for i in 0..<4 {
+            let firefly = SKShapeNode(circleOfRadius: 3.5)
+            firefly.fillColor = fireflyColor
+            firefly.strokeColor = .clear
+            firefly.glowWidth = 6
+            firefly.zPosition = 4
+            firefly.alpha = 0
+            firefly.position = CGPoint(
+                x: center.x + CGFloat.random(in: -40...40),
+                y: center.y + CGFloat.random(in: -60...30)
+            )
+            addChild(firefly)
+
+            let cycle = SKAction.sequence([
+                SKAction.run { [weak firefly] in
+                    firefly?.position = CGPoint(
+                        x: center.x + CGFloat.random(in: -40...40),
+                        y: center.y + CGFloat.random(in: -60...30)
+                    )
+                    firefly?.alpha = 0
+                },
+                SKAction.fadeIn(withDuration: 0.5),
+                SKAction.group([
+                    SKAction.moveBy(x: 0, y: 55, duration: 1.6),
+                    SKAction.sequence([
+                        SKAction.wait(forDuration: 0.9),
+                        SKAction.fadeOut(withDuration: 0.7)
+                    ])
+                ]),
+                SKAction.wait(forDuration: 0.3)
+            ])
+            firefly.run(.sequence([
+                .wait(forDuration: Double(i) * 0.6),
+                .repeatForever(cycle)
+            ]))
+        }
+    }
+
+    private func spawnWardrobeSparkle() {
+        guard let wardrobePos = wardrobeNode?.position else { return }
+        for i in 0..<8 {
+            let spark = SKShapeNode(circleOfRadius: 5)
+            spark.fillColor = UIColor(red: 1.0, green: 0.9, blue: 0.2, alpha: 1.0)
+            spark.strokeColor = .clear
+            spark.glowWidth = 8
+            spark.zPosition = 6
+            spark.position = wardrobePos
+            addChild(spark)
+
+            let angle = CGFloat(i) / 8.0 * .pi * 2
+            let dx = cos(angle) * CGFloat.random(in: 40...80)
+            let dy = sin(angle) * CGFloat.random(in: 40...80)
+            spark.run(.sequence([
+                .wait(forDuration: Double(i) * 0.07),
+                .group([
+                    .moveBy(x: dx, y: dy, duration: 1.5),
+                    .sequence([.fadeIn(withDuration: 0.2), .fadeOut(withDuration: 1.3)])
+                ]),
+                .removeFromParent()
+            ]))
         }
     }
     
@@ -347,6 +429,12 @@ class FrontShopScene: SKScene {
             guard let nodeName = node.name else { continue }
             
             switch nodeName {
+            case "wardrobeNode":
+                if currentState == .greeting {
+                    transitionToDressingRoom()
+                    return
+                }
+
             case "dressButton", "shirtButton", "pantsButton":
                 if currentState == .choosingClothing {
                     handleChoice(named: nodeName)
@@ -608,5 +696,13 @@ class FrontShopScene: SKScene {
 
         shopkeeper.position = CGPoint(x: 0, y: -60)     // adjust Y
         mannequin.position = CGPoint(x: 200, y: -60)    // adjust Y
+    }
+
+    private func transitionToDressingRoom() {
+        guard let view = self.view else { return }
+        let scene = DressingRoomScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.5)
+        view.presentScene(scene, transition: transition)
     }
 }
