@@ -538,9 +538,6 @@ class BackRoomScene: SKScene {
             instructionLabel.text = "완성된 \(garmentNoun)를 마네킹에 입혀볼까요?"
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
-        case .mannequin:
-            // Boss uses BossMinigameNode; this case is not reached in normal play.
-            currentState = .finalCheck
         }
         updateWalletHUD()
     }

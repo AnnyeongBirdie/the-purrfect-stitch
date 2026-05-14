@@ -9,7 +9,6 @@ enum MinigameStation {
     case fabricCabinet
     case sewingStation
     case buttonStation
-    case mannequin
 }
 
 enum EnemyKind {
@@ -72,36 +71,6 @@ struct MinigameConfig {
                 hazardKind: .fallingButtons(spawnInterval: 1.5),
                 chestRewardLabel: "단추 획득!", chestRewardImageName: "Buttons_Regular",
                 completionReward: 30, backgroundTint: bgTint, accentColor: accent)
-        case .mannequin:
-            // deprecated — boss uses BossMinigameNode; this stub is never called
-            return MinigameConfig(
-                station: station, levelSeed: 4, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either, monsterBehavior: .stationary, hazardKind: .none,
-                chestRewardLabel: finishedGarmentLabel(for: order),
-                chestRewardImageName: finishedGarmentImageName(for: order),
-                completionReward: 0, backgroundTint: bgTint, accentColor: accent)
-        }
-    }
-
-    private static func finishedGarmentImageName(for order: Order?) -> String {
-        let garment: String
-        switch order?.clothingType {
-        case "셔츠": garment = "Shirt"
-        case "바지": garment = "Pants"
-        default:     garment = "Dress"
-        }
-        switch order?.fabricColor {
-        case "파랑": return "Mannequin_\(garment)_Blue"
-        case "노랑": return "Mannequin_\(garment)_Yellow"
-        default:     return "Mannequin_\(garment)_Pink"
-        }
-    }
-
-    private static func finishedGarmentLabel(for order: Order?) -> String {
-        switch order?.clothingType {
-        case "셔츠": return "셔츠 완성!"
-        case "바지": return "바지 완성!"
-        default:     return "드레스 완성!"
         }
     }
 
