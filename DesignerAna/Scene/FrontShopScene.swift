@@ -28,8 +28,10 @@ class FrontShopScene: SKScene {
     
     var shouldShowFinishedGarment = false
     var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
+    var completedOrder: Order?
 
     private var wardrobeNode: SKSpriteNode!
+    private var saveTrophyButton: SKShapeNode?
 
     override func didMove(to view: SKView) {
         fitBackgroundToScene()
@@ -40,11 +42,16 @@ class FrontShopScene: SKScene {
         if shouldShowFinishedGarment {
             showFinishedGarmentOnFrontMannequin()
             showCompletionGreeting()
+            showSaveTrophyButton()
             currentState = .greeting
         } else {
             showGreeting()
             showClothingChoices()
             currentState = .choosingClothing
+        }
+
+        if Store.loadGarmentCount() > Store.loadLastSeenCount() {
+            spawnWardrobeSparkle()
         }
 
         if let shopkeeper = childNode(withName: "shopkeeper") as? SKSpriteNode {
@@ -431,7 +438,14 @@ class FrontShopScene: SKScene {
             switch nodeName {
             case "wardrobeNode":
                 if currentState == .greeting {
+                    Store.saveLastSeenCount(Store.loadGarmentCount())
                     transitionToDressingRoom()
+                    return
+                }
+
+            case "saveTrophyButton":
+                if currentState == .greeting && shouldShowFinishedGarment {
+                    handleSaveTrophy()
                     return
                 }
 
@@ -696,6 +710,57 @@ class FrontShopScene: SKScene {
 
         shopkeeper.position = CGPoint(x: 0, y: -60)     // adjust Y
         mannequin.position = CGPoint(x: 200, y: -60)    // adjust Y
+    }
+
+    private func showSaveTrophyButton() {
+        let button = SKShapeNode(rectOf: CGSize(width: 200, height: 52), cornerRadius: 18)
+        button.fillColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+        button.strokeColor = UIColor.brown
+        button.lineWidth = 3
+        button.position = CGPoint(x: 0, y: frame.minY + 90)
+        button.zPosition = 50
+        button.name = "saveTrophyButton"
+        addChild(button)
+        saveTrophyButton = button
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = "옷장에 보관"
+        label.fontSize = 24
+        label.fontColor = .white
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.name = "saveTrophyButton"
+        label.zPosition = 51
+        button.addChild(label)
+    }
+
+    private func handleSaveTrophy() {
+        if let order = completedOrder {
+            var garments = Store.loadGarments()
+            garments.append(FinishedGarment(
+                clothingType: order.clothingType,
+                fabricColor: order.fabricColor,
+                completedAt: Date()
+            ))
+            Store.saveGarments(garments)
+            Store.saveGarmentCount(Store.loadGarmentCount() + 1)
+        }
+
+        saveTrophyButton?.removeFromParent()
+        saveTrophyButton = nil
+
+        shouldShowFinishedGarment = false
+        completedOrder = nil
+
+        if let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode {
+            mannequin.texture = SKTexture(imageNamed: "Mannequin_White")
+            mannequin.setScale(0.3)
+        }
+
+        currentState = .choosingClothing
+        showGreeting()
+        showClothingChoices()
+        dialogLabel.text = "안녕하세요! 어떤 옷을 만들어 드릴까요?"
     }
 
     private func transitionToDressingRoom() {

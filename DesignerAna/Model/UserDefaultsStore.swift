@@ -8,8 +8,10 @@
 import Foundation
 
 enum UserDefaultsKey {
-    static let walletBalance    = "wallet.balance"
-    static let wardrobeGarments = "wardrobe.garments"
+    static let walletBalance        = "wallet.balance"
+    static let wardrobeGarments     = "wardrobe.garments"
+    static let garmentCount         = "wardrobe.garmentCount"
+    static let lastSeenGarmentCount = "wardrobe.lastSeenCount"
 }
 
 enum Store {
@@ -35,5 +37,20 @@ enum Store {
     static func saveGarments(_ garments: [FinishedGarment]) {
         guard let data = try? encoder.encode(garments) else { return }
         defaults.set(data, forKey: UserDefaultsKey.wardrobeGarments)
+    }
+
+    // MARK: - Garment count badge
+
+    static func loadGarmentCount() -> Int {
+        defaults.integer(forKey: UserDefaultsKey.garmentCount)
+    }
+    static func saveGarmentCount(_ count: Int) {
+        defaults.set(count, forKey: UserDefaultsKey.garmentCount)
+    }
+    static func loadLastSeenCount() -> Int {
+        defaults.integer(forKey: UserDefaultsKey.lastSeenGarmentCount)
+    }
+    static func saveLastSeenCount(_ count: Int) {
+        defaults.set(count, forKey: UserDefaultsKey.lastSeenGarmentCount)
     }
 }

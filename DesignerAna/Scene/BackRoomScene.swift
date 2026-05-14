@@ -592,6 +592,7 @@ class BackRoomScene: SKScene {
         scene.scaleMode = .resizeFill
         scene.shouldShowFinishedGarment = true
         scene.finishedGarmentImageName = garmentImageName(for: order)
+        scene.completedOrder = order
 
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)
