@@ -26,16 +26,16 @@ class FrontShopScene: SKScene {
     private var paymentPanel: SKShapeNode?
     private var payButton: SKShapeNode?
     
-    var shouldShowFinishedDress = false
-    var finishedDressImageName: String = "Mannequin_Dress_Pink"
+    var shouldShowFinishedGarment = false
+    var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
     
     override func didMove(to view: SKView) {
         fitBackgroundToScene()
         setupDialogueUI()
         fixCharacterLayout()
 
-        if shouldShowFinishedDress {
-            showFinishedDressOnFrontMannequin()
+        if shouldShowFinishedGarment {
+            showFinishedGarmentOnFrontMannequin()
             showCompletionGreeting()
             currentState = .greeting
         } else {
@@ -566,13 +566,13 @@ class FrontShopScene: SKScene {
         speechBubble.run(SKAction.group([fadeIn, scaleUp]))
     }
     
-    private func showFinishedDressOnFrontMannequin() {
+    private func showFinishedGarmentOnFrontMannequin() {
         guard let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode else {
             print("Could not find mannequin node in FrontShopScene")
             return
         }
 
-        let texture = SKTexture(imageNamed: finishedDressImageName)
+        let texture = SKTexture(imageNamed: finishedGarmentImageName)
         mannequin.texture = texture
 
         // Remove any old stretching from the original mannequin node
