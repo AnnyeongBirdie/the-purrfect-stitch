@@ -71,7 +71,7 @@ Characters and props live in zPosition 0–15 (e.g., the tailor sprite is at 10,
 
 ### Known gaps / in-progress state
 
-- `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code.
+- `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code. A conversion to fully programmatic was considered alongside the layout fixes following the wardrobe + persistence ship at commit `2be2344`, but deferred — the regression risk wasn't worth the consistency win while that work was still settling. Revisit when another structural change is already on the table.
 - State checks in `FrontShopScene` use `if currentState == .case` guards instead of exhaustive switches; this loses Swift's compile-time exhaustiveness check.
 - `Order.fabricColor` and `Order.clothingType` are typed as `String` rather than enum. Couples with the if-guards concern; both will likely be refactored together.
 
