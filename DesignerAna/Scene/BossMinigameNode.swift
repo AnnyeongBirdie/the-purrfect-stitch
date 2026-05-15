@@ -234,8 +234,7 @@ class BossMinigameNode: SKNode {
         let floorTop = -sceneH * 0.40 + 9
         bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 88)
 
-        let node = SKSpriteNode(color: UIColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1),
-                                size: CGSize(width: 176, height: 176))
+        let node = SKSpriteNode(color: .clear, size: CGSize(width: 176, height: 176))
         node.position = bossAnchor
         node.zPosition = 2
         node.name = "boss"
@@ -490,8 +489,7 @@ class BossMinigameNode: SKNode {
 
         let floorTop = -sceneH * 0.40 + 9
         for i in 0..<2 {
-            let add = SKSpriteNode(color: UIColor(red: 0.5, green: 0.25, blue: 0.7, alpha: 1),
-                                   size: CGSize(width: 72, height: 72))
+            let add = SKSpriteNode(color: .clear, size: CGSize(width: 72, height: 72))
             add.position = CGPoint(x: boss.position.x + CGFloat(i == 0 ? -24 : 24),
                                    y: floorTop + 36)
             add.zPosition = 2

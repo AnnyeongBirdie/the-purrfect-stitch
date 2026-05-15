@@ -262,13 +262,11 @@ class MinigameNode: SKNode {
     }
 
     private func buildMonster() {
-        // Placeholder circle until a monster sprite asset exists.
-        let node = SKSpriteNode(color: UIColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1), size: CGSize(width: 88, height: 88))
+        let node = SKSpriteNode(color: .clear, size: CGSize(width: 88, height: 88))
         node.position = CGPoint(x: sceneW * 0.10, y: -sceneH * 0.28)
         node.zPosition = 2
         node.name = "monster"
 
-        // Label inside placeholder
         let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         label.text = "👾"
         label.fontSize = 56
