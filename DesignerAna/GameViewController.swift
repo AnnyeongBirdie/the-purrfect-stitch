@@ -18,7 +18,7 @@ class GameViewController: UIViewController {
             // Load the FrontShopScene using the GameScene.sks layout
             if let scene = FrontShopScene(fileNamed: "GameScene") {
                 // Set the scale mode to scale to fit the window
-                scene.scaleMode = .aspectFill
+                scene.scaleMode = .resizeFill
                 
                 // Present the scene
                 view.presentScene(scene)
