@@ -14,8 +14,13 @@ class DressingRoomScene: SKScene {
     private let clothingTypes = ["드레스", "셔츠", "바지"]
     private let fabricColors  = ["분홍", "파랑", "노랑"]
 
+    private var safeTop: CGFloat = 0
+    private var safeBottom: CGFloat = 0
+
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        safeTop = view.safeAreaInsets.top
+        safeBottom = view.safeAreaInsets.bottom
         setupBackground()
         setupTrophyGrid()
         setupBackButton()
@@ -32,22 +37,16 @@ class DressingRoomScene: SKScene {
     private func setupTrophyGrid() {
         let garments = Store.loadGarments()
 
-        let cellSize = CGSize(width: 110, height: 150)
-        let colSpacing: CGFloat = 130
-        let rowSpacing: CGFloat = 170
-
-        // Grid origin: center of the lower half of the scene
-        let gridOriginX: CGFloat = 0
-        let gridOriginY: CGFloat = -size.height * 0.12
+        let g = Layout.trophyGrid(in: size, rows: 3, cols: 3, safeTop: safeTop, safeBottom: safeBottom)
 
         for (rowIdx, clothing) in clothingTypes.enumerated() {
             for (colIdx, color) in fabricColors.enumerated() {
-                let cellX = gridOriginX + (CGFloat(colIdx) - 1) * colSpacing
-                let cellY = gridOriginY - CGFloat(rowIdx) * rowSpacing
+                let cellX = g.origin.x + CGFloat(colIdx) * g.colSpacing
+                let cellY = g.origin.y - CGFloat(rowIdx) * g.rowSpacing
 
                 let matches = garments.filter { $0.clothingType == clothing && $0.fabricColor == color }
 
-                let cell = buildCell(cellSize: cellSize, clothing: clothing, color: color,
+                let cell = buildCell(cellSize: g.cellSize, clothing: clothing, color: color,
                                      matches: matches, position: CGPoint(x: cellX, y: cellY))
                 addChild(cell)
             }
@@ -59,22 +58,22 @@ class DressingRoomScene: SKScene {
         let container = SKNode()
         container.position = position
 
-        if matches.isEmpty {
-            // Faint placeholder outline
-            let outline = SKShapeNode(rectOf: cellSize, cornerRadius: 14)
-            outline.fillColor = .clear
-            outline.strokeColor = .white
-            outline.lineWidth = 2
-            outline.alpha = 0.35
-            outline.zPosition = 1
-            container.addChild(outline)
-        } else {
-            // Trophy sprite
+        // Outline always present — faint for empty slots, brighter for earned ones
+        let outline = SKShapeNode(rectOf: cellSize, cornerRadius: 14)
+        outline.fillColor = .clear
+        outline.strokeColor = .white
+        outline.lineWidth = 2
+        outline.alpha = matches.isEmpty ? 0.35 : 0.75
+        outline.zPosition = 1
+        container.addChild(outline)
+
+        if !matches.isEmpty {
+            // Trophy sprite on top of outline
             let imageName = garmentImageNameFor(clothing: clothing, color: color)
             let sprite = SKSpriteNode(imageNamed: imageName)
             sprite.size = cellSize
             sprite.alpha = 0.85
-            sprite.zPosition = 1
+            sprite.zPosition = 2
             container.addChild(sprite)
 
             // Badge for duplicates
@@ -84,7 +83,7 @@ class DressingRoomScene: SKScene {
                 badge.fillColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 0.7)
                 badge.strokeColor = .clear
                 badge.position = CGPoint(x: cellSize.width / 2 - 26, y: -cellSize.height / 2 + 16)
-                badge.zPosition = 2
+                badge.zPosition = 3
 
                 let badgeLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
                 badgeLabel.text = "×\(matches.count)"
@@ -123,7 +122,7 @@ class DressingRoomScene: SKScene {
         button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
         button.strokeColor = UIColor.brown
         button.lineWidth = 2
-        button.position = CGPoint(x: -size.width / 2 + 70, y: size.height / 2 - 50)
+        button.position = CGPoint(x: -size.width / 2 + 70, y: size.height / 2 - safeTop - 28)
         button.zPosition = 10
         button.name = "backButton"
         addChild(button)

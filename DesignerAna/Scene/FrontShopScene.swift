@@ -34,7 +34,12 @@ class FrontShopScene: SKScene {
     private var saveTrophyButton: SKShapeNode?
     private var relaunchDialogNode: SKNode?
 
+    private var safeTop: CGFloat = 0
+    private var safeBottom: CGFloat = 0
+
     override func didMove(to view: SKView) {
+        safeTop = view.safeAreaInsets.top
+        safeBottom = view.safeAreaInsets.bottom
         fitBackgroundToScene()
         setupDialogueUI()
         fixCharacterLayout()
@@ -75,7 +80,7 @@ class FrontShopScene: SKScene {
         let tex = wardrobeNode.texture ?? SKTexture(imageNamed: "Wardrobe")
         let scale = targetHeight / tex.size().height
         wardrobeNode.setScale(scale)
-        wardrobeNode.position = CGPoint(x: frame.minX + wardrobeNode.size.width * 0.55, y: -50)
+        wardrobeNode.position = Layout.frontShopCharacters(in: size).wardrobe
         wardrobeNode.zPosition = 5
         wardrobeNode.name = "wardrobeNode"
         addChild(wardrobeNode)
@@ -723,8 +728,9 @@ class FrontShopScene: SKScene {
         shopkeeper.setScale(0.6)   // tweak this
         mannequin.setScale(0.3)    // keep your current mannequin scale
 
-        shopkeeper.position = CGPoint(x: 0, y: -60)     // adjust Y
-        mannequin.position = CGPoint(x: 200, y: -60)    // adjust Y
+        let layout = Layout.frontShopCharacters(in: size)
+        shopkeeper.position = layout.shopkeeper
+        mannequin.position = layout.mannequin
     }
 
     // MARK: - Relaunch dialog (active order recovery)
@@ -747,18 +753,23 @@ class FrontShopScene: SKScene {
         dim.zPosition = -1
         overlay.addChild(dim)
 
-        let panel = SKShapeNode(rectOf: CGSize(width: 340, height: 320), cornerRadius: 24)
+        let geo = Layout.relaunchDialogFrame(in: size, below: speechBubble.frame.minY, safeBottom: safeBottom)
+        let panel = SKShapeNode(rectOf: geo.size, cornerRadius: 24)
         panel.fillColor = UIColor(red: 0.96, green: 0.91, blue: 0.80, alpha: 0.98)
         panel.strokeColor = UIColor.brown
         panel.lineWidth = 4
+        panel.position = geo.center
         panel.zPosition = 1
         overlay.addChild(panel)
+
+        // Scale internal positions proportionally to panel height so nothing clips.
+        let s = geo.size.height / 320.0
 
         let title = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         title.text = "이전에 하던 게 있어요!"
         title.fontSize = 22
         title.fontColor = .black
-        title.position = CGPoint(x: 0, y: 120)
+        title.position = CGPoint(x: 0, y: 120 * s)
         title.verticalAlignmentMode = .center
         panel.addChild(title)
 
@@ -766,7 +777,7 @@ class FrontShopScene: SKScene {
         subtitle.text = "\(saved.fabricColor) \(saved.clothingType)"
         subtitle.fontSize = 18
         subtitle.fontColor = UIColor(red: 0.4, green: 0.2, blue: 0.0, alpha: 1.0)
-        subtitle.position = CGPoint(x: 0, y: 88)
+        subtitle.position = CGPoint(x: 0, y: 88 * s)
         subtitle.verticalAlignmentMode = .center
         panel.addChild(subtitle)
 
@@ -774,7 +785,7 @@ class FrontShopScene: SKScene {
         let btnA = makeFrontShopDialogButton(
             text: "이어서 만들래 → 지갑 \(currentBalance)냥",
             name: "relaunchContinue",
-            position: CGPoint(x: 0, y: 35),
+            position: CGPoint(x: 0, y: 35 * s),
             width: 300
         )
         panel.addChild(btnA)
@@ -783,7 +794,7 @@ class FrontShopScene: SKScene {
         let btnB = makeFrontShopDialogButton(
             text: "보증금 환불 → 지갑 \(refundedBalance)냥",
             name: "relaunchRefund",
-            position: CGPoint(x: 0, y: -45),
+            position: CGPoint(x: 0, y: -45 * s),
             width: 300
         )
         panel.addChild(btnB)
@@ -792,7 +803,7 @@ class FrontShopScene: SKScene {
         let btnC = makeFrontShopDialogButton(
             text: "지금까지 모은 거 챙기기 → 지갑 \(currentBalance)냥",
             name: "relaunchCashOut",
-            position: CGPoint(x: 0, y: -120),
+            position: CGPoint(x: 0, y: -120 * s),
             width: 300
         )
         panel.addChild(btnC)

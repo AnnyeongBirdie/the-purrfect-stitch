@@ -669,6 +669,7 @@ class BackRoomScene: SKScene {
     // MARK: - Active order persistence
 
     private func saveActiveOrderSnapshot() {
+        guard currentState != .finalCheck, currentState != .completed else { return }
         guard let order = order else { return }
         // Don't overwrite a cleared record after order completes
         let snapshot = ActiveOrder(
