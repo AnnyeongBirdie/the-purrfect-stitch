@@ -60,7 +60,12 @@ class MinigameNode: SKNode {
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
     private let heroSpeed: CGFloat = 160      // pts/sec
-    private var jumpImpulse: CGFloat = 0      // computed from sceneH in setup
+    private let jumpPeakFraction: CGFloat = 0.24
+    private var jumpVelocity: CGFloat = 0
+    private let descentMultiplier: CGFloat = 1.8
+    private let gAscent: CGFloat = 18
+    private var gDescent: CGFloat { gAscent * descentMultiplier }
+    private var inDescent = false
     private let proximityRange: CGFloat = 60  // tap-to-defeat range
 
     // MARK: - Init
@@ -78,8 +83,8 @@ class MinigameNode: SKNode {
         sceneH = scene.size.height
         // Impulse that produces a jump peak ~1.75% of sceneH above the floor,
         // derived from kinematics: v = sqrt(2 * |g| * desiredHeight)
-        jumpImpulse = (2.0 * 18.0 * sceneH * 0.0175).squareRoot()
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
+        jumpVelocity = (2.0 * 18.0 * sceneH * jumpPeakFraction).squareRoot()
+        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
         // ContactDelegate needs to be set on the scene; we bridge through a stored ref.
         sceneRef = scene
         scene.physicsWorld.contactDelegate = contactBridge
@@ -237,14 +242,14 @@ class MinigameNode: SKNode {
 
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
-        hero.setScale(0.075)
+        hero.setScale(0.15)
         heroStartPosition = CGPoint(x: -sceneW * 0.38, y: -sceneH * 0.28)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
         addChild(hero)
 
-        let body = SKPhysicsBody(rectangleOf: CGSize(width: 14, height: 22))
+        let body = SKPhysicsBody(rectangleOf: CGSize(width: 28, height: 44))
         body.isDynamic = true
         body.allowsRotation = false
         body.friction = 0
@@ -258,7 +263,7 @@ class MinigameNode: SKNode {
 
     private func buildMonster() {
         // Placeholder circle until a monster sprite asset exists.
-        let node = SKSpriteNode(color: UIColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1), size: CGSize(width: 44, height: 44))
+        let node = SKSpriteNode(color: UIColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1), size: CGSize(width: 88, height: 88))
         node.position = CGPoint(x: sceneW * 0.10, y: -sceneH * 0.28)
         node.zPosition = 2
         node.name = "monster"
@@ -266,7 +271,7 @@ class MinigameNode: SKNode {
         // Label inside placeholder
         let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         label.text = "👾"
-        label.fontSize = 28
+        label.fontSize = 56
         label.verticalAlignmentMode = .center
         label.position = .zero
         label.zPosition = 1
@@ -329,7 +334,7 @@ class MinigameNode: SKNode {
     private func spawnFallingButton() {
         guard !monsterDefeated else { return }
 
-        let radius: CGFloat = 20
+        let radius: CGFloat = 40
         let btn = makeButtonIcon(radius: radius)
         btn.position = CGPoint(x: CGFloat.random(in: -sceneW * 0.40 ... sceneW * 0.40),
                                y: sceneH * 0.46)
@@ -389,12 +394,12 @@ class MinigameNode: SKNode {
         let startX: CGFloat = -sceneW * 0.20  // first blade slightly past hero start
         for i in 0..<count {
             let blade = SKSpriteNode(imageNamed: "Scissors")
-            blade.setScale(0.12)
-            blade.position = CGPoint(x: startX + CGFloat(i) * spacing, y: floorTop + 18)
+            blade.setScale(0.24)
+            blade.position = CGPoint(x: startX + CGFloat(i) * spacing, y: floorTop + 36)
             blade.zPosition = 2
             blade.name = "scissorHazard"
 
-            let hitSize = CGSize(width: 24, height: 24)
+            let hitSize = CGSize(width: 48, height: 48)
             let body = SKPhysicsBody(rectangleOf: hitSize)
             body.isDynamic = false
             body.categoryBitMask = PhysicsCategory.hazard
@@ -407,8 +412,8 @@ class MinigameNode: SKNode {
     }
 
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
+        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.26)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.26)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -437,7 +442,7 @@ class MinigameNode: SKNode {
         // x = sceneW * 0.36 (not 0.42) keeps the jump button reachable for a
         // wrap-grip with a shorter right thumb — the thumb bends in toward
         // center rather than extending out toward the edge.
-        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.39)
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.26)
         btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
@@ -559,7 +564,10 @@ class MinigameNode: SKNode {
         isOnGround = false
         isJumping = true
         hero.removeAction(forKey: "step")
-        hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpImpulse))
+        let currentDx = hero.physicsBody?.velocity.dx ?? 0
+        hero.physicsBody?.velocity = CGVector(dx: currentDx, dy: jumpVelocity)
+        inDescent = false
+        sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
     }
 
     // MARK: - Update (called by BackRoomScene.update)
@@ -588,12 +596,20 @@ class MinigameNode: SKNode {
         hero.position.x = max(-sceneW * 0.47, min(sceneW * 0.47, hero.position.x))
 
         // Floor failsafe: snap hero back if she tunnels through the floor
-        let floorSurface = -sceneH * 0.40 + 20   // floor top + hero half-body
+        let floorSurface = -sceneH * 0.40 + 40   // floor top + hero half-body
         if hero.position.y < floorSurface {
             hero.position.y = floorSurface
             hero.physicsBody?.velocity = CGVector(dx: hero.physicsBody?.velocity.dx ?? 0, dy: 0)
             isOnGround = true
             isJumping = false
+            inDescent = false
+            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
+        }
+
+        // Asymmetric jump: switch to descent gravity once the hero starts falling.
+        if !inDescent, isJumping, let dy = hero.physicsBody?.velocity.dy, dy <= 0 {
+            inDescent = true
+            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gDescent)
         }
 
         // Stomp + side-contact detection — both done here rather than in the physics
@@ -603,11 +619,11 @@ class MinigameNode: SKNode {
             let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - monster.position.x)
             let dy = abs(hero.position.y - monster.position.y)
-            let heroFeet = hero.position.y - 11
-            let monsterTop = monster.position.y + 22
+            let heroFeet = hero.position.y - 22
+            let monsterTop = monster.position.y + 44
 
-            let overlapping = dx < 29 && dy < 33  // hero half(7,11) + monster half(22,22)
-            let isStomp = vdy < -50 && heroFeet <= monsterTop && heroFeet >= monsterTop - 30
+            let overlapping = dx < 58 && dy < 66  // hero half(14,22) + monster half(44,44)
+            let isStomp = vdy < -50 && heroFeet <= monsterTop && heroFeet >= monsterTop - 60
 
             if overlapping {
                 if isStomp { defeatMonster() } else { handleDeath() }
@@ -698,7 +714,8 @@ class MinigameNode: SKNode {
         }
 
         // Bounce hero upward as feedback
-        hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 200))
+        let currentDx = hero.physicsBody?.velocity.dx ?? 0
+        hero.physicsBody?.velocity = CGVector(dx: currentDx, dy: 200)
     }
 
     private func spawnChest() {
@@ -812,6 +829,8 @@ class MinigameNode: SKNode {
             if vy <= 0 {
                 isOnGround = true
                 isJumping = false
+                inDescent = false
+                sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
             }
         }
 

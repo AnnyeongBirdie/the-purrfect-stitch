@@ -65,7 +65,12 @@ class BossMinigameNode: SKNode {
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
     private let heroSpeed: CGFloat = 160
-    private var jumpImpulse: CGFloat = 0
+    private let jumpPeakFraction: CGFloat = 0.24
+    private var jumpVelocity: CGFloat = 0
+    private let descentMultiplier: CGFloat = 1.8
+    private let gAscent: CGFloat = 18
+    private var gDescent: CGFloat { gAscent * descentMultiplier }
+    private var inDescent = false
     private let proximityRange: CGFloat = 80
 
     // MARK: - Theming (derived from order.fabricColor)
@@ -91,8 +96,8 @@ class BossMinigameNode: SKNode {
     func setup(in scene: SKScene) {
         sceneW = scene.size.width
         sceneH = scene.size.height
-        jumpImpulse = (2.0 * 18.0 * sceneH * 0.0175).squareRoot()
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
+        jumpVelocity = (2.0 * 18.0 * sceneH * jumpPeakFraction).squareRoot()
+        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
         sceneRef = scene
         scene.physicsWorld.contactDelegate = contactBridge
 
@@ -196,14 +201,14 @@ class BossMinigameNode: SKNode {
 
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
-        hero.setScale(0.075)
+        hero.setScale(0.15)
         heroStartPosition = CGPoint(x: -sceneW * 0.38, y: -sceneH * 0.28)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
         addChild(hero)
 
-        let body = SKPhysicsBody(rectangleOf: CGSize(width: 14, height: 22))
+        let body = SKPhysicsBody(rectangleOf: CGSize(width: 28, height: 44))
         body.isDynamic = true
         body.allowsRotation = false
         body.friction = 0
@@ -227,17 +232,17 @@ class BossMinigameNode: SKNode {
 
     private func buildBoss() {
         let floorTop = -sceneH * 0.40 + 9
-        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 44)
+        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 88)
 
         let node = SKSpriteNode(color: UIColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1),
-                                size: CGSize(width: 88, height: 88))
+                                size: CGSize(width: 176, height: 176))
         node.position = bossAnchor
         node.zPosition = 2
         node.name = "boss"
 
         let emoji = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         emoji.text = "👾"
-        emoji.fontSize = 52
+        emoji.fontSize = 104
         emoji.verticalAlignmentMode = .center
         emoji.position = .zero
         emoji.zPosition = 1
@@ -287,8 +292,8 @@ class BossMinigameNode: SKNode {
     // MARK: - D-pad
 
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
+        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.26)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.26)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -312,7 +317,7 @@ class BossMinigameNode: SKNode {
 
     private func buildJumpButton() {
         let btn = SKShapeNode(circleOfRadius: 34)
-        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.39)
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.26)
         btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
@@ -378,7 +383,7 @@ class BossMinigameNode: SKNode {
         let padX = CGFloat.random(in: -sceneW * 0.35 ... sceneW * 0.15)
         let floorTop = -sceneH * 0.40 + 9
         let padCenterY = floorTop + 8
-        let padSize = CGSize(width: 80, height: 16)
+        let padSize = CGSize(width: 160, height: 16)
 
         let pad = SKShapeNode(rectOf: padSize, cornerRadius: 4)
         pad.position = CGPoint(x: padX, y: padCenterY)
@@ -407,7 +412,7 @@ class BossMinigameNode: SKNode {
                 guard let self else { return }
                 self.spawnSparkles(at: pad.position, color: .red)
                 // Point-in-time check: hero standing on the pad when boss lands
-                if abs(self.hero.position.x - padX) < 48 {
+                if abs(self.hero.position.x - padX) < 88 {
                     self.handleDeath()
                 }
                 pad.removeFromParent()
@@ -440,7 +445,7 @@ class BossMinigameNode: SKNode {
             let floorTop = -self.sceneH * 0.40 + 9
             let projY = floorTop + 16   // matches hero foot height
 
-            let projSize = CGSize(width: 50, height: 20)
+            let projSize = CGSize(width: 100, height: 40)
             let proj = SKShapeNode(rectOf: projSize, cornerRadius: 6)
             proj.fillColor = UIColor.orange.withAlphaComponent(0.85)
             proj.strokeColor = .yellow
@@ -486,15 +491,15 @@ class BossMinigameNode: SKNode {
         let floorTop = -sceneH * 0.40 + 9
         for i in 0..<2 {
             let add = SKSpriteNode(color: UIColor(red: 0.5, green: 0.25, blue: 0.7, alpha: 1),
-                                   size: CGSize(width: 36, height: 36))
+                                   size: CGSize(width: 72, height: 72))
             add.position = CGPoint(x: boss.position.x + CGFloat(i == 0 ? -24 : 24),
-                                   y: floorTop + 18)
+                                   y: floorTop + 36)
             add.zPosition = 2
             add.name = "summonAdd"
 
             let emoji = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
             emoji.text = "👾"
-            emoji.fontSize = 20
+            emoji.fontSize = 40
             emoji.verticalAlignmentMode = .center
             emoji.position = .zero
             emoji.zPosition = 1
@@ -815,7 +820,10 @@ class BossMinigameNode: SKNode {
         isOnGround = false
         isJumping = true
         hero.removeAction(forKey: "step")
-        hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpImpulse))
+        let currentDx = hero.physicsBody?.velocity.dx ?? 0
+        hero.physicsBody?.velocity = CGVector(dx: currentDx, dy: jumpVelocity)
+        inDescent = false
+        sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
     }
 
     // MARK: - Update (called by BackRoomScene.update)
@@ -838,23 +846,31 @@ class BossMinigameNode: SKNode {
         hero.position.x = max(-sceneW * 0.47, min(sceneW * 0.47, hero.position.x))
 
         // Floor failsafe
-        let floorSurface = -sceneH * 0.40 + 20
+        let floorSurface = -sceneH * 0.40 + 40
         if hero.position.y < floorSurface {
             hero.position.y = floorSurface
             hero.physicsBody?.velocity = CGVector(dx: hero.physicsBody?.velocity.dx ?? 0, dy: 0)
             isOnGround = true
             isJumping = false
+            inDescent = false
+            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
+        }
+
+        // Asymmetric jump: switch to descent gravity once the hero starts falling.
+        if !inDescent, isJumping, let dy = hero.physicsBody?.velocity.dy, dy <= 0 {
+            inDescent = true
+            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gDescent)
         }
 
         // Boss stomp detection (only stun-eligible if vulnerable)
         if !bossDefeated {
             let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - boss.position.x)
-            let heroFeet = hero.position.y - 11
-            let bossTop = boss.position.y + 44
+            let heroFeet = hero.position.y - 22
+            let bossTop = boss.position.y + 88
             let dy = abs(hero.position.y - boss.position.y)
-            let overlapping = dx < 52 && dy < 56
-            let isStomp = vdy < -50 && heroFeet <= bossTop && heroFeet >= bossTop - 70
+            let overlapping = dx < 102 && dy < 110
+            let isStomp = vdy < -50 && heroFeet <= bossTop && heroFeet >= bossTop - 140
             if overlapping {
                 if isStomp {
                     hitBoss()
@@ -863,7 +879,7 @@ class BossMinigameNode: SKNode {
                     // upward slightly. Using a position nudge (not velocity) avoids
                     // the zero-damping drift that sent the hero flying to the wall.
                     let pushDir: CGFloat = hero.position.x < boss.position.x ? -1 : 1
-                    hero.position.x = boss.position.x + pushDir * 55
+                    hero.position.x = boss.position.x + pushDir * 110
                     let curDx = hero.physicsBody?.velocity.dx ?? 0
                     hero.physicsBody?.velocity = CGVector(dx: curDx, dy: 90)
                 }
@@ -884,10 +900,10 @@ class BossMinigameNode: SKNode {
             let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - add.position.x)
             let dy = abs(hero.position.y - add.position.y)
-            let heroFeet = hero.position.y - 11
-            let addTop = add.position.y + 18
-            let overlapping = dx < 26 && dy < 30
-            let isStomp = vdy < -50 && heroFeet <= addTop && heroFeet >= addTop - 24
+            let heroFeet = hero.position.y - 22
+            let addTop = add.position.y + 36
+            let overlapping = dx < 50 && dy < 58
+            let isStomp = vdy < -50 && heroFeet <= addTop && heroFeet >= addTop - 48
             if overlapping {
                 if isStomp { defeatAdd(add) }
                 else { heroKilledByAdd = true }
@@ -910,6 +926,8 @@ class BossMinigameNode: SKNode {
         if heroGround, (hero.physicsBody?.velocity.dy ?? 0) <= 0 {
             isOnGround = true
             isJumping = false
+            inDescent = false
+            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
         }
 
         let heroHazard = (a == PhysicsCategory.hero && b == PhysicsCategory.hazard) ||

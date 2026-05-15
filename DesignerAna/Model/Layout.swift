@@ -5,7 +5,8 @@ enum Layout {
     /// Evenly-spaced positions for the three front-shop characters.
     /// Wardrobe on the left, shopkeeper at centre, mannequin on the right.
     static func frontShopCharacters(in size: CGSize) -> (wardrobe: CGPoint, shopkeeper: CGPoint, mannequin: CGPoint) {
-        let spread = size.width *
+        let spread = size.width * 0.28
+        let baseY  = -size.height * 0.19
         return (
             wardrobe:   CGPoint(x: -spread,  y: baseY + size.height * 0.04),
             shopkeeper: CGPoint(x: 0,         y: baseY),
