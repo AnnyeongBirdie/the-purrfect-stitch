@@ -35,3 +35,4 @@ BossMinigame_prompt.md
 
 # Claude Code per-machine settings (absolute paths, machine-specific)
 .claude/settings.local.json
+*_prompt.md
