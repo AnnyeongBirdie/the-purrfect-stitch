@@ -60,12 +60,20 @@ class MinigameNode: SKNode {
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
     private let heroSpeed: CGFloat = 160      // pts/sec
+    // Jump tuning knobs — a "snappy arcade" jump. Dial these without touching structure:
+    //   jumpPeakFraction  — peak height as a fraction of sceneH
+    //   timeToApex        — seconds from launch to the top of the arc (lower = snappier)
+    //   descentMultiplier — descent gravity = ascent gravity × this (>1 = Mario-style quick fall)
     private let jumpPeakFraction: CGFloat = 0.24
-    private var jumpVelocity: CGFloat = 0
+    private let timeToApex: CGFloat = 0.35
     private let descentMultiplier: CGFloat = 1.8
-    private let gAscent: CGFloat = 18
+    // Derived in setup(in:) once sceneH is known — see the kinematics there.
+    private var gAscent: CGFloat = 0
     private var gDescent: CGFloat { gAscent * descentMultiplier }
+    private var jumpVelocity: CGFloat = 0
     private var inDescent = false
+    private var heroVelY: CGFloat = 0         // kinematic vertical velocity (pts/sec)
+    private var platformRects: [CGRect] = []  // floor + platforms, for landing checks
     private let proximityRange: CGFloat = 60  // tap-to-defeat range
 
     // MARK: - Init
@@ -81,9 +89,13 @@ class MinigameNode: SKNode {
     func setup(in scene: SKScene) {
         sceneW = scene.size.width
         sceneH = scene.size.height
-        // Impulse that produces a jump peak ~1.75% of sceneH above the floor,
-        // derived from kinematics: v = sqrt(2 * |g| * desiredHeight)
-        jumpVelocity = (2.0 * 18.0 * sceneH * jumpPeakFraction).squareRoot()
+        // Jump physics derived from the tuning knobs above. For a launch velocity v
+        // under constant gravity g: time-to-apex = v / g and apex height = v² / (2g).
+        // Solving both for the desired apex height and time gives:
+        //   g = 2·height / timeToApex²        v = 2·height / timeToApex
+        let peakHeight = sceneH * jumpPeakFraction
+        gAscent = 2 * peakHeight / (timeToApex * timeToApex)
+        jumpVelocity = 2 * peakHeight / timeToApex
         scene.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
         // ContactDelegate needs to be set on the scene; we bridge through a stored ref.
         sceneRef = scene
@@ -213,11 +225,10 @@ class MinigameNode: SKNode {
                 makePlatform(x:    0, y: -sceneH * 0.05, width: 100, height: 16),
                 makePlatform(x:  110, y:  sceneH * 0.08, width: 100, height: 16),
             ]
-        default: // seed 1
+        default: // seed 1 — tutorial: floor plus one optional side ledge.
             return [
                 floor,
                 makePlatform(x: -70, y: -sceneH * 0.18, width: 120, height: 16),
-                makePlatform(x:  80, y:  sceneH * 0.00, width: 120, height: 16),
             ]
         }
     }
@@ -232,11 +243,16 @@ class MinigameNode: SKNode {
 
         let body = SKPhysicsBody(rectangleOf: CGSize(width: width, height: height))
         body.isDynamic = false
+        body.friction = 0
+        body.restitution = 0          // no bounce — pairs with the hero body
         body.categoryBitMask = PhysicsCategory.ground
         body.contactTestBitMask = PhysicsCategory.none
         body.collisionBitMask = PhysicsCategory.hero
         node.physicsBody = body
 
+        // Record geometry so update() can do kinematic landing checks.
+        platformRects.append(CGRect(x: x - width / 2, y: y - height / 2,
+                                    width: width, height: height))
         return node
     }
 
@@ -249,27 +265,32 @@ class MinigameNode: SKNode {
         hero.name = "hero"
         addChild(hero)
 
+        // The physics body is used ONLY for hazard contact detection. The hero's
+        // movement — horizontal AND vertical — is fully kinematic (see update()).
+        // affectedByGravity is off and collisions are disabled so the physics
+        // engine never moves her; her Y is integrated by hand.
         let body = SKPhysicsBody(rectangleOf: CGSize(width: 28, height: 44))
         body.isDynamic = true
+        body.affectedByGravity = false
         body.allowsRotation = false
-        body.friction = 0
-        body.linearDamping = 0
-        body.usesPreciseCollisionDetection = true
         body.categoryBitMask = PhysicsCategory.hero
-        body.contactTestBitMask = PhysicsCategory.ground | PhysicsCategory.hazard
-        body.collisionBitMask = PhysicsCategory.ground
+        body.contactTestBitMask = PhysicsCategory.hazard
+        body.collisionBitMask = PhysicsCategory.none
         hero.physicsBody = body
     }
 
     private func buildMonster() {
-        let node = SKSpriteNode(color: .clear, size: CGSize(width: 88, height: 88))
-        node.position = CGPoint(x: sceneW * 0.10, y: -sceneH * 0.28)
+        // A short, squat creature that sits flush on the floor — short enough to
+        // clear with a normal jump and to land on cleanly. Y = floor-top (+9)
+        // plus the monster's half-height (28).
+        let node = SKSpriteNode(color: .clear, size: CGSize(width: 56, height: 56))
+        node.position = CGPoint(x: sceneW * 0.10, y: -sceneH * 0.40 + 37)
         node.zPosition = 2
         node.name = "monster"
 
         let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         label.text = "👾"
-        label.fontSize = 56
+        label.fontSize = 52
         label.verticalAlignmentMode = .center
         label.position = .zero
         label.zPosition = 1
@@ -386,19 +407,22 @@ class MinigameNode: SKNode {
     private func buildHazards() {
         guard case .scissorBlades(let count, let spacing) = config.hazardKind else { return }
 
-        // Place scissors on the floor surface between hero start and monster.
-        // Floor top is at -sceneH*0.40 + 9 (half of floor height 18). Sprite sits on top.
+        // Small scissor blades standing on the floor — short enough to hop over
+        // one at a time. The sprite is sized directly (not via setScale) so the
+        // node stays at scale 1.0 and the physics body keeps its true size.
         let floorTop = -sceneH * 0.40 + 9
-        let startX: CGFloat = -sceneW * 0.20  // first blade slightly past hero start
+        let bladeSize = CGSize(width: 26, height: 50)   // a touch shorter than the hero
+        let startX: CGFloat = -sceneW * 0.20            // first blade just past hero start
         for i in 0..<count {
             let blade = SKSpriteNode(imageNamed: "Scissors")
-            blade.setScale(0.24)
-            blade.position = CGPoint(x: startX + CGFloat(i) * spacing, y: floorTop + 36)
+            blade.size = bladeSize
+            blade.position = CGPoint(x: startX + CGFloat(i) * spacing,
+                                     y: floorTop + bladeSize.height / 2)   // sits on the floor
             blade.zPosition = 2
             blade.name = "scissorHazard"
 
-            let hitSize = CGSize(width: 48, height: 48)
-            let body = SKPhysicsBody(rectangleOf: hitSize)
+            // Hitbox a little smaller than the sprite so near-misses don't kill.
+            let body = SKPhysicsBody(rectangleOf: CGSize(width: 20, height: 38))
             body.isDynamic = false
             body.categoryBitMask = PhysicsCategory.hazard
             body.contactTestBitMask = PhysicsCategory.hero
@@ -410,8 +434,8 @@ class MinigameNode: SKNode {
     }
 
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.26)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.26)
+        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -477,9 +501,6 @@ class MinigameNode: SKNode {
     private func animateEntrance() {
         hero.alpha = 0
         hero.run(.fadeIn(withDuration: 0.4))
-        let bounceUp = SKAction.moveBy(x: 0, y: 12, duration: 0.12)
-        let bounceDown = SKAction.moveBy(x: 0, y: -12, duration: 0.12)
-        hero.run(.sequence([.wait(forDuration: 0.5), bounceUp, bounceDown]))
     }
 
     // MARK: - Touch handling (called by BackRoomScene.touchesBegan)
@@ -558,14 +579,13 @@ class MinigameNode: SKNode {
     }
 
     private func tryJump() {
-        guard isOnGround, !isJumping else { return }
+        // The hero can jump whenever she is not already mid-jump.
+        guard !isJumping else { return }
+
         isOnGround = false
         isJumping = true
-        hero.removeAction(forKey: "step")
-        let currentDx = hero.physicsBody?.velocity.dx ?? 0
-        hero.physicsBody?.velocity = CGVector(dx: currentDx, dy: jumpVelocity)
         inDescent = false
-        sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
+        heroVelY = jumpVelocity          // kinematic launch — integrated in update()
     }
 
     // MARK: - Update (called by BackRoomScene.update)
@@ -577,54 +597,82 @@ class MinigameNode: SKNode {
         guard !isDead, !isCompleting else { return }
 
         if moveDirection != 0 {
-            let dx = moveDirection * heroSpeed * CGFloat(dt)
-            hero.position.x += dx
-
-            // Bounce step animation
-            let bounce = SKAction.sequence([
-                .moveBy(x: 0, y: 6, duration: 0.08),
-                .moveBy(x: 0, y: -6, duration: 0.08)
-            ])
-            if hero.action(forKey: "step") == nil {
-                hero.run(bounce, withKey: "step")
-            }
+            hero.position.x += moveDirection * heroSpeed * CGFloat(dt)
         }
 
         // Clamp to dungeon bounds (x)
         hero.position.x = max(-sceneW * 0.47, min(sceneW * 0.47, hero.position.x))
 
-        // Floor failsafe: snap hero back if she tunnels through the floor
-        let floorSurface = -sceneH * 0.40 + 40   // floor top + hero half-body
-        if hero.position.y < floorSurface {
-            hero.position.y = floorSurface
-            hero.physicsBody?.velocity = CGVector(dx: hero.physicsBody?.velocity.dx ?? 0, dy: 0)
+        // --- Vertical motion (fully kinematic) -------------------------------
+        // The hero's Y is integrated here by hand — the physics engine never
+        // moves her (her body has affectedByGravity = false, collisions off).
+        // This makes the jump deterministic: no physics/clamp tug-of-war, no
+        // tunnelling, and no reliance on contact callbacks for grounding.
+        let g = inDescent ? gDescent : gAscent
+        heroVelY -= g * CGFloat(dt)
+        let newHeroY = hero.position.y + heroVelY * CGFloat(dt)
+
+        // The surface under the hero: the floor, or a platform she is
+        // descending onto from above (one-way — she jumps up through them).
+        let footOffset: CGFloat = 31              // hero sprite half-height
+        var landingY = -sceneH * 0.40 + 40        // floor: sprite stands on surface
+        if heroVelY <= 0 {
+            let prevFeet = hero.position.y - footOffset
+            for rect in platformRects where hero.position.x >= rect.minX - 10
+                                          && hero.position.x <= rect.maxX + 10 {
+                let standY = rect.maxY + footOffset
+                if standY > landingY, prevFeet >= rect.maxY - 1 {
+                    landingY = standY
+                }
+            }
+        }
+
+        if heroVelY <= 0, newHeroY <= landingY {
+            hero.position.y = landingY            // landed / standing
+            heroVelY = 0
             isOnGround = true
             isJumping = false
             inDescent = false
-            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
+        } else {
+            hero.position.y = newHeroY            // airborne
+            isOnGround = false
+            if isJumping, !inDescent, heroVelY <= 0 {
+                inDescent = true                  // past the apex — fall faster
+            }
         }
 
-        // Asymmetric jump: switch to descent gravity once the hero starts falling.
-        if !inDescent, isJumping, let dy = hero.physicsBody?.velocity.dy, dy <= 0 {
-            inDescent = true
-            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gDescent)
-        }
-
-        // Stomp + side-contact detection — both done here rather than in the physics
-        // contact delegate because hero.position.x is set manually each frame, which
-        // can cause the physics engine to miss contacts between simulation steps.
+        // Stomp vs. side-hit. Coming down onto the monster while descending
+        // defeats him; touching him any other way — walking into him, or rising
+        // into him on a too-late jump — sends the hero back to the start. A jump
+        // that sails clear over him is just a harmless miss.
         if !monsterDefeated, !isDead, let monster = monster {
-            let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - monster.position.x)
             let dy = abs(hero.position.y - monster.position.y)
-            let heroFeet = hero.position.y - 22
-            let monsterTop = monster.position.y + 44
+            let touching = dx < monster.size.width  / 2 + 14    // + hero half-width
+                        && dy < monster.size.height / 2 + 22    // + hero half-body
+            if touching {
+                if heroVelY < -40 {        // descending onto him → stomp
+                    defeatMonster()
+                } else {                   // walked or rose into him → back to start
+                    handleDeath()
+                }
+            }
+        }
 
-            let overlapping = dx < 58 && dy < 66  // hero half(14,22) + monster half(44,44)
-            let isStomp = vdy < -50 && heroFeet <= monsterTop && heroFeet >= monsterTop - 60
-
-            if overlapping {
-                if isStomp { defeatMonster() } else { handleDeath() }
+        // Hazard contact (scissor blades, falling buttons). Checked here by hand:
+        // the kinematically-moved hero does not reliably trip the physics contact
+        // delegate, so we test overlap directly — the same approach as the stomp.
+        if !isDead, !isCompleting {
+            for hazard in children where hazard.name == "scissorHazard"
+                                      || hazard.name == "fallingButton" {
+                let isButton = (hazard.name == "fallingButton")
+                let hzHalfW: CGFloat = isButton ? 28 : 9
+                let hzHalfH: CGFloat = isButton ? 28 : 18
+                if abs(hero.position.x - hazard.position.x) < 14 + hzHalfW,
+                   abs(hero.position.y - hazard.position.y) < 22 + hzHalfH {
+                    handleDeath()
+                    break
+                }
             }
         }
 
@@ -654,7 +702,7 @@ class MinigameNode: SKNode {
         setPressed(leftArrowButton, false)
         setPressed(rightArrowButton, false)
         setPressed(jumpButton, false)
-        hero.physicsBody?.velocity = .zero
+        heroVelY = 0
 
         let deathLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         deathLabel.text = "다시 도전해봐요!"
@@ -674,6 +722,10 @@ class MinigameNode: SKNode {
             guard let self else { return }
             deathLabel.removeFromParent()
             self.hero.position = self.heroStartPosition
+            self.heroVelY = 0
+            self.isJumping = false
+            self.inDescent = false
+            self.isOnGround = true
             self.monsterPaceOffset = 0
             self.monsterPaceDirection = 1
             if let monster = self.monster {
@@ -711,9 +763,10 @@ class MinigameNode: SKNode {
             spawnSparkles(at: pos)
         }
 
-        // Bounce hero upward as feedback
-        let currentDx = hero.physicsBody?.velocity.dx ?? 0
-        hero.physicsBody?.velocity = CGVector(dx: currentDx, dy: 200)
+        // Bounce hero upward as feedback (kinematic).
+        heroVelY = 200
+        isJumping = true
+        inDescent = false
     }
 
     private func spawnChest() {

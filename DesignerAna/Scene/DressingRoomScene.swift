@@ -27,10 +27,13 @@ class DressingRoomScene: SKScene {
     }
 
     private func setupBackground() {
+        // Dark base so the dimmed backdrop reads as muted, letting trophies pop.
+        backgroundColor = UIColor(red: 0.10, green: 0.09, blue: 0.14, alpha: 1)
         let bg = SKSpriteNode(imageNamed: "Wardrobe_Background")
         bg.position = .zero
         bg.size = self.size
         bg.zPosition = 0
+        bg.alpha = 0.55          // less opaque — the busy backdrop no longer competes
         addChild(bg)
     }
 
@@ -68,11 +71,15 @@ class DressingRoomScene: SKScene {
         container.addChild(outline)
 
         if !matches.isEmpty {
-            // Trophy sprite on top of outline
+            // Trophy sprite on top of outline. Scale to fit the cell while
+            // keeping the garment's true proportions (the source images vary in
+            // aspect ratio) — no sideways stretching.
             let imageName = garmentImageNameFor(clothing: clothing, color: color)
             let sprite = SKSpriteNode(imageNamed: imageName)
-            sprite.size = cellSize
-            sprite.alpha = 0.85
+            let native = sprite.size
+            let fit = min(cellSize.width / native.width, cellSize.height / native.height)
+            sprite.size = CGSize(width: native.width * fit, height: native.height * fit)
+            sprite.alpha = 1.0
             sprite.zPosition = 2
             container.addChild(sprite)
 

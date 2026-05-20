@@ -44,17 +44,22 @@ enum Layout {
         let usableTop    =  size.height / 2 - safeTop    - backButtonBand
         let usableBottom = -size.height / 2 + safeBottom + 16
         let usableHeight = usableTop - usableBottom
-        let usableWidth  = size.width * 0.82
 
-        let cellH       = min(150, (usableHeight - CGFloat(rows  - 1) * 20) / CGFloat(rows))
-        let cellW       = min(120, (usableWidth  - CGFloat(cols  - 1) * 16) / CGFloat(cols))
-        let rowSpacing  = (usableHeight - cellH) / CGFloat(rows  - 1)
-        let colSpacing  = (usableWidth  - cellW) / CGFloat(cols  - 1)
+        // Slender cells — taller than wide — so garment trophies stand upright
+        // instead of being stretched sideways to fill a wide cell.
+        let rowGap: CGFloat = 18
+        let colGap: CGFloat = 48
+        let cellH = min(150, (usableHeight - rowGap * CGFloat(rows - 1)) / CGFloat(rows))
+        let cellW = cellH * 0.72
 
-        // origin = centre of the top-left cell
+        let rowSpacing = cellH + rowGap
+        let colSpacing = cellW + colGap
+
+        // Centre the grid on x = 0 and within the usable vertical band.
+        let usableMidY = (usableTop + usableBottom) / 2
         let origin = CGPoint(
-            x: -usableWidth  / 2 + cellW / 2,
-            y:  usableTop         - cellH / 2
+            x: -colSpacing * CGFloat(cols - 1) / 2,
+            y:  usableMidY + rowSpacing * CGFloat(rows - 1) / 2
         )
         return (origin, CGSize(width: cellW, height: cellH), colSpacing, rowSpacing)
     }

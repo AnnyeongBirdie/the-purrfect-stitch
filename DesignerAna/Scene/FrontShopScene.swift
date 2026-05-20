@@ -709,6 +709,18 @@ class FrontShopScene: SKScene {
         let scale = targetHeight / texture.size().height
         mannequin.setScale(scale)
     }
+
+    // Restore the shop mannequin to the blank white form after the finished
+    // garment has been stored in the wardrobe.
+    private func revertFrontMannequin() {
+        guard let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode else { return }
+        let texture = SKTexture(imageNamed: "Mannequin_White")
+        mannequin.texture = texture
+        mannequin.xScale = 1.0
+        mannequin.yScale = 1.0
+        mannequin.size = texture.size()
+        mannequin.setScale(0.3)
+    }
     
     private func fitBackgroundToScene() {
         guard let background = childNode(withName: "//background") as? SKSpriteNode else {
@@ -781,13 +793,16 @@ class FrontShopScene: SKScene {
         subtitle.verticalAlignmentMode = .center
         panel.addChild(subtitle)
 
-        // Button A: continue
+        // Button A: continue. Continue and Cash Out leave the wallet at the same
+        // number — the real difference is that only Continue keeps the garment's
+        // trophy earnable. The 🏆 prefix and gold tint make that the visible cue.
         let btnA = makeFrontShopDialogButton(
-            text: "이어서 만들래 → 지갑 \(currentBalance)냥",
+            text: "🏆 이어서 만들래 → 지갑 \(currentBalance)냥",
             name: "relaunchContinue",
             position: CGPoint(x: 0, y: 35 * s),
             width: 300
         )
+        btnA.fillColor = UIColor(red: 0.85, green: 0.62, blue: 0.30, alpha: 1.0)
         panel.addChild(btnA)
 
         // Button B: refund
@@ -799,9 +814,10 @@ class FrontShopScene: SKScene {
         )
         panel.addChild(btnB)
 
-        // Button C: cash out
+        // Button C: cash out. Same wallet number as Continue, but this path
+        // forfeits the active order — so the label says so explicitly.
         let btnC = makeFrontShopDialogButton(
-            text: "지금까지 모은 거 챙기기 → 지갑 \(currentBalance)냥",
+            text: "트로피 없이 챙기기 → 지갑 \(currentBalance)냥",
             name: "relaunchCashOut",
             position: CGPoint(x: 0, y: -120 * s),
             width: 300
@@ -915,6 +931,8 @@ class FrontShopScene: SKScene {
 
         saveTrophyButton?.removeFromParent()
         saveTrophyButton = nil
+
+        revertFrontMannequin()
 
         shouldShowFinishedGarment = false
         completedOrder = nil

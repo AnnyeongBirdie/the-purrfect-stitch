@@ -29,6 +29,8 @@ class BossMinigameNode: SKNode {
     // MARK: - Nodes
     private var hero: SKSpriteNode!
     private var boss: SKSpriteNode!
+    private var bossAura: SKShapeNode!     // state-feedback halo behind the boss
+    private var platformRects: [CGRect] = []   // climb-up ledges (kinematic landing)
     private var hpDots: [SKShapeNode] = []
     private var chestNode: SKSpriteNode?
     private var instructionLabel: SKLabelNode!
@@ -65,12 +67,19 @@ class BossMinigameNode: SKNode {
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
     private let heroSpeed: CGFloat = 160
+    // Jump tuning knobs — a "snappy arcade" jump. Dial these without touching structure:
+    //   jumpPeakFraction  — peak height as a fraction of sceneH
+    //   timeToApex        — seconds from launch to the top of the arc (lower = snappier)
+    //   descentMultiplier — descent gravity = ascent gravity × this (>1 = Mario-style quick fall)
     private let jumpPeakFraction: CGFloat = 0.24
-    private var jumpVelocity: CGFloat = 0
+    private let timeToApex: CGFloat = 0.35
     private let descentMultiplier: CGFloat = 1.8
-    private let gAscent: CGFloat = 18
+    // Derived in setup(in:) once sceneH is known — see the kinematics there.
+    private var gAscent: CGFloat = 0
     private var gDescent: CGFloat { gAscent * descentMultiplier }
+    private var jumpVelocity: CGFloat = 0
     private var inDescent = false
+    private var heroVelY: CGFloat = 0         // kinematic vertical velocity (pts/sec)
     private let proximityRange: CGFloat = 80
 
     // MARK: - Theming (derived from order.fabricColor)
@@ -80,6 +89,10 @@ class BossMinigameNode: SKNode {
     // D-pad button colors
     private let buttonRestingFill = UIColor.white.withAlphaComponent(0.25)
     private let buttonPressedFill = UIColor.black.withAlphaComponent(0.35)
+
+    // Boss-aura state colors
+    private let auraVulnerable = UIColor(red: 0.35, green: 0.95, blue: 0.45, alpha: 1)
+    private let auraCharging   = UIColor(red: 1.00, green: 0.82, blue: 0.20, alpha: 1)
 
     // MARK: - Init
 
@@ -96,7 +109,13 @@ class BossMinigameNode: SKNode {
     func setup(in scene: SKScene) {
         sceneW = scene.size.width
         sceneH = scene.size.height
-        jumpVelocity = (2.0 * 18.0 * sceneH * jumpPeakFraction).squareRoot()
+        // Jump physics derived from the tuning knobs above. For a launch velocity v
+        // under constant gravity g: time-to-apex = v / g and apex height = v² / (2g).
+        // Solving both for the desired apex height and time gives:
+        //   g = 2·height / timeToApex²        v = 2·height / timeToApex
+        let peakHeight = sceneH * jumpPeakFraction
+        gAscent = 2 * peakHeight / (timeToApex * timeToApex)
+        jumpVelocity = 2 * peakHeight / timeToApex
         scene.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
         sceneRef = scene
         scene.physicsWorld.contactDelegate = contactBridge
@@ -106,6 +125,7 @@ class BossMinigameNode: SKNode {
         buildArena()
         buildHero()
         buildBoss()
+        buildPlatforms()
         buildDirectionalButtons()
         buildJumpButton()
         buildInstructionLabel()
@@ -190,6 +210,8 @@ class BossMinigameNode: SKNode {
 
         let floorBody = SKPhysicsBody(rectangleOf: floorSize)
         floorBody.isDynamic = false
+        floorBody.friction = 0
+        floorBody.restitution = 0     // no bounce — pairs with the hero body
         floorBody.categoryBitMask = PhysicsCategory.ground
         floorBody.contactTestBitMask = PhysicsCategory.none
         floorBody.collisionBitMask = PhysicsCategory.hero
@@ -208,36 +230,45 @@ class BossMinigameNode: SKNode {
         hero.name = "hero"
         addChild(hero)
 
+        // The physics body is used ONLY for hazard contact detection. The hero's
+        // movement — horizontal AND vertical — is fully kinematic (see update()).
         let body = SKPhysicsBody(rectangleOf: CGSize(width: 28, height: 44))
         body.isDynamic = true
+        body.affectedByGravity = false
         body.allowsRotation = false
-        body.friction = 0
-        body.linearDamping = 0
-        body.usesPreciseCollisionDetection = true
         body.categoryBitMask = PhysicsCategory.hero
-        body.contactTestBitMask = PhysicsCategory.ground | PhysicsCategory.hazard
-        body.collisionBitMask = PhysicsCategory.ground
+        body.contactTestBitMask = PhysicsCategory.hazard
+        body.collisionBitMask = PhysicsCategory.none
         hero.physicsBody = body
     }
 
     private func animateEntrance() {
         hero.alpha = 0
         hero.run(.fadeIn(withDuration: 0.4))
-        hero.run(.sequence([.wait(forDuration: 0.5),
-                            .moveBy(x: 0, y: 12, duration: 0.12),
-                            .moveBy(x: 0, y: -12, duration: 0.12)]))
     }
 
     // MARK: - Boss
 
     private func buildBoss() {
         let floorTop = -sceneH * 0.40 + 9
-        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 88)
+        // Hovers above the floor (never touching it) — low enough that the hero
+        // can climb the platforms and drop onto it, high enough that the summoned
+        // adds still read as dropping from the "mother".
+        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 68)
 
         let node = SKSpriteNode(color: .clear, size: CGSize(width: 176, height: 176))
         node.position = bossAnchor
         node.zPosition = 2
         node.name = "boss"
+
+        // State-feedback halo — hidden until a vulnerability/attack state shows it.
+        // Replaces colour-flashing the sprite, which painted a stray square.
+        let aura = SKShapeNode(circleOfRadius: 80)
+        aura.strokeColor = .clear
+        aura.zPosition = 0          // behind the emoji (emoji is zPosition 1)
+        aura.alpha = 0
+        node.addChild(aura)
+        bossAura = aura
 
         let emoji = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         emoji.text = "👾"
@@ -250,6 +281,27 @@ class BossMinigameNode: SKNode {
         boss = node
         addChild(node)
         buildHPDots()
+    }
+
+    // Two stepping-stone ledges leading up toward the boss, so the hero can
+    // climb up and drop onto it.
+    private func buildPlatforms() {
+        let floorTop = -sceneH * 0.40 + 9
+        makePlatform(x: -sceneW * 0.12, centerY: floorTop + 49, width: 150)  // lower step
+        makePlatform(x:  sceneW * 0.04, centerY: floorTop + 101, width: 150) // upper step
+    }
+
+    private func makePlatform(x: CGFloat, centerY: CGFloat, width: CGFloat) {
+        let height: CGFloat = 16
+        let node = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: 6)
+        node.position = CGPoint(x: x, y: centerY)
+        node.fillColor = accentColor.withAlphaComponent(0.7)
+        node.strokeColor = accentColor
+        node.lineWidth = 2
+        node.zPosition = 1
+        addChild(node)
+        platformRects.append(CGRect(x: x - width / 2, y: centerY - height / 2,
+                                    width: width, height: height))
     }
 
     private func buildHPDots() {
@@ -291,8 +343,8 @@ class BossMinigameNode: SKNode {
     // MARK: - D-pad
 
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.26)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.26)
+        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -430,21 +482,17 @@ class BossMinigameNode: SKNode {
         guard !bossDefeated else { return }
         instructionLabel.text = "점프해서 피하세요!"
 
-        // Telegraph: boss flashes yellow for 2s
-        let chargeFlash = SKAction.repeat(.sequence([
-            .colorize(with: .yellow, colorBlendFactor: 0.8, duration: 0.15),
-            .colorize(with: UIColor(red: 0.4, green: 0.2, blue: 0.6, alpha: 1),
-                      colorBlendFactor: 1.0, duration: 0.15)
-        ]), count: 6)
-        boss.run(chargeFlash)
+        // Telegraph: a charging-yellow halo for the 2s wind-up.
+        pulseAura(auraCharging)
 
         run(.wait(forDuration: 2.0)) { [weak self] in
             guard let self, !self.bossDefeated else { return }
+            self.hideAura()   // telegraph over — the sweep launches
 
             let floorTop = -self.sceneH * 0.40 + 9
             let projY = floorTop + 16   // matches hero foot height
 
-            let projSize = CGSize(width: 100, height: 40)
+            let projSize = CGSize(width: 60, height: 24)
             let proj = SKShapeNode(rectOf: projSize, cornerRadius: 6)
             proj.fillColor = UIColor.orange.withAlphaComponent(0.85)
             proj.strokeColor = .yellow
@@ -490,8 +538,10 @@ class BossMinigameNode: SKNode {
         let floorTop = -sceneH * 0.40 + 9
         for i in 0..<2 {
             let add = SKSpriteNode(color: .clear, size: CGSize(width: 72, height: 72))
-            add.position = CGPoint(x: boss.position.x + CGFloat(i == 0 ? -24 : 24),
-                                   y: floorTop + 36)
+            // Spread the two adds wide and sit them on the floor so they crawl
+            // in from different distances rather than swarming together.
+            add.position = CGPoint(x: boss.position.x + CGFloat(i == 0 ? -100 : 100),
+                                   y: floorTop + 20)
             add.zPosition = 2
             add.name = "summonAdd"
 
@@ -523,19 +573,50 @@ class BossMinigameNode: SKNode {
         }
     }
 
+    // MARK: - Boss aura (state feedback)
+
+    /// Steady pulsing halo — vulnerability window and attack telegraphs.
+    private func pulseAura(_ color: UIColor) {
+        bossAura.removeAllActions()
+        bossAura.fillColor = color
+        bossAura.run(.repeatForever(.sequence([
+            .fadeAlpha(to: 0.55, duration: 0.4),
+            .fadeAlpha(to: 0.22, duration: 0.4)
+        ])), withKey: "auraPulse")
+    }
+
+    /// Fade the halo out.
+    private func hideAura() {
+        bossAura.removeAllActions()
+        bossAura.run(.fadeAlpha(to: 0, duration: 0.15))
+    }
+
+    /// A quick bright flash (boss hit). Optionally resumes a steady pulse after.
+    private func flashAura(_ color: UIColor, thenPulse pulseColor: UIColor? = nil) {
+        bossAura.removeAllActions()
+        bossAura.fillColor = color
+        bossAura.run(.sequence([
+            .fadeAlpha(to: 0.85, duration: 0.06),
+            .fadeAlpha(to: 0.0, duration: 0.14)
+        ])) { [weak self] in
+            guard let self, let pulseColor, !self.bossDefeated else { return }
+            self.pulseAura(pulseColor)
+        }
+    }
+
     // MARK: - Vulnerability window
 
     private func openVulnerabilityWindow(duration: TimeInterval, onClose: @escaping () -> Void) {
         guard !bossDefeated else { onClose(); return }
         isVulnerable = true
-        boss.run(.colorize(with: .green, colorBlendFactor: 0.4, duration: 0.15))
+        pulseAura(auraVulnerable)
         instructionLabel.text = "지금이에요! 공격!"
 
         run(.wait(forDuration: duration)) { [weak self] in
             guard let self else { return }
             self.isVulnerable = false
             if !self.bossDefeated {
-                self.boss.run(.colorize(withColorBlendFactor: 0.0, duration: 0.15))
+                self.hideAura()
                 self.instructionLabel.text = "보스 괴물을 물리쳐요!"
             }
             onClose()
@@ -547,11 +628,8 @@ class BossMinigameNode: SKNode {
     private func hitBoss() {
         guard !bossDefeated else { return }
         guard isVulnerable, !isInvulnerable else {
-            // Shield flash when hit outside vulnerability window
-            boss.run(.sequence([
-                .colorize(with: .white, colorBlendFactor: 0.9, duration: 0.08),
-                .colorize(withColorBlendFactor: 0.0, duration: 0.08)
-            ]))
+            // Shield flash when hit outside the vulnerability window.
+            flashAura(.white)
             return
         }
 
@@ -560,11 +638,8 @@ class BossMinigameNode: SKNode {
         updateHPDots()
         spawnSparkles(at: boss.position, color: .white)
 
-        boss.run(.sequence([
-            .colorize(with: .white, colorBlendFactor: 1.0, duration: 0.08),
-            .wait(forDuration: 0.24),
-            .colorize(with: .green, colorBlendFactor: 0.4, duration: 0.08)
-        ]))
+        // White hit-flash, then back to the green vulnerability glow (still open).
+        flashAura(.white, thenPulse: auraVulnerable)
 
         run(.wait(forDuration: 0.4)) { [weak self] in self?.isInvulnerable = false }
 
@@ -581,6 +656,7 @@ class BossMinigameNode: SKNode {
 
         removeAllActions()
         boss.removeAllActions()
+        hideAura()
         let snapshot = adds
         adds.removeAll()
         snapshot.forEach { $0.removeFromParent() }
@@ -687,7 +763,7 @@ class BossMinigameNode: SKNode {
         setPressed(leftArrowButton, false)
         setPressed(rightArrowButton, false)
         setPressed(jumpButton, false)
-        hero.physicsBody?.velocity = .zero
+        heroVelY = 0
 
         let msg = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         msg.text = "다시 도전해봐요!"
@@ -719,7 +795,10 @@ class BossMinigameNode: SKNode {
 
         // Reset hero
         hero.position = heroStartPosition
-        hero.physicsBody?.velocity = .zero
+        heroVelY = 0
+        isJumping = false
+        inDescent = false
+        isOnGround = true
 
         // Reset boss — cancel running actions first, then restore state
         removeAllActions()
@@ -727,7 +806,7 @@ class BossMinigameNode: SKNode {
         boss.position = bossAnchor
         boss.alpha = 1.0
         boss.setScale(1.0)
-        boss.run(.colorize(withColorBlendFactor: 0.0, duration: 0.0))
+        hideAura()
         bossHP = 3
         isVulnerable = false
         isInvulnerable = false
@@ -814,14 +893,12 @@ class BossMinigameNode: SKNode {
     }
 
     private func tryJump() {
-        guard isOnGround, !isJumping else { return }
+        // The hero can jump whenever she is not already mid-jump.
+        guard !isJumping else { return }
         isOnGround = false
         isJumping = true
-        hero.removeAction(forKey: "step")
-        let currentDx = hero.physicsBody?.velocity.dx ?? 0
-        hero.physicsBody?.velocity = CGVector(dx: currentDx, dy: jumpVelocity)
         inDescent = false
-        sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
+        heroVelY = jumpVelocity          // kinematic launch — integrated in update()
     }
 
     // MARK: - Update (called by BackRoomScene.update)
@@ -835,51 +912,61 @@ class BossMinigameNode: SKNode {
         // Hero horizontal movement
         if moveDirection != 0 {
             hero.position.x += moveDirection * heroSpeed * CGFloat(dt)
-            if hero.action(forKey: "step") == nil {
-                hero.run(.sequence([.moveBy(x: 0, y: 6, duration: 0.08),
-                                    .moveBy(x: 0, y: -6, duration: 0.08)]),
-                         withKey: "step")
-            }
         }
         hero.position.x = max(-sceneW * 0.47, min(sceneW * 0.47, hero.position.x))
 
-        // Floor failsafe
-        let floorSurface = -sceneH * 0.40 + 40
-        if hero.position.y < floorSurface {
-            hero.position.y = floorSurface
-            hero.physicsBody?.velocity = CGVector(dx: hero.physicsBody?.velocity.dx ?? 0, dy: 0)
+        // --- Vertical motion (fully kinematic) -------------------------------
+        // The hero's Y is integrated here by hand — the physics engine never
+        // moves her (her body has affectedByGravity = false, collisions off).
+        // Deterministic: no physics tug-of-war, no reliance on contact callbacks.
+        let g = inDescent ? gDescent : gAscent
+        heroVelY -= g * CGFloat(dt)
+        let newHeroY = hero.position.y + heroVelY * CGFloat(dt)
+
+        // Surface under the hero: the floor, or a platform she is descending
+        // onto from above (one-way — she jumps up through them).
+        let footOffset: CGFloat = 31
+        var landingY = -sceneH * 0.40 + 40        // floor: sprite stands on surface
+        if heroVelY <= 0 {
+            let prevFeet = hero.position.y - footOffset
+            for rect in platformRects where hero.position.x >= rect.minX - 10
+                                          && hero.position.x <= rect.maxX + 10 {
+                let standY = rect.maxY + footOffset
+                if standY > landingY, prevFeet >= rect.maxY - 1 {
+                    landingY = standY
+                }
+            }
+        }
+
+        if heroVelY <= 0, newHeroY <= landingY {
+            hero.position.y = landingY            // landed / standing
+            heroVelY = 0
             isOnGround = true
             isJumping = false
             inDescent = false
-            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
+        } else {
+            hero.position.y = newHeroY            // airborne
+            isOnGround = false
+            if isJumping, !inDescent, heroVelY <= 0 {
+                inDescent = true                  // past the apex — fall faster
+            }
         }
 
-        // Asymmetric jump: switch to descent gravity once the hero starts falling.
-        if !inDescent, isJumping, let dy = hero.physicsBody?.velocity.dy, dy <= 0 {
-            inDescent = true
-            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gDescent)
-        }
-
-        // Boss stomp detection (only stun-eligible if vulnerable)
+        // Boss stomp / bump. Descending onto the boss is a stomp (it only takes
+        // damage during its vulnerable window — see hitBoss). An airborne bump
+        // that isn't a stomp shoves the hero clear; standing on a platform or
+        // the floor beside the boss does nothing.
         if !bossDefeated {
-            let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - boss.position.x)
-            let heroFeet = hero.position.y - 22
-            let bossTop = boss.position.y + 88
             let dy = abs(hero.position.y - boss.position.y)
-            let overlapping = dx < 102 && dy < 110
-            let isStomp = vdy < -50 && heroFeet <= bossTop && heroFeet >= bossTop - 140
-            if overlapping {
-                if isStomp {
-                    hitBoss()
-                } else {
-                    // Slide hero to just outside the overlap zone and pop them
-                    // upward slightly. Using a position nudge (not velocity) avoids
-                    // the zero-damping drift that sent the hero flying to the wall.
+            if dx < 70, dy < 78 {
+                if heroVelY < -20 {
+                    hitBoss()                       // descending onto the boss
+                } else if !isOnGround {
+                    // Airborne bump — slide her clear and pop her up a little.
                     let pushDir: CGFloat = hero.position.x < boss.position.x ? -1 : 1
                     hero.position.x = boss.position.x + pushDir * 110
-                    let curDx = hero.physicsBody?.velocity.dx ?? 0
-                    hero.physicsBody?.velocity = CGVector(dx: curDx, dy: 90)
+                    heroVelY = 90
                 }
             }
         }
@@ -893,21 +980,29 @@ class BossMinigameNode: SKNode {
             add.position.x += dir * 60 * CGFloat(dt)
             add.xScale = dir > 0 ? 1 : -1
 
-            // Stomp or side-contact
+            // Descending onto an add stomps it; touching it any other way hits.
             if heroKilledByAdd { continue }
-            let vdy = hero.physicsBody?.velocity.dy ?? 0
             let dx = abs(hero.position.x - add.position.x)
             let dy = abs(hero.position.y - add.position.y)
-            let heroFeet = hero.position.y - 22
-            let addTop = add.position.y + 36
-            let overlapping = dx < 50 && dy < 58
-            let isStomp = vdy < -50 && heroFeet <= addTop && heroFeet >= addTop - 48
-            if overlapping {
-                if isStomp { defeatAdd(add) }
+            if dx < 40, dy < 46 {
+                if heroVelY < -20 { defeatAdd(add) }
                 else { heroKilledByAdd = true }
             }
         }
         if heroKilledByAdd { handleDeath() }
+
+        // Sweep-projectile contact — checked here by hand. The kinematic hero
+        // does not reliably trip the physics contact delegate, so the sweep
+        // (a physics-body hazard) is tested for overlap directly.
+        if !isDead, !isCompleting {
+            for proj in children where proj.name == "sweepProjectile" {
+                if abs(hero.position.x - proj.position.x) < 42,
+                   abs(hero.position.y - proj.position.y) < 30 {
+                    handleDeath()
+                    break
+                }
+            }
+        }
 
         // HP dots track boss as it moves
         syncHPDotPositions()
