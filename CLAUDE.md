@@ -52,6 +52,23 @@ The fabric cabinet, sewing station, and button station each gate on a platformer
 
 A vertical pill-shaped halo behind the tailor sprite in `BackRoomScene` provides ambient visual feedback. Its color tracks `order?.fabricColor` and **deepens in shade with each station cleared** (light after fabric → medium after sewing → dark after buttons), pulsing via alpha breathing throughout. At completion, the pulse stops and the halo expands to fill the screen before the scene transitions back to the front shop. The three shades per color are hand-tuned `UIColor` values centralized as `haloLight` / `haloMedium` / `haloDark` computed properties.
 
+### Sprite PNG transparent-padding rule
+
+All character PNGs have transparent space at the bottom of their bounding box — the illustrated feet do not extend to the sprite's mathematical bottom edge. When placing any character sprite on a floor or platform, always compensate:
+
+```
+node.position.y = surfaceTop + (halfHeight - padding)
+```
+
+**Per-character padding values (verified on device):**
+| Sprite | Size | halfHeight | Padding | Position offset |
+|--------|------|-----------|---------|----------------|
+| Monster | 60×90 | 45 | 20 pt | surfaceTop + 25 |
+| Boss | 130×195 | 97 | 30 pt | surfaceTop + 67 |
+| BossAdd | 56×58 | 29 | 20 pt | surfaceTop + 9 |
+
+Without this offset the character will appear to float above the surface. **This rule applies every time a character is positioned on a floor or platform — in both Cowork sessions and Claude Code sessions.**
+
 ### zPosition convention
 
 Characters and props live in zPosition 0–15 (e.g., the tailor sprite is at 10, its halo at 8). Reserve **zPosition 50+** for back-room overlays — minigame scenes, dialogs, and modal UI introduced in Phase 3. This keeps gameplay layers cleanly separable from interactive overlays.
