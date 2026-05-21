@@ -125,18 +125,19 @@ class DressingRoomScene: SKScene {
     }
 
     private func setupBackButton() {
-        let button = SKShapeNode(rectOf: CGSize(width: 100, height: 44), cornerRadius: 14)
-        button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
-        button.strokeColor = UIColor.brown
+        // Nav-icon style — matches the left-edge nav strip in FrontShopScene
+        let button = SKShapeNode(rectOf: CGSize(width: 54, height: 54), cornerRadius: 14)
+        button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 0.88)
+        button.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.6)
         button.lineWidth = 2
-        button.position = CGPoint(x: -size.width / 2 + 70, y: size.height / 2 - safeTop - 28)
+        button.position = CGPoint(x: size.width / 2 - 37, y: 0)
         button.zPosition = 10
         button.name = "backButton"
         addChild(button)
 
         let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        label.text = "← 닫기"
-        label.fontSize = 20
+        label.text = "←"
+        label.fontSize = 26
         label.fontColor = .white
         label.horizontalAlignmentMode = .center
         label.verticalAlignmentMode = .center

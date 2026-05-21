@@ -30,7 +30,7 @@ class FrontShopScene: SKScene {
     var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
     var completedOrder: Order?
 
-    private var wardrobeNode: SKSpriteNode!
+    // wardrobeNode removed — navigation handled by the nav icon strip (see setupNavIcons)
     private var saveTrophyButton: SKShapeNode?
     private var relaunchDialogNode: SKNode?
 
@@ -43,7 +43,7 @@ class FrontShopScene: SKScene {
         fitBackgroundToScene()
         setupDialogueUI()
         fixCharacterLayout()
-        setupWardrobeNode()
+        setupNavIcons()
 
         if shouldShowFinishedGarment {
             showFinishedGarmentOnFrontMannequin()
@@ -74,62 +74,40 @@ class FrontShopScene: SKScene {
         }
     }
 
-    private func setupWardrobeNode() {
-        wardrobeNode = SKSpriteNode(imageNamed: "Wardrobe")
-        let targetHeight: CGFloat = 280
-        let tex = wardrobeNode.texture ?? SKTexture(imageNamed: "Wardrobe")
-        let scale = targetHeight / tex.size().height
-        wardrobeNode.setScale(scale)
-        wardrobeNode.position = Layout.frontShopCharacters(in: size).wardrobe
-        wardrobeNode.zPosition = 5
-        wardrobeNode.name = "wardrobeNode"
-        addChild(wardrobeNode)
+    // MARK: - Nav icon strip (left edge)
+    // Four circular icon buttons stacked on the left side.
+    // Wardrobe does the same job as the old wardrobeNode sprite.
+    // Settings / Wallet / Storybook are V2 placeholders (no-op taps for now).
+    private func setupNavIcons() {
+        let icons: [(symbol: String, name: String, y: CGFloat)] = [
+            ("⚙",  "settingsNav",   105),
+            ("💰", "walletNav",      40),
+            ("👗", "wardrobeNav",   -25),
+            ("📖", "storybookNav",  -90),
+        ]
+        let x: CGFloat = -size.width * 0.38
 
-        addFireflies(at: wardrobeNode.position)
-    }
+        for icon in icons {
+            let btn = SKShapeNode(rectOf: CGSize(width: 54, height: 54), cornerRadius: 14)
+            btn.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 0.88)
+            btn.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.6)
+            btn.lineWidth = 2
+            btn.position = CGPoint(x: x, y: icon.y)
+            btn.zPosition = 30
+            btn.name = icon.name
 
-    private func addFireflies(at center: CGPoint) {
-        let fireflyColor = UIColor(red: 1.0, green: 0.95, blue: 0.5, alpha: 1.0)
-        for i in 0..<4 {
-            let firefly = SKShapeNode(circleOfRadius: 3.5)
-            firefly.fillColor = fireflyColor
-            firefly.strokeColor = .clear
-            firefly.glowWidth = 6
-            firefly.zPosition = 4
-            firefly.alpha = 0
-            firefly.position = CGPoint(
-                x: center.x + CGFloat.random(in: -40...40),
-                y: center.y + CGFloat.random(in: -60...30)
-            )
-            addChild(firefly)
-
-            let cycle = SKAction.sequence([
-                SKAction.run { [weak firefly] in
-                    firefly?.position = CGPoint(
-                        x: center.x + CGFloat.random(in: -40...40),
-                        y: center.y + CGFloat.random(in: -60...30)
-                    )
-                    firefly?.alpha = 0
-                },
-                SKAction.fadeIn(withDuration: 0.5),
-                SKAction.group([
-                    SKAction.moveBy(x: 0, y: 55, duration: 1.6),
-                    SKAction.sequence([
-                        SKAction.wait(forDuration: 0.9),
-                        SKAction.fadeOut(withDuration: 0.7)
-                    ])
-                ]),
-                SKAction.wait(forDuration: 0.3)
-            ])
-            firefly.run(.sequence([
-                .wait(forDuration: Double(i) * 0.6),
-                .repeatForever(cycle)
-            ]))
+            let label = SKLabelNode(text: icon.symbol)
+            label.fontSize = 26
+            label.verticalAlignmentMode = .center
+            label.horizontalAlignmentMode = .center
+            label.name = icon.name
+            btn.addChild(label)
+            addChild(btn)
         }
     }
 
     private func spawnWardrobeSparkle() {
-        guard let wardrobePos = wardrobeNode?.position else { return }
+        let wardrobePos = CGPoint(x: -size.width * 0.38, y: -25)
         for i in 0..<8 {
             let spark = SKShapeNode(circleOfRadius: 5)
             spark.fillColor = UIColor(red: 1.0, green: 0.9, blue: 0.2, alpha: 1.0)
@@ -154,13 +132,15 @@ class FrontShopScene: SKScene {
     }
     
     private func setupDialogueUI() {
-        let bubbleWidth = size.width * 0.72
+        let bubbleWidth = size.width * 0.58
         let bubbleHeight: CGFloat = 95
-        
+
         speechBubble = SKShapeNode(rectOf: CGSize(width: bubbleWidth, height: bubbleHeight), cornerRadius: 28)
         speechBubble.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.95)
         speechBubble.strokeColor = UIColor.brown
         speechBubble.lineWidth = 4
+        // Centered above the shopkeeper (x:0). At 58% width the left edge sits at
+        // -0.29*width, which clears the nav icon strip at -0.35*width.
         speechBubble.position = CGPoint(x: 0, y: frame.maxY - 70)
         speechBubble.zPosition = 90
         
@@ -286,11 +266,22 @@ class FrontShopScene: SKScene {
             name: "yellowColorButton",
             position: CGPoint(x: 180, y: frame.minY + 90)
         )
-        fabricBackButton = createChoiceButton(
-            text: "← 다시",
-            name: "fabricBackButton",
-            position: CGPoint(x: 0, y: frame.minY + 155)
-        )
+        // Nav-icon style — matches the left-edge nav strip and DressingRoom back button
+        let backBtn = SKShapeNode(rectOf: CGSize(width: 54, height: 54), cornerRadius: 14)
+        backBtn.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 0.88)
+        backBtn.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.6)
+        backBtn.lineWidth = 2
+        backBtn.position = CGPoint(x: frame.maxX - 37, y: 0)
+        backBtn.zPosition = 50
+        backBtn.name = "fabricBackButton"
+        let backLabel = SKLabelNode(text: "←")
+        backLabel.fontSize = 26
+        backLabel.verticalAlignmentMode = .center
+        backLabel.horizontalAlignmentMode = .center
+        backLabel.name = "fabricBackButton"
+        backBtn.addChild(backLabel)
+        addChild(backBtn)
+        fabricBackButton = backBtn
     }
 
     private func hideFabricColorChoices() {
@@ -456,12 +447,16 @@ class FrontShopScene: SKScene {
             }
 
             switch nodeName {
-            case "wardrobeNode":
+            case "wardrobeNav":
                 if currentState == .greeting || currentState == .choosingClothing {
                     Store.saveLastSeenCount(Store.loadGarmentCount())
                     transitionToDressingRoom()
                     return
                 }
+
+            case "settingsNav", "walletNav", "storybookNav":
+                // V2 placeholder — no-op for now
+                return
 
             case "saveTrophyButton":
                 if currentState == .greeting && shouldShowFinishedGarment {
