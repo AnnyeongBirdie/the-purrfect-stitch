@@ -65,6 +65,7 @@ class BackRoomScene: SKScene {
 
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
+    private var instructionShadowLabel: SKLabelNode!
 
     private var earnedMinigameRewards: Int = 0
     private var quitButton: SKShapeNode?
@@ -150,13 +151,29 @@ class BackRoomScene: SKScene {
     }
 
     private func setupInstructionLabel() {
+        // Shadow clone sits behind the main label to improve readability
+        // over the bright back-room background.
+        instructionShadowLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        instructionShadowLabel.text = "원단 보관장을 눌러보세요."
+        instructionShadowLabel.fontSize = 24
+        instructionShadowLabel.fontColor = UIColor(white: 0, alpha: 0.55)
+        instructionShadowLabel.position = CGPoint(x: 2, y: -2)
+        instructionShadowLabel.zPosition = -1   // behind the parent label
+
         instructionLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         instructionLabel.text = "원단 보관장을 눌러보세요."
         instructionLabel.fontSize = 24
         instructionLabel.fontColor = .white
         instructionLabel.position = CGPoint(x: 0, y: 150)
         instructionLabel.zPosition = 20
+        instructionLabel.addChild(instructionShadowLabel)
         addChild(instructionLabel)
+    }
+
+    /// Updates both the instruction label and its drop shadow in one call.
+    private func setInstructionText(_ text: String) {
+        instructionLabel.text = text
+        instructionShadowLabel.text = text
     }
 
     private func setupStationFireflies() {
@@ -351,7 +368,7 @@ class BackRoomScene: SKScene {
             case "fabricCabinet":
                 guard currentState == .waitingForCabinetTap else { return true }
 
-                instructionLabel.text = "원단 보관장으로 가는 중이에요."
+                setInstructionText("원단 보관장으로 가는 중이에요.")
                 currentState = .walkingToCabinet
 
                 moveTailor(to: cabinetInteractionX) { [weak self] in
@@ -364,7 +381,7 @@ class BackRoomScene: SKScene {
             case "sewingStation":
                 guard currentState == .waitingForSewing else { return true }
 
-                instructionLabel.text = "재봉대로 이동 중이에요."
+                setInstructionText("재봉대로 이동 중이에요.")
                 currentState = .walkingToSewing
 
                 moveTailor(to: 120) { [weak self] in
@@ -377,7 +394,7 @@ class BackRoomScene: SKScene {
             case "buttonStation":
                 guard currentState == .waitingForButtons else { return true }
 
-                instructionLabel.text = "단추 공간으로 이동 중이에요."
+                setInstructionText("단추 공간으로 이동 중이에요.")
                 currentState = .walkingToButtons
 
                 moveTailor(to: 300) { [weak self] in
@@ -390,7 +407,7 @@ class BackRoomScene: SKScene {
             case "mannequin":
                 guard currentState == .waitingForMannequin else { return true }
 
-                instructionLabel.text = "마네킹으로 이동 중이에요."
+                setInstructionText("마네킹으로 이동 중이에요.")
                 currentState = .walkingToMannequin
 
                 moveTailor(to: 0) { [weak self] in
@@ -537,7 +554,7 @@ class BackRoomScene: SKScene {
 
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
-        instructionLabel.text = garmentCompletionText(for: order)
+        setInstructionText(garmentCompletionText(for: order))
         updateWalletHUD()
         placeDressOnMannequin()
     }
@@ -559,16 +576,16 @@ class BackRoomScene: SKScene {
             earnedMinigameRewards += 10
             celebrateTailor()
             showTailorHalo(color: haloLight)
-            instructionLabel.text = "잘했어요! 재봉대로 가보세요."
+            setInstructionText("잘했어요! 재봉대로 가보세요.")
             currentState = .waitingForSewing
         case .sewingStation:
             earnedMinigameRewards += 20
-            instructionLabel.text = "단추를 달아볼까요?"
+            setInstructionText("단추를 달아볼까요?")
             updateHaloColor(to: haloMedium)
             currentState = .waitingForButtons
         case .buttonStation:
             earnedMinigameRewards += 30
-            instructionLabel.text = "완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?"
+            setInstructionText("완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?")
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
         }
@@ -697,15 +714,15 @@ class BackRoomScene: SKScene {
         case .waitingForSewing, .walkingToSewing:
             resumeTarget = .waitingForSewing
             showTailorHalo(color: haloLight)
-            instructionLabel.text = "재봉대로 가보세요."
+            setInstructionText("재봉대로 가보세요.")
         case .waitingForButtons, .walkingToButtons:
             resumeTarget = .waitingForButtons
             showTailorHalo(color: haloMedium)
-            instructionLabel.text = "단추를 달아볼까요?"
+            setInstructionText("단추를 달아볼까요?")
         case .waitingForMannequin, .walkingToMannequin:
             resumeTarget = .waitingForMannequin
             showTailorHalo(color: haloDark)
-            instructionLabel.text = "완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?"
+            setInstructionText("완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?")
         default:
             resumeTarget = .waitingForCabinetTap
         }

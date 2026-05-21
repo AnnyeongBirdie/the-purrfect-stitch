@@ -30,6 +30,7 @@ class BossMinigameNode: SKNode {
     private var hero: SKSpriteNode!
     private var boss: SKSpriteNode!
     private var bossAura: SKShapeNode!     // state-feedback halo behind the boss
+    private var vulnStarsNode: SKNode?    // orbiting stars shown during vulnerability window
     private var platformRects: [CGRect] = []   // climb-up ledges (kinematic landing)
     private var hpDots: [SKShapeNode] = []
     private var chestNode: SKSpriteNode?
@@ -49,6 +50,10 @@ class BossMinigameNode: SKNode {
     private var lastUpdateTime: TimeInterval = 0
     private var heroStartPosition: CGPoint = .zero
 
+    // Haptic generators — created once, reused on every button press
+    private let hapticLight  = UIImpactFeedbackGenerator(style: .light)
+    private let hapticMedium = UIImpactFeedbackGenerator(style: .medium)
+
     // MARK: - Boss state
     private var bossHP = 3
     private var bossAnchor: CGPoint = .zero
@@ -66,6 +71,7 @@ class BossMinigameNode: SKNode {
     // MARK: - Layout
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
+    private var floorCenterY: CGFloat = 0   // matches MinigameNode floor position
     private let heroSpeed: CGFloat = 160
     // Jump tuning knobs — a "snappy arcade" jump. Dial these without touching structure:
     //   jumpPeakFraction  — peak height as a fraction of sceneH
@@ -109,6 +115,7 @@ class BossMinigameNode: SKNode {
     func setup(in scene: SKScene) {
         sceneW = scene.size.width
         sceneH = scene.size.height
+        floorCenterY = -sceneH * 0.26   // same as MinigameNode floor
         // Jump physics derived from the tuning knobs above. For a launch velocity v
         // under constant gravity g: time-to-apex = v / g and apex height = v² / (2g).
         // Solving both for the desired apex height and time gives:
@@ -142,7 +149,7 @@ class BossMinigameNode: SKNode {
     private func buildDungeonAtmosphere() {
         let lineColor = UIColor.white.withAlphaComponent(0.07)
         let brickH: CGFloat = 44
-        let floorY = -sceneH * 0.40
+        let floorY = floorCenterY
 
         var y = floorY + brickH
         var row = 0
@@ -202,7 +209,7 @@ class BossMinigameNode: SKNode {
 
         let floorSize = CGSize(width: sceneW, height: 18)
         let floorNode = SKShapeNode(rectOf: floorSize)
-        floorNode.position = CGPoint(x: 0, y: -sceneH * 0.40)
+        floorNode.position = CGPoint(x: 0, y: floorCenterY)
         floorNode.fillColor = accentColor.withAlphaComponent(0.7)
         floorNode.strokeColor = accentColor
         floorNode.lineWidth = 2
@@ -224,7 +231,7 @@ class BossMinigameNode: SKNode {
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
         hero.setScale(0.15)
-        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: -sceneH * 0.28)
+        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 40)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
@@ -250,33 +257,28 @@ class BossMinigameNode: SKNode {
     // MARK: - Boss
 
     private func buildBoss() {
-        let floorTop = -sceneH * 0.40 + 9
-        // Hovers above the floor (never touching it) — low enough that the hero
-        // can climb the platforms and drop onto it, high enough that the summoned
-        // adds still read as dropping from the "mother".
-        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 68)
+        let floorTop = floorCenterY + 9
+        // Boss sits on the floor: center = floorTop + half-height.
+        // PNG is 1024×1536 (2:3 ratio) so width 130 → height 195; half-height = 97.
+        // PNG transparent-padding rule: Boss PNG has ~30pt of transparent space at the bottom
+        // (more than regular monsters), so visual feet land at surfaceTop + (halfHeight - 30)
+        // = floorTop + 97 - 30 = floorTop + 67.
+        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 67)
 
-        let node = SKSpriteNode(color: .clear, size: CGSize(width: 176, height: 176))
+        let node = SKSpriteNode(imageNamed: "Boss")
+        node.size = CGSize(width: 130, height: 195)
         node.position = bossAnchor
         node.zPosition = 2
         node.name = "boss"
 
-        // State-feedback halo — hidden until a vulnerability/attack state shows it.
-        // Replaces colour-flashing the sprite, which painted a stray square.
-        let aura = SKShapeNode(circleOfRadius: 80)
+        // State-feedback halo behind the boss sprite. zPosition -1 so it renders
+        // beneath the texture (children with negative z appear behind the sprite image).
+        let aura = SKShapeNode(circleOfRadius: 70)
         aura.strokeColor = .clear
-        aura.zPosition = 0          // behind the emoji (emoji is zPosition 1)
+        aura.zPosition = -1
         aura.alpha = 0
         node.addChild(aura)
         bossAura = aura
-
-        let emoji = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        emoji.text = "👾"
-        emoji.fontSize = 104
-        emoji.verticalAlignmentMode = .center
-        emoji.position = .zero
-        emoji.zPosition = 1
-        node.addChild(emoji)
 
         boss = node
         addChild(node)
@@ -286,7 +288,7 @@ class BossMinigameNode: SKNode {
     // Two stepping-stone ledges leading up toward the boss, so the hero can
     // climb up and drop onto it.
     private func buildPlatforms() {
-        let floorTop = -sceneH * 0.40 + 9
+        let floorTop = floorCenterY + 9
         makePlatform(x: -sceneW * 0.12, centerY: floorTop + 49, width: 150)  // lower step
         makePlatform(x:  sceneW * 0.04, centerY: floorTop + 101, width: 150) // upper step
     }
@@ -316,7 +318,7 @@ class BossMinigameNode: SKNode {
             dot.strokeColor = .white
             dot.lineWidth = 1.5
             dot.position = CGPoint(x: boss.position.x - totalW / 2 + CGFloat(i) * spacing,
-                                   y: boss.position.y + 62)
+                                   y: boss.position.y + 106)   // above 195pt boss
             dot.zPosition = 4
             addChild(dot)
             hpDots.append(dot)
@@ -328,7 +330,7 @@ class BossMinigameNode: SKNode {
         let totalW = spacing * CGFloat(max(1, hpDots.count - 1))
         for (i, dot) in hpDots.enumerated() {
             dot.position = CGPoint(x: boss.position.x - totalW / 2 + CGFloat(i) * spacing,
-                                   y: boss.position.y + 62)
+                                   y: boss.position.y + 106)   // above 195pt boss
         }
     }
 
@@ -343,8 +345,9 @@ class BossMinigameNode: SKNode {
     // MARK: - D-pad
 
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
+        let buttonY = -sceneH * 0.38   // same level as jump button, below floor
+        leftArrowButton  = makeArrowButton(label: "←", x: -sceneW * 0.42, y: buttonY)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: buttonY)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -368,7 +371,7 @@ class BossMinigameNode: SKNode {
 
     private func buildJumpButton() {
         let btn = SKShapeNode(circleOfRadius: 34)
-        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.26)
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.38)
         btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
@@ -432,7 +435,7 @@ class BossMinigameNode: SKNode {
         instructionLabel.text = "빨간 패드를 피하세요!"
 
         let padX = CGFloat.random(in: -sceneW * 0.35 ... sceneW * 0.15)
-        let floorTop = -sceneH * 0.40 + 9
+        let floorTop = floorCenterY + 9
         let padCenterY = floorTop + 8
         let padSize = CGSize(width: 160, height: 16)
 
@@ -489,7 +492,7 @@ class BossMinigameNode: SKNode {
             guard let self, !self.bossDefeated else { return }
             self.hideAura()   // telegraph over — the sweep launches
 
-            let floorTop = -self.sceneH * 0.40 + 9
+            let floorTop = self.floorCenterY + 9
             let projY = floorTop + 16   // matches hero foot height
 
             let projSize = CGSize(width: 60, height: 24)
@@ -535,23 +538,17 @@ class BossMinigameNode: SKNode {
             .fadeAlpha(to: 1.0, duration: 0.3)
         ])), withKey: "summonPulse")
 
-        let floorTop = -sceneH * 0.40 + 9
+        let floorTop = floorCenterY + 9
         for i in 0..<2 {
-            let add = SKSpriteNode(color: .clear, size: CGSize(width: 72, height: 72))
+            let add = SKSpriteNode(imageNamed: "BossAdd")
+            // BossAdd PNG is 534×550 (nearly square); 56×58 preserves proportions.
+            add.size = CGSize(width: 56, height: 58)
             // Spread the two adds wide and sit them on the floor so they crawl
             // in from different distances rather than swarming together.
             add.position = CGPoint(x: boss.position.x + CGFloat(i == 0 ? -100 : 100),
-                                   y: floorTop + 20)
+                                   y: floorTop + 29)   // center = floor top + half-height
             add.zPosition = 2
             add.name = "summonAdd"
-
-            let emoji = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-            emoji.text = "👾"
-            emoji.fontSize = 40
-            emoji.verticalAlignmentMode = .center
-            emoji.position = .zero
-            emoji.zPosition = 1
-            add.addChild(emoji)
 
             adds.append(add)
             addChild(add)
@@ -591,6 +588,37 @@ class BossMinigameNode: SKNode {
         bossAura.run(.fadeAlpha(to: 0, duration: 0.15))
     }
 
+    /// Show one large blinking 💤 above the boss head — boss fell asleep after attacking.
+    /// Replaces the green circle aura during the vulnerability window.
+    private func showVulnerabilityStars() {
+        hideVulnerabilityStars()
+        let container = SKNode()
+        // Boss top edge is at +97 from center; sleep bubble floats above that.
+        container.position = CGPoint(x: 0, y: 118)
+        container.zPosition = 5
+        boss.addChild(container)
+        vulnStarsNode = container
+
+        let zzz = SKLabelNode(text: "💤")
+        zzz.fontSize = 52
+        zzz.horizontalAlignmentMode = .center
+        zzz.verticalAlignmentMode = .center
+        container.addChild(zzz)
+
+        // Slow blink — appears, fades, repeats
+        zzz.run(.repeatForever(.sequence([
+            .fadeAlpha(to: 1.0, duration: 0.3),
+            .wait(forDuration: 0.4),
+            .fadeAlpha(to: 0.2, duration: 0.3),
+            .wait(forDuration: 0.2)
+        ])), withKey: "zzzBlink")
+    }
+
+    private func hideVulnerabilityStars() {
+        vulnStarsNode?.removeFromParent()
+        vulnStarsNode = nil
+    }
+
     /// A quick bright flash (boss hit). Optionally resumes a steady pulse after.
     private func flashAura(_ color: UIColor, thenPulse pulseColor: UIColor? = nil) {
         bossAura.removeAllActions()
@@ -609,14 +637,15 @@ class BossMinigameNode: SKNode {
     private func openVulnerabilityWindow(duration: TimeInterval, onClose: @escaping () -> Void) {
         guard !bossDefeated else { onClose(); return }
         isVulnerable = true
-        pulseAura(auraVulnerable)
+        hideAura()                    // no green circle — stars signal the opening instead
+        showVulnerabilityStars()
         instructionLabel.text = "지금이에요! 공격!"
 
         run(.wait(forDuration: duration)) { [weak self] in
             guard let self else { return }
             self.isVulnerable = false
+            self.hideVulnerabilityStars()
             if !self.bossDefeated {
-                self.hideAura()
                 self.instructionLabel.text = "보스 괴물을 물리쳐요!"
             }
             onClose()
@@ -638,8 +667,8 @@ class BossMinigameNode: SKNode {
         updateHPDots()
         spawnSparkles(at: boss.position, color: .white)
 
-        // White hit-flash, then back to the green vulnerability glow (still open).
-        flashAura(.white, thenPulse: auraVulnerable)
+        // White hit-flash; stars keep spinning so no need to resume the aura.
+        flashAura(.white)
 
         run(.wait(forDuration: 0.4)) { [weak self] in self?.isInvulnerable = false }
 
@@ -681,27 +710,27 @@ class BossMinigameNode: SKNode {
     // MARK: - Chest
 
     private func spawnChest(at position: CGPoint) {
-        let chest = SKSpriteNode(color: UIColor(red: 0.7, green: 0.5, blue: 0.1, alpha: 1),
-                                 size: CGSize(width: 60, height: 50))
+        let chest = SKSpriteNode(imageNamed: "Chest")
+        chest.size = CGSize(width: 80, height: 66)
         chest.position = position
         chest.zPosition = 2
         chest.name = "bossChest"
         chest.alpha = 0
 
-        let emoji = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        emoji.text = "📦"
-        emoji.fontSize = 34
-        emoji.verticalAlignmentMode = .center
-        emoji.position = .zero
-        chest.addChild(emoji)
-
         chestNode = chest
         addChild(chest)
 
+        // Fade in, pop up, then pulse to draw the hero over
         chest.run(.sequence([
             .fadeIn(withDuration: 0.5),
             .scale(to: 1.2, duration: 0.2),
-            .scale(to: 1.0, duration: 0.1)
+            .scale(to: 1.0, duration: 0.1),
+            .run {
+                chest.run(.repeatForever(.sequence([
+                    .scale(to: 1.08, duration: 0.55),
+                    .scale(to: 1.00, duration: 0.55)
+                ])), withKey: "chestPulse")
+            }
         ]))
     }
 
@@ -711,6 +740,11 @@ class BossMinigameNode: SKNode {
         guard !chestOpened else { return }
         chestOpened = true
         isCompleting = true
+
+        // Stop the attract pulse, swap to the open-chest art, then bounce
+        chestNode?.removeAction(forKey: "chestPulse")
+        chestNode?.texture = SKTexture(imageNamed: "ChestOpen")
+        chestNode?.size = CGSize(width: 96, height: 80)   // lid-open art is a touch wider
 
         let label = garmentCompletionText(for: order)
         instructionLabel.text = label
@@ -807,6 +841,7 @@ class BossMinigameNode: SKNode {
         boss.alpha = 1.0
         boss.setScale(1.0)
         hideAura()
+        hideVulnerabilityStars()
         bossHP = 3
         isVulnerable = false
         isInvulnerable = false
@@ -832,18 +867,21 @@ class BossMinigameNode: SKNode {
         if jumpButton.contains(loc) {
             jumpButtonTouch = touch
             setPressed(jumpButton, true)
+            hapticMedium.impactOccurred()
             tryJump()
             return
         }
         if leftArrowButton.contains(loc) {
             leftButtonTouch = touch
             setPressed(leftArrowButton, true)
+            hapticLight.impactOccurred()
             updateMoveDirection()
             return
         }
         if rightArrowButton.contains(loc) {
             rightButtonTouch = touch
             setPressed(rightArrowButton, true)
+            hapticLight.impactOccurred()
             updateMoveDirection()
             return
         }
@@ -864,10 +902,7 @@ class BossMinigameNode: SKNode {
             }
         }
 
-        // Tap chest
-        if bossDefeated, !chestOpened, let chest = chestNode, chest.contains(loc) {
-            openChest()
-        }
+        // Chest is now claimed by proximity (see update()) — no tap needed
     }
 
     func handleTouchEnded(_ touch: UITouch) {
@@ -926,7 +961,7 @@ class BossMinigameNode: SKNode {
         // Surface under the hero: the floor, or a platform she is descending
         // onto from above (one-way — she jumps up through them).
         let footOffset: CGFloat = 31
-        var landingY = -sceneH * 0.40 + 40        // floor: sprite stands on surface
+        var landingY = floorCenterY + 40           // floor: sprite stands on surface
         if heroVelY <= 0 {
             let prevFeet = hero.position.y - footOffset
             for rect in platformRects where hero.position.x >= rect.minX - 10
@@ -956,14 +991,20 @@ class BossMinigameNode: SKNode {
         // damage during its vulnerable window — see hitBoss). An airborne bump
         // that isn't a stomp shoves the hero clear; standing on a platform or
         // the floor beside the boss does nothing.
+        //
+        // The boss is now 130×195, sitting on the floor. Half-height = 97. For a
+        // stomp from above, dy can reach boss_halfH + hero_halfH = 97+31 = 128.
+        // The bump fires only when the hero's head has risen into the boss's body
+        // (hero.y + 31 > bossAnchor.y - 40), so walking near the boss on the floor
+        // does not accidentally trigger it.
         if !bossDefeated {
             let dx = abs(hero.position.x - boss.position.x)
             let dy = abs(hero.position.y - boss.position.y)
-            if dx < 70, dy < 78 {
+            if dx < 79, dy < 130 {
                 if heroVelY < -20 {
                     hitBoss()                       // descending onto the boss
-                } else if !isOnGround {
-                    // Airborne bump — slide her clear and pop her up a little.
+                } else if !isOnGround, hero.position.y + 31 > bossAnchor.y - 40 {
+                    // Airborne and hero's head has reached the boss's lower body.
                     let pushDir: CGFloat = hero.position.x < boss.position.x ? -1 : 1
                     hero.position.x = boss.position.x + pushDir * 110
                     heroVelY = 90
@@ -1002,6 +1043,13 @@ class BossMinigameNode: SKNode {
                     break
                 }
             }
+        }
+
+        // Proximity chest claim — hero walks up to the boss chest to open it
+        if bossDefeated, !chestOpened, !isCompleting, !isDead,
+           let chest = chestNode,
+           abs(hero.position.x - chest.position.x) < 80 {
+            openChest()
         }
 
         // HP dots track boss as it moves

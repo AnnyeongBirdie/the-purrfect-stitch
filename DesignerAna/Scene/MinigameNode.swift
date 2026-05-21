@@ -34,6 +34,7 @@ class MinigameNode: SKNode {
     private var isJumping = false
     private var monsterDefeated = false
     private var chestOpened = false
+    private var chestClaimable = false   // locked for 0.8s after spawn so hero must walk to it
     private var isCompleting = false
     private var isDead = false
 
@@ -45,6 +46,10 @@ class MinigameNode: SKNode {
     private var rightButtonTouch: UITouch?
     private var jumpButtonTouch: UITouch?
     private var lastUpdateTime: TimeInterval = 0
+
+    // Haptic generators — created once, reused on every button press
+    private let hapticLight  = UIImpactFeedbackGenerator(style: .light)
+    private let hapticMedium = UIImpactFeedbackGenerator(style: .medium)
 
     // D-pad button fill colors — buttons darken when held so a thumb sliding
     // off has visible feedback instead of relying on the hero stopping.
@@ -59,6 +64,9 @@ class MinigameNode: SKNode {
     // MARK: - Layout constants (sceneW/sceneH set at runtime in setup(in:))
     private var sceneW: CGFloat = 0
     private var sceneH: CGFloat = 0
+    // Floor center Y in scene coordinates. Set in setup(in:) so everything
+    // that depends on the floor (hero, monster, chest, hazards) uses one source.
+    private var floorCenterY: CGFloat = 0
     private let heroSpeed: CGFloat = 160      // pts/sec
     // Jump tuning knobs — a "snappy arcade" jump. Dial these without touching structure:
     //   jumpPeakFraction  — peak height as a fraction of sceneH
@@ -89,6 +97,9 @@ class MinigameNode: SKNode {
     func setup(in scene: SKScene) {
         sceneW = scene.size.width
         sceneH = scene.size.height
+        // Floor sits high enough that all three D-pad buttons fit below it.
+        // Buttons land at -sceneH*0.38; floor top = -sceneH*0.26+9, safely above.
+        floorCenterY = -sceneH * 0.26
         // Jump physics derived from the tuning knobs above. For a launch velocity v
         // under constant gravity g: time-to-apex = v / g and apex height = v² / (2g).
         // Solving both for the desired apex height and time gives:
@@ -123,7 +134,7 @@ class MinigameNode: SKNode {
     private func buildDungeonAtmosphere() {
         let lineColor = UIColor.white.withAlphaComponent(0.07)
         let brickH: CGFloat = 44
-        let floorY = -sceneH * 0.40
+        let floorY = floorCenterY
 
         // Horizontal mortar lines + staggered vertical joints
         var y = floorY + brickH
@@ -202,14 +213,18 @@ class MinigameNode: SKNode {
     // Returns platform nodes for a given seed. All layouts share: a full-width floor,
     // plus 2–3 elevated platforms the hero must use to reach the monster and chest.
     private func platformLayout(seed: Int) -> [SKShapeNode] {
-        let floor = makePlatform(x: 0, y: -sceneH * 0.40, width: sceneW, height: 18)
+        let floor = makePlatform(x: 0, y: floorCenterY, width: sceneW, height: 18)
 
         switch seed {
         case 2:
+            // Scissors station: three stepped platforms. Blades sit on the left
+            // side of the floor (see buildHazards). Platforms are lower and more
+            // numerous than the other seeds so there are plenty of safe spots.
             return [
                 floor,
-                makePlatform(x: -80, y: -sceneH * 0.15, width: 130, height: 16),
-                makePlatform(x:  90, y:  sceneH * 0.02, width: 130, height: 16),
+                makePlatform(x: -90, y: -sceneH * 0.18, width: 130, height: 16),
+                makePlatform(x:  40, y: -sceneH * 0.08, width: 120, height: 16),
+                makePlatform(x: 170, y:  sceneH * 0.04, width: 120, height: 16),
             ]
         case 3:
             return [
@@ -225,10 +240,11 @@ class MinigameNode: SKNode {
                 makePlatform(x:    0, y: -sceneH * 0.05, width: 100, height: 16),
                 makePlatform(x:  110, y:  sceneH * 0.08, width: 100, height: 16),
             ]
-        default: // seed 1 — tutorial: floor plus one optional side ledge.
+        default: // seed 1 — tutorial: two platforms that require a real jump to reach the monster.
             return [
                 floor,
-                makePlatform(x: -70, y: -sceneH * 0.18, width: 120, height: 16),
+                makePlatform(x: -60, y: -sceneH * 0.08, width: 130, height: 16),
+                makePlatform(x: 100, y:  sceneH * 0.06, width: 200, height: 16),
             ]
         }
     }
@@ -259,7 +275,7 @@ class MinigameNode: SKNode {
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
         hero.setScale(0.15)
-        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: -sceneH * 0.28)
+        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 40)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
@@ -280,21 +296,23 @@ class MinigameNode: SKNode {
     }
 
     private func buildMonster() {
-        // A short, squat creature that sits flush on the floor — short enough to
-        // clear with a normal jump and to land on cleanly. Y = floor-top (+9)
-        // plus the monster's half-height (28).
-        let node = SKSpriteNode(color: .clear, size: CGSize(width: 56, height: 56))
-        node.position = CGPoint(x: sceneW * 0.10, y: -sceneH * 0.40 + 37)
+        // Illustrated thread-ball creature. The PNG is 1024×1536 (2:3 ratio),
+        // so width 60 → height 90 preserves the natural proportions.
+        // Monster center = floor top (floorCenterY+9) + half-height (45).
+        let node = SKSpriteNode(imageNamed: "Monster")
+        node.size = CGSize(width: 60, height: 90)
+        // PNG transparent-padding rule: monster PNGs have ~20pt of transparent space at the
+        // bottom of their bounding box. Always subtract half-height MINUS ~20 when placing a
+        // monster on a surface, i.e. surfaceTop + (halfHeight - 20) = surfaceTop + 25.
+        // (Applies to all sprite characters placed on floors or platforms — remind Claude Code too.)
+        let platformTop = sceneH * 0.06 + 8   // top of the seed-1 upper platform
+        let monsterX = config.levelSeed == 1 ? sceneW * 0.22 : sceneW * 0.10
+        let monsterY = config.levelSeed == 1
+            ? platformTop + 25                  // on the upper platform, padding-corrected
+            : floorCenterY + 34                 // on the floor (seeds 2-4), padding-corrected
+        node.position = CGPoint(x: monsterX, y: monsterY)
         node.zPosition = 2
         node.name = "monster"
-
-        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        label.text = "👾"
-        label.fontSize = 52
-        label.verticalAlignmentMode = .center
-        label.position = .zero
-        label.zPosition = 1
-        node.addChild(label)
 
         let body = SKPhysicsBody(rectangleOf: node.size)
         body.isDynamic = false
@@ -410,9 +428,9 @@ class MinigameNode: SKNode {
         // Small scissor blades standing on the floor — short enough to hop over
         // one at a time. The sprite is sized directly (not via setScale) so the
         // node stays at scale 1.0 and the physics body keeps its true size.
-        let floorTop = -sceneH * 0.40 + 9
+        let floorTop = floorCenterY + 9
         let bladeSize = CGSize(width: 26, height: 50)   // a touch shorter than the hero
-        let startX: CGFloat = -sceneW * 0.20            // first blade just past hero start
+        let startX: CGFloat = -sceneW * 0.28            // blades on the left side of the arena
         for i in 0..<count {
             let blade = SKSpriteNode(imageNamed: "Scissors")
             blade.size = bladeSize
@@ -434,8 +452,10 @@ class MinigameNode: SKNode {
     }
 
     private func buildDirectionalButtons() {
-        leftArrowButton = makeArrowButton(label: "←", x: -sceneW * 0.42, y: -sceneH * 0.39)
-        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: -sceneH * 0.39)
+        // All three control buttons sit at the same Y, below the floor bar.
+        let buttonY = -sceneH * 0.38
+        leftArrowButton  = makeArrowButton(label: "←", x: -sceneW * 0.42, y: buttonY)
+        rightArrowButton = makeArrowButton(label: "→", x: -sceneW * 0.29, y: buttonY)
         addChild(leftArrowButton)
         addChild(rightArrowButton)
     }
@@ -464,7 +484,7 @@ class MinigameNode: SKNode {
         // x = sceneW * 0.36 (not 0.42) keeps the jump button reachable for a
         // wrap-grip with a shorter right thumb — the thumb bends in toward
         // center rather than extending out toward the edge.
-        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.26)
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.38)
         btn.fillColor = buttonRestingFill
         btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
         btn.lineWidth = 2
@@ -499,8 +519,12 @@ class MinigameNode: SKNode {
     }
 
     private func animateEntrance() {
+        // Short fade so the hero is visible almost immediately — 0.4s felt like a delay.
         hero.alpha = 0
-        hero.run(.fadeIn(withDuration: 0.4))
+        hero.run(.fadeIn(withDuration: 0.1))
+        // Pre-warm haptic engines so the very first press fires without latency.
+        hapticLight.prepare()
+        hapticMedium.prepare()
     }
 
     // MARK: - Touch handling (called by BackRoomScene.touchesBegan)
@@ -513,6 +537,7 @@ class MinigameNode: SKNode {
         if jumpButton.contains(location) {
             jumpButtonTouch = touch
             setPressed(jumpButton, true)
+            hapticMedium.impactOccurred()
             tryJump()
             return
         }
@@ -520,12 +545,14 @@ class MinigameNode: SKNode {
         if leftArrowButton.contains(location) {
             leftButtonTouch = touch
             setPressed(leftArrowButton, true)
+            hapticLight.impactOccurred()
             updateMoveDirection()
             return
         }
         if rightArrowButton.contains(location) {
             rightButtonTouch = touch
             setPressed(rightArrowButton, true)
+            hapticLight.impactOccurred()
             updateMoveDirection()
             return
         }
@@ -542,11 +569,7 @@ class MinigameNode: SKNode {
             }
         }
 
-        // Tap chest to open
-        if monsterDefeated, !chestOpened, let chest = chestNode, chest.contains(location) {
-            openChest()
-            return
-        }
+        // Chest is now claimed by proximity (see update()) — no tap needed
     }
 
     func handleTouchEnded(_ touch: UITouch) {
@@ -615,7 +638,7 @@ class MinigameNode: SKNode {
         // The surface under the hero: the floor, or a platform she is
         // descending onto from above (one-way — she jumps up through them).
         let footOffset: CGFloat = 31              // hero sprite half-height
-        var landingY = -sceneH * 0.40 + 40        // floor: sprite stands on surface
+        var landingY = floorCenterY + 40           // floor: sprite stands on surface
         if heroVelY <= 0 {
             let prevFeet = hero.position.y - footOffset
             for rect in platformRects where hero.position.x >= rect.minX - 10
@@ -674,6 +697,15 @@ class MinigameNode: SKNode {
                     break
                 }
             }
+        }
+
+        // Proximity chest claim — hero walks up to the chest to open it.
+        // The 80-pt range is forgiving enough for young players without firing
+        // accidentally while the hero is still fighting the monster.
+        if monsterDefeated, chestClaimable, !chestOpened, !isCompleting, !isDead,
+           let chest = chestNode,
+           abs(hero.position.x - chest.position.x) < 80 {
+            openChest()
         }
 
         // Pacing monster movement
@@ -770,26 +802,34 @@ class MinigameNode: SKNode {
     }
 
     private func spawnChest() {
-        let chest = SKSpriteNode(color: UIColor(red: 0.7, green: 0.5, blue: 0.1, alpha: 1),
-                                 size: CGSize(width: 50, height: 42))
-        chest.position = CGPoint(x: sceneW * 0.30, y: -sceneH * 0.25)
+        chestClaimable = false
+        // Lock claim for 0.8s so the hero must physically walk to the chest.
+        // Fixes seed-1 bug where the hero's x after stomping the upper-platform
+        // monster was already within the 80pt claim radius of the chest spawn point.
+        run(.wait(forDuration: 0.8)) { [weak self] in self?.chestClaimable = true }
+
+        let chest = SKSpriteNode(imageNamed: "Chest")
+        chest.size = CGSize(width: 70, height: 58)
+        // Sit the chest on the floor surface
+        let floorTop = floorCenterY + 9
+        chest.position = CGPoint(x: sceneW * 0.30, y: floorTop + 29)
         chest.zPosition = 2
         chest.name = "chest"
-
-        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        label.text = "📦"
-        label.fontSize = 28
-        label.verticalAlignmentMode = .center
-        label.position = .zero
-        chest.addChild(label)
 
         chest.setScale(0)
         chestNode = chest
         addChild(chest)
 
+        // Pop in, then pulse gently to draw the hero toward it
         chest.run(.sequence([
             .scale(to: 1.2, duration: 0.2),
-            .scale(to: 1.0, duration: 0.1)
+            .scale(to: 1.0, duration: 0.1),
+            .run {
+                chest.run(.repeatForever(.sequence([
+                    .scale(to: 1.08, duration: 0.55),
+                    .scale(to: 1.00, duration: 0.55)
+                ])), withKey: "chestPulse")
+            }
         ]))
     }
 
@@ -797,6 +837,12 @@ class MinigameNode: SKNode {
         guard !chestOpened else { return }
         chestOpened = true
         isCompleting = true
+
+        // Stop the attract pulse, swap to the open-chest art, then bounce
+        chestNode?.removeAction(forKey: "chestPulse")
+        chestNode?.texture = SKTexture(imageNamed: "ChestOpen")
+        chestNode?.size = CGSize(width: 84, height: 70)   // lid-open art is a touch wider
+
         instructionLabel.text = config.chestRewardLabel
 
         let bounce = SKAction.sequence([
