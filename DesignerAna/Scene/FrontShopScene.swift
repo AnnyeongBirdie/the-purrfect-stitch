@@ -37,6 +37,7 @@ class FrontShopScene: SKScene {
     private var safeTop: CGFloat = 0
     private var safeBottom: CGFloat = 0
 
+
     override func didMove(to view: SKView) {
         safeTop = view.safeAreaInsets.top
         safeBottom = view.safeAreaInsets.bottom
@@ -433,7 +434,7 @@ class FrontShopScene: SKScene {
         
         let location = touch.location(in: self)
         let tappedNodes = nodes(at: location)
-        
+
         for node in tappedNodes {
             guard let nodeName = node.name else { continue }
             
@@ -454,8 +455,14 @@ class FrontShopScene: SKScene {
                     return
                 }
 
-            case "settingsNav", "walletNav", "storybookNav":
-                // V2 placeholder — no-op for now
+            case "walletNav":
+                if currentState == .greeting || currentState == .choosingClothing {
+                    transitionToRiddleScene()
+                }
+                return
+
+            case "settingsNav", "storybookNav":
+                // V2 placeholder — no-op
                 return
 
             case "saveTrophyButton":
@@ -612,7 +619,7 @@ class FrontShopScene: SKScene {
             hidePaymentPanel()
             hidePayButtons()
             currentOrder = nil
-            dialogLabel.text = "냥이 부족해요. 다시 골라주세요."
+            dialogLabel.text = "냥이 부족해요! 💰 눌러서 퀴즈로 버세요!"
             showClothingChoicesAgain()
         }
     }
@@ -936,6 +943,14 @@ class FrontShopScene: SKScene {
         showGreeting()
         showClothingChoices()
         dialogLabel.text = "안녕하세요! 어떤 옷을 만들어 드릴까요?"
+    }
+
+    private func transitionToRiddleScene() {
+        guard let view = self.view else { return }
+        let scene = RiddleScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.4)
+        view.presentScene(scene, transition: transition)
     }
 
     private func transitionToDressingRoom() {

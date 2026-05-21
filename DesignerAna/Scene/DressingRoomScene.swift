@@ -17,6 +17,8 @@ class DressingRoomScene: SKScene {
     private var safeTop: CGFloat = 0
     private var safeBottom: CGFloat = 0
 
+    private var enlargeOverlay: SKNode?   // non-nil while a trophy is zoomed in
+
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         safeTop = view.safeAreaInsets.top
@@ -68,6 +70,7 @@ class DressingRoomScene: SKScene {
         outline.lineWidth = 2
         outline.alpha = matches.isEmpty ? 0.35 : 0.75
         outline.zPosition = 1
+        if matches.isEmpty { container.name = "emptyCell" }
         container.addChild(outline)
 
         if !matches.isEmpty {
@@ -81,6 +84,10 @@ class DressingRoomScene: SKScene {
             sprite.size = CGSize(width: native.width * fit, height: native.height * fit)
             sprite.alpha = 1.0
             sprite.zPosition = 2
+            // Name encodes clothing+color so touchesBegan can identify what was tapped
+            let cellName = "trophy_\(clothing)_\(color)"
+            sprite.name = cellName
+            container.name = cellName
             container.addChild(sprite)
 
             // Badge for duplicates
@@ -150,12 +157,154 @@ class DressingRoomScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
+        // Any tap dismisses the enlarge overlay.
+        if enlargeOverlay != nil {
+            dismissEnlarged()
+            return
+        }
+
         for node in nodes(at: location) {
             if node.name == "backButton" {
                 transitionToFrontShop()
                 return
             }
+            // Tapped an empty slot?
+            if node.name == "emptyCell" {
+                showEmptySlotToast()
+                return
+            }
+
+            // Tapped a filled trophy cell?
+            if let name = node.name, name.hasPrefix("trophy_") {
+                let parts = name.dropFirst("trophy_".count).split(separator: "_", maxSplits: 1)
+                guard parts.count == 2 else { continue }
+                let clothing = String(parts[0])
+                let color    = String(parts[1])
+                let garments = Store.loadGarments()
+                let count    = garments.filter { $0.clothingType == clothing && $0.fabricColor == color }.count
+                showEnlarged(clothing: clothing, color: color, count: count)
+                return
+            }
         }
+    }
+
+    // MARK: - Trophy enlarge overlay
+
+    private func showEnlarged(clothing: String, color: String, count: Int) {
+        dismissEnlarged()   // safety — shouldn't be open already
+
+        let overlay = SKNode()
+        overlay.zPosition = 20
+        overlay.name = "enlargeOverlay"
+        addChild(overlay)
+        enlargeOverlay = overlay
+
+        // Full-screen dim
+        let dim = SKShapeNode(rectOf: size)
+        dim.fillColor = UIColor(white: 0, alpha: 0.72)
+        dim.strokeColor = .clear
+        dim.zPosition = 0
+        overlay.addChild(dim)
+
+        // Enlarged garment sprite — fit inside 80% of the shorter screen dimension
+        let imageName = garmentImageNameFor(clothing: clothing, color: color)
+        let sprite = SKSpriteNode(imageNamed: imageName)
+        let maxSide = min(size.width, size.height) * 0.80
+        let native  = sprite.size
+        let fit     = min(maxSide / native.width, maxSide / native.height)
+        sprite.size = CGSize(width: native.width * fit, height: native.height * fit)
+        sprite.position = CGPoint(x: 0, y: 20)
+        sprite.zPosition = 1
+        overlay.addChild(sprite)
+
+        // Pop-in animation
+        sprite.setScale(0.6)
+        sprite.run(.sequence([
+            .scale(to: 1.05, duration: 0.18),
+            .scale(to: 1.00, duration: 0.08)
+        ]))
+
+        // Label: clothing type + color
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = "\(color) \(clothing)"
+        label.fontSize = 26
+        label.fontColor = .white
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: 0, y: -sprite.size.height / 2 - 36)
+        label.zPosition = 2
+        overlay.addChild(label)
+
+        // Count badge (only if more than one)
+        if count > 1 {
+            let badgeSize = CGSize(width: 60, height: 34)
+            let badge = SKShapeNode(rectOf: badgeSize, cornerRadius: 10)
+            badge.fillColor = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 0.8)
+            badge.strokeColor = .clear
+            badge.position = CGPoint(x: sprite.size.width / 2 - 10,
+                                     y: sprite.size.height / 2 - 10 + 20)
+            badge.zPosition = 3
+            let badgeLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+            badgeLabel.text = "×\(count)"
+            badgeLabel.fontSize = 20
+            badgeLabel.fontColor = .white
+            badgeLabel.horizontalAlignmentMode = .center
+            badgeLabel.verticalAlignmentMode = .center
+            badgeLabel.zPosition = 1
+            badge.addChild(badgeLabel)
+            overlay.addChild(badge)
+        }
+
+        // Hint
+        let hint = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
+        hint.text = "탭하면 닫혀요"
+        hint.fontSize = 16
+        hint.fontColor = UIColor(white: 1, alpha: 0.45)
+        hint.horizontalAlignmentMode = .center
+        hint.position = CGPoint(x: 0, y: -size.height / 2 + safeBottom + 30)
+        hint.zPosition = 2
+        overlay.addChild(hint)
+    }
+
+    private func showEmptySlotToast() {
+        // Remove any existing toast so rapid taps don't stack.
+        childNode(withName: "emptyToast")?.removeFromParent()
+
+        let toast = SKNode()
+        toast.name = "emptyToast"
+        toast.zPosition = 15
+        toast.position = CGPoint(x: 0, y: -size.height * 0.18)
+        addChild(toast)
+
+        let pill = SKShapeNode(rectOf: CGSize(width: 310, height: 52), cornerRadius: 26)
+        pill.fillColor = UIColor(white: 0.12, alpha: 0.88)
+        pill.strokeColor = .clear
+        toast.addChild(pill)
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = "아직 없어요! 옷을 만들어봐요 👗"
+        label.fontSize = 20
+        label.fontColor = .white
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.zPosition = 1
+        toast.addChild(label)
+
+        toast.alpha = 0
+        toast.run(.sequence([
+            .fadeIn(withDuration: 0.2),
+            .wait(forDuration: 1.6),
+            .fadeOut(withDuration: 0.3),
+            .removeFromParent()
+        ]))
+    }
+
+    private func dismissEnlarged() {
+        enlargeOverlay?.run(.sequence([
+            .fadeOut(withDuration: 0.15),
+            .removeFromParent()
+        ]))
+        enlargeOverlay = nil
     }
 
     private func transitionToFrontShop() {
