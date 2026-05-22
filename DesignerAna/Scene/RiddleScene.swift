@@ -349,6 +349,7 @@ class RiddleScene: SKScene {
         guard let view = self.view,
               let scene = FrontShopScene(fileNamed: "GameScene") else { return }
         scene.scaleMode = .resizeFill
+        scene.suppressEntryBell = true
         let transition = SKTransition.crossFade(withDuration: 0.5)
         view.presentScene(scene, transition: transition)
     }

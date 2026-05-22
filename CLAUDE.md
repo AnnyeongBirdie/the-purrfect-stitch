@@ -29,14 +29,19 @@ This is an iOS SpriteKit game — a Korean-language tailor-shop simulation. The 
 ```
 GameViewController
   └─ FrontShopScene (loaded from GameScene.sks)
+       │  ⚙ nav  → crossFade → SettingsScene  → crossFade → FrontShopScene
+       │  💰 nav  → crossFade → RiddleScene    → crossFade → FrontShopScene
+       │  👗 nav  → crossFade → DressingRoomScene → crossFade → FrontShopScene
        │  pays deposit → fade transition
        └─ BackRoomScene (built programmatically)
             │  dress placed on mannequin → crossFade transition
             └─ FrontShopScene (reloaded from GameScene.sks)
-                 with shouldShowFinishedDress = true
+                 with shouldShowFinishedGarment = true
 ```
 
 Scene-to-scene communication is a plain property set on the destination before `presentScene()`. Currency state lives in a `Wallet.shared` singleton, read directly from both scenes. There is no shared coordinator or persistent storage across launches.
+
+Side-scenes (DressingRoomScene, RiddleScene, SettingsScene) all set `scene.suppressEntryBell = true` before presenting FrontShopScene on return, so the shop bell only plays on genuine entries (app launch, back-room completion), not on return from navigation.
 
 ### State machines
 
@@ -83,7 +88,7 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 
 ### Model layer
 
-`Model/` has four files; scene-specific state still lives inside each scene class.
+`Model/` has seven files; scene-specific state still lives inside each scene class.
 
 | Type | Key fields |
 |---|---|
@@ -91,6 +96,9 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 | `FrontShopState` (enum) | six cases, drives UI in FrontShopScene |
 | `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
 | `Wallet` (singleton) | `balance: Int` (starts at 200냥, not persisted across launches) |
+| `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
+| `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String, on: SKNode)`. All SFX route through this — silent no-op when muted. |
+| `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 11 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. |
 
 `currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state is `Wallet.shared.balance` — same value read from both scenes, no property handoff needed.
 

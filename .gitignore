@@ -36,3 +36,8 @@ BossMinigame_prompt.md
 # Claude Code per-machine settings (absolute paths, machine-specific)
 .claude/settings.local.json
 *_prompt.md
+
+# Raw asset working folders at repo root (temporary — revisit end of session).
+# Leading slash anchors to repo root so DesignerAna/SoundEffects/ is NOT ignored.
+/SoundEffects/
+/SpriteArt/

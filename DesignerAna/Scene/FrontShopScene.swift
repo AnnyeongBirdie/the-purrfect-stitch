@@ -27,6 +27,7 @@ class FrontShopScene: SKScene {
     private var payButton: SKShapeNode?
     
     var shouldShowFinishedGarment = false
+    var suppressEntryBell = false   // set by side-scenes (Wardrobe/Riddle/Settings) on return
     var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
     var completedOrder: Order?
 
@@ -45,6 +46,9 @@ class FrontShopScene: SKScene {
         setupDialogueUI()
         fixCharacterLayout()
         setupNavIcons()
+        if !suppressEntryBell {
+            SoundManager.shared.play("sfx_shop_bell.mp3", on: self)
+        }
 
         if shouldShowFinishedGarment {
             showFinishedGarmentOnFrontMannequin()
@@ -461,8 +465,14 @@ class FrontShopScene: SKScene {
                 }
                 return
 
-            case "settingsNav", "storybookNav":
-                // V2 placeholder — no-op
+            case "settingsNav":
+                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                transitionToSettingsScene()
+                return
+
+            case "storybookNav":
+                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                transitionToStorybookScene()
                 return
 
             case "saveTrophyButton":
@@ -473,12 +483,14 @@ class FrontShopScene: SKScene {
 
             case "dressButton", "shirtButton", "pantsButton":
                 if currentState == .choosingClothing {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleChoice(named: nodeName)
                     return
                 }
 
             case "pinkColorButton", "blueColorButton", "yellowColorButton":
                 if currentState == .choosingFabricColor {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleFabricColorChoice(named: nodeName)
                     return
                 }
@@ -494,24 +506,28 @@ class FrontShopScene: SKScene {
 
             case "confirmOrderButton":
                 if currentState == .reviewingOrder {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleConfirmOrder()
                     return
                 }
-                
+
             case "cancelOrderButton":
                 if currentState == .reviewingOrder {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleCancelOrder()
                     return
                 }
-                
+
             case "confirmPayButton":
                 if currentState == .awaitingPayment {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handlePayment()
                     return
                 }
 
             case "goBackButton":
                 if currentState == .awaitingPayment {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleGoBackFromPayment()
                     return
                 }
@@ -527,6 +543,7 @@ class FrontShopScene: SKScene {
         hideOrderSheet()
         hideReviewButtons()
         dialogLabel.text = "좋아요! 선수금을 내주세요."
+        SoundManager.shared.play("sfx_order_stamp.mp3", on: self)
         showPaymentPanel()
         
     }
@@ -613,6 +630,7 @@ class FrontShopScene: SKScene {
             currentState = .sendingOrder
             hidePaymentPanel()
             hidePayButtons()
+            SoundManager.shared.play("sfx_coin_pay.mp3", on: self)
             sendOrderToBackRoom()
         } else {
             currentState = .choosingClothing
@@ -668,7 +686,8 @@ class FrontShopScene: SKScene {
     
     private func transitionToBackRoom() {
         guard let view = self.view else { return }
-        
+        SoundManager.shared.play("sfx_transition_fade.mp3", on: self)
+
         let backRoomScene = BackRoomScene(size: self.size)
         backRoomScene.scaleMode = self.scaleMode
         backRoomScene.order = currentOrder
@@ -945,6 +964,14 @@ class FrontShopScene: SKScene {
         dialogLabel.text = "안녕하세요! 어떤 옷을 만들어 드릴까요?"
     }
 
+    private func transitionToSettingsScene() {
+        guard let view = self.view else { return }
+        let scene = SettingsScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.4)
+        view.presentScene(scene, transition: transition)
+    }
+
     private func transitionToRiddleScene() {
         guard let view = self.view else { return }
         let scene = RiddleScene(size: self.size)
@@ -958,6 +985,14 @@ class FrontShopScene: SKScene {
         let scene = DressingRoomScene(size: self.size)
         scene.scaleMode = self.scaleMode
         let transition = SKTransition.crossFade(withDuration: 0.5)
+        view.presentScene(scene, transition: transition)
+    }
+
+    private func transitionToStorybookScene() {
+        guard let view = self.view else { return }
+        let scene = StorybookScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.4)
         view.presentScene(scene, transition: transition)
     }
 }
