@@ -131,6 +131,14 @@ Each station (fabric cabinet, sewing station, button station, mannequin) gates p
 
 **Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
 
+### Phase 4 — Audio pass
+
+In progress. A full sound pass across every scene, and a **v1 release gate** — v1 ships with working sound. The `SoundManager` singleton and the settings mute toggle already shipped (commit `b256239`), so Phase 4 is purely content sourcing and wiring, with no new infrastructure.
+
+The game needs 28 sound effects in total. The five front-shop UI/ambient SFX are sourced and bundled in `DesignerAna/SoundEffects/`; the remaining 23 — back room, minigame movement, minigame combat, boss fight, and wardrobe — are not yet sourced. Sourcing royalty-free MP3s is the current blocker and is owner-driven. Per-SFX sourced-vs-wired status is tracked in `SOUND_INVENTORY.md` (git-tracked, at the repo root).
+
+Wiring lags sourcing. `RiddleScene` and `DressingRoomScene` do not yet play button taps even though `sfx_button_tap` is available; rather than wire that one gap on its own, each scene is wired completely — button taps plus its own SFX — once its full sound set is sourced. This absorbs what was previously tracked as a standalone "sound-wiring gap" cleanup item.
+
 ### Currency & economy
 
 - **Wallet:** `Wallet.shared.balance: Int`, starting at 200냥 per launch (not persisted), depleted by deposits in the front shop. Read directly from both scenes — no property handoff between scenes.
