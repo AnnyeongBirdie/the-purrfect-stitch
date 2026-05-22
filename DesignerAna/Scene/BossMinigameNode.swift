@@ -466,7 +466,7 @@ class BossMinigameNode: SKNode {
                     self.handleDeath()
                 }
                 pad.removeFromParent()
-                self.openVulnerabilityWindow(duration: 1.5) { [weak self] in
+                self.openVulnerabilityWindow(duration: 3.0) { [weak self] in
                     self?.boss.run(.move(to: self!.bossAnchor, duration: 0.4)) {
                         self?.scheduleNextAttack()
                     }
@@ -516,7 +516,7 @@ class BossMinigameNode: SKNode {
             let travelTime = self.sceneW / 360.0 + 0.3
             self.run(.wait(forDuration: travelTime)) { [weak self] in
                 guard let self, !self.bossDefeated else { return }
-                self.openVulnerabilityWindow(duration: 1.5) { [weak self] in
+                self.openVulnerabilityWindow(duration: 3.0) { [weak self] in
                     self?.scheduleNextAttack()
                 }
             }
@@ -560,7 +560,7 @@ class BossMinigameNode: SKNode {
         if adds.isEmpty {
             boss.removeAction(forKey: "summonPulse")
             boss.alpha = 1.0
-            openVulnerabilityWindow(duration: 1.5) { [weak self] in
+            openVulnerabilityWindow(duration: 3.0) { [weak self] in
                 self?.scheduleNextAttack()
             }
         }

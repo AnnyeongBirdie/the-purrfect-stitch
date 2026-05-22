@@ -51,7 +51,8 @@ class FrontShopScene: SKScene {
             showFinishedGarmentOnFrontMannequin()
             showCompletionGreeting()
             showSaveTrophyButton()
-            currentState = .greeting
+            currentState = .showingFinishedGarment
+            setNavIconsDimmed(true)   // block leaving before the trophy is saved
         } else if let saved = Store.loadActiveOrder(),
                   Date().timeIntervalSince(saved.savedAt) < 30 * 24 * 3600 {
             showGreeting()
@@ -104,6 +105,16 @@ class FrontShopScene: SKScene {
             label.name = icon.name
             btn.addChild(label)
             addChild(btn)
+        }
+    }
+
+    /// Dim or restore the four nav icons. They are dimmed while a finished
+    /// garment waits to be saved, so it reads as "inactive" rather than
+    /// silently swallowing taps — and so the trophy can't be lost by
+    /// navigating away before it is stored.
+    private func setNavIconsDimmed(_ dimmed: Bool) {
+        for name in ["settingsNav", "walletNav", "wardrobeNav", "storybookNav"] {
+            childNode(withName: name)?.alpha = dimmed ? 0.35 : 1.0
         }
     }
 
@@ -462,13 +473,17 @@ class FrontShopScene: SKScene {
                 return
 
             case "settingsNav":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
-                transitionToSettingsScene()
+                if currentState.accepts(.appNavigation) {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    transitionToSettingsScene()
+                }
                 return
 
             case "storybookNav":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
-                transitionToStorybookScene()
+                if currentState.accepts(.appNavigation) {
+                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    transitionToStorybookScene()
+                }
                 return
 
             case "saveTrophyButton":
@@ -952,6 +967,7 @@ class FrontShopScene: SKScene {
         shouldShowFinishedGarment = false
         completedOrder = nil
 
+        setNavIconsDimmed(false)   // trophy saved — navigation is safe again
         currentState = .choosingClothing
         showGreeting()
         showClothingChoices()

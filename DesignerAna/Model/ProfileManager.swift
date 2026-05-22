@@ -26,7 +26,7 @@ final class ProfileManager {
         ("PirateCat",       "해적 냥"),
         ("ProfessorCat",    "교수 냥"),
         ("RenaissanceCat",  "다빈치 냥"),
-        ("RoyalCat",        "왕족 냥"),
+        ("GodmotherCat",    "요정 대모 냥"),
         ("VillageGirlCat",  "마을 소녀 냥"),
         ("WizardCat",       "마법사 냥"),
     ]

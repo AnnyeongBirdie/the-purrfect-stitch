@@ -8,7 +8,9 @@ import Foundation
 final class Wallet {
     static let shared = Wallet()
     private init() {
-        balance = Store.loadWalletBalance() ?? 200
+        // First launch only — afterwards the saved balance is loaded.
+        // New players start broke and earn their way in via riddles.
+        balance = Store.loadWalletBalance() ?? 0
     }
 
     var balance: Int {

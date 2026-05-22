@@ -96,7 +96,7 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 | `ClothingType` / `FabricColor` (enums) | `String`-raw, `Codable`, `CaseIterable`; live in `Order.swift`. Korean raw values, kept identical to the old `String` model so `Codable` persistence stays byte-compatible. Helpers: `displayName`, `assetFragment` / `assetSuffix`, and `FabricColor.palette`. |
 | `FrontShopState` (enum) | six cases, drives UI in FrontShopScene. `ShopInput` + `FrontShopState.accepts(_:)` — a single exhaustive `switch self` — gate which buttons each state accepts. |
 | `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
-| `Wallet` (singleton) | `balance: Int` (starts at 200냥, not persisted across launches) |
+| `Wallet` (singleton) | `balance: Int` (0냥 on a player's first launch, then persisted across launches via `Store`) |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
 | `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String, on: SKNode)`. All SFX route through this — silent no-op when muted. |
 | `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 11 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. |
@@ -141,12 +141,12 @@ Wiring lags sourcing. `RiddleScene` and `DressingRoomScene` do not yet play butt
 
 ### Currency & economy
 
-- **Wallet:** `Wallet.shared.balance: Int`, starting at 200냥 per launch (not persisted), depleted by deposits in the front shop. Read directly from both scenes — no property handoff between scenes.
+- **Wallet:** `Wallet.shared.balance: Int`, 0냥 on a player's first launch and persisted across launches thereafter (`Store.loadWalletBalance` / `saveWalletBalance`, saved on every `balance` change). Depleted by deposits in the front shop. Read directly from both scenes — no property handoff between scenes.
 - **Earning paths:**
   - **Minigame rewards (shipped):** 10 / 20 / 30 / 50 냥 awarded on chest open at cabinet / sewing / buttons / boss respectively. Shown as a gold pop-up rising from the chest; tracked in the back-room wallet HUD.
   - **Riddle fallback (later):** when the wallet runs low, the NPC shopkeeper offers simple math or trivia questions and awards 냥 for correct answers. Question content sourced from external curriculum, TBD.
 - **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards share a single currency system (`Wallet.shared`) — no duplicated transaction logic across scenes.
-- **Not yet persisted:** the wallet resets to 200냥 on every launch. Persistence (likely UserDefaults + Codable) will be bundled with the wardrobe persistence work.
+- **Persistence (shipped):** the wallet is saved to `UserDefaults` on every change and reloaded on launch — no per-launch reset. A brand-new player starts at 0냥 and earns their way in via riddles and minigame rewards.
 
 ### V2 expansion ideas (post-roadmap)
 

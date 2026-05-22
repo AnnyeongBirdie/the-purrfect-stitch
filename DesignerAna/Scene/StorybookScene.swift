@@ -150,8 +150,8 @@ class StorybookScene: SKScene {
                 tocEmoji: "💰",
                 pages: [
                     Page(
-                        illustrationAsset: nil,
-                        illustrationEmoji: "🪙",
+                        illustrationAsset: "NyangCoin",
+                        illustrationEmoji: nil,
                         pageTitle: "냥이란?",
                         pageBody:
                             "이 왕국에서는 '냥'이라는 특별한 돈을 써요.\n\n" +
