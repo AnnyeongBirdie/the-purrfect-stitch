@@ -47,6 +47,7 @@ Side-scenes (DressingRoomScene, RiddleScene, SettingsScene) all set `scene.suppr
 
 **FrontShopScene** uses the `FrontShopState` enum (in `Model/`):
 `greeting → choosingClothing → choosingFabricColor → reviewingOrder → awaitingPayment → sendingOrder`
+Plus `showingFinishedGarment` — entered on return from the back room with a completed garment; all nav icons are blocked and dimmed in this state until the trophy is saved to the wardrobe.
 
 **BackRoomScene** uses a private nested `BackRoomState` enum with this linear progression:
 `waitingForCabinetTap → walkingToCabinet → waitingForSewing → walkingToSewing → waitingForButtons → walkingToButtons → waitingForMannequin → walkingToMannequin → finalCheck → completed`
@@ -94,7 +95,7 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 |---|---|
 | `Order` (struct) | `clothingType: ClothingType`, `depositAmount: Int`, `fabricColor: FabricColor` |
 | `ClothingType` / `FabricColor` (enums) | `String`-raw, `Codable`, `CaseIterable`; live in `Order.swift`. Korean raw values, kept identical to the old `String` model so `Codable` persistence stays byte-compatible. Helpers: `displayName`, `assetFragment` / `assetSuffix`, and `FabricColor.palette`. |
-| `FrontShopState` (enum) | six cases, drives UI in FrontShopScene. `ShopInput` + `FrontShopState.accepts(_:)` — a single exhaustive `switch self` — gate which buttons each state accepts. |
+| `FrontShopState` (enum) | seven cases, drives UI in FrontShopScene. `ShopInput` + `FrontShopState.accepts(_:)` — a single exhaustive `switch self` — gate which buttons each state accepts. |
 | `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
 | `Wallet` (singleton) | `balance: Int` (0냥 on a player's first launch, then persisted across launches via `Store`) |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
