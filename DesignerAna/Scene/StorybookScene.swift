@@ -220,6 +220,70 @@ class StorybookScene: SKScene {
                             "먼지 몬스터의 비밀을 알고 있을지도 몰라요... 💫"
                     )
                 ]
+            ),
+
+            // ── 6. The Royal Family ───────────────────────────────────────
+            Chapter(
+                title:    "왕실 가족",
+                tocEmoji: "👑",
+                pages: [
+                    // King
+                    Page(
+                        illustrationAsset: "KingCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "고양이 임금님",
+                        pageBody:
+                            "먼지 왕국을 다스리는 마음 따뜻한 임금님이에요.\n\n" +
+                            "손에는 황금 도끼를 들고 있지만, 한 번도 누군가와 " +
+                            "싸운 적이 없답니다. 사실은 아주 다정한 분이거든요.\n\n" +
+                            "왕국과 백성들을 무척 사랑해요. 던전의 먼지 몬스터들도 " +
+                            "미워하지 않고, 분명 무슨 사연이 있을 거라 믿고 있답니다.\n\n" +
+                            "언젠가 임금님이 그 비밀을 풀어줄까요? 👑"
+                    ),
+                    // Queen
+                    Page(
+                        illustrationAsset: "QueenCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "지혜로운 왕비님",
+                        pageBody:
+                            "임금님 곁을 지키는 지혜로운 왕비님이에요.\n\n" +
+                            "왕국의 오래된 이야기를 누구보다 많이 알고 있어요. " +
+                            "손에 든 보석 지팡이는 왕국에서 가장 오래된 보물이랍니다.\n\n" +
+                            "왕비님은 가끔 이렇게 속삭여요. " +
+                            "\"먼지 몬스터들도... 옛날엔 다른 모습이었단다.\"\n\n" +
+                            "왕비님이 아는 비밀은 과연 무엇일까요? 🤫"
+                    ),
+                    // First Princess — Estelle
+                    Page(
+                        illustrationAsset: "FirstPrincessCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "첫째 공주, 에스텔",
+                        pageBody:
+                            "왕국의 첫째 공주, 에스텔이에요. 보랏빛 눈동자와 " +
+                            "왕국에서 가장 풍성한 곱슬털을 가진 공주님이랍니다.\n\n" +
+                            "조용하지만 무척 용감해요. 어느 날 에스텔은 홀로 " +
+                            "먼 길을 떠났어요. 털실 몬스터와 먼지 몬스터의 " +
+                            "숨겨진 비밀을 풀기 위해서죠.\n\n" +
+                            "왕국의 문제를 해결하는 건, 다음 임금이 될 " +
+                            "공주님의 소중한 임무니까요.\n\n" +
+                            "에스텔의 용감한 모험은 또 다른 이야기에서 펼쳐질 거예요. 📖"
+                    ),
+                    // Second Princess — Anastasia ("Ana")
+                    Page(
+                        illustrationAsset: "SecondPrincessCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "둘째 공주, 아나스타샤",
+                        pageBody:
+                            "왕국의 둘째 공주, 아나스타샤예요. 다들 다정하게 " +
+                            "'아나'라고 부른답니다.\n\n" +
+                            "씩씩하고 호기심 많은 샴고양이 공주님이죠. 예쁜 " +
+                            "드레스를 좋아해서 재봉사 가게에 자주 놀러 온대요.\n\n" +
+                            "언니 에스텔이 모험을 떠난 뒤로, 아나는 온갖 사고를 " +
+                            "치며 왕국을 들썩이게 한답니다.\n\n" +
+                            "\"언니, 나도 가만히 있을 순 없어!\" " +
+                            "아나의 이야기는 이제 막 시작되었어요. ✨"
+                    )
+                ]
             )
         ]
     }()
