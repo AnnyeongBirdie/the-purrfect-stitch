@@ -509,9 +509,6 @@ class BackRoomScene: SKScene {
         tailor.isPaused = true
         quitButton?.isHidden = true
 
-        // Save gravity and set platformer gravity
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
-
         // Back-room touches are intercepted in touchesBegan via the activeMinigame
         // early-return, so no separate touch-shield node is needed.
 
@@ -530,7 +527,6 @@ class BackRoomScene: SKScene {
         guard let scene = self.scene else { return }
         tailor.isPaused = true
         quitButton?.isHidden = true
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -18)
 
         let boss = BossMinigameNode(order: order) { [weak self] in
             self?.handleBossCompletion()
@@ -664,7 +660,6 @@ class BackRoomScene: SKScene {
     private func returnToFrontShop() {
         guard let view = self.view else { return }
         guard let scene = FrontShopScene(fileNamed: "GameScene") else {
-            print("Could not load GameScene.sks")
             return
         }
 
@@ -727,7 +722,6 @@ class BackRoomScene: SKScene {
             resumeTarget = .waitingForCabinetTap
         }
 
-        // Set without triggering didSet save (order not yet serialized at this point)
         currentState = resumeTarget
         updateQuitButtonVisibility()
     }

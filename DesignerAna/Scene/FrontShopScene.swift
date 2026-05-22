@@ -31,16 +31,13 @@ class FrontShopScene: SKScene {
     var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
     var completedOrder: Order?
 
-    // wardrobeNode removed — navigation handled by the nav icon strip (see setupNavIcons)
     private var saveTrophyButton: SKShapeNode?
     private var relaunchDialogNode: SKNode?
 
-    private var safeTop: CGFloat = 0
     private var safeBottom: CGFloat = 0
 
 
     override func didMove(to view: SKView) {
-        safeTop = view.safeAreaInsets.top
         safeBottom = view.safeAreaInsets.bottom
         fitBackgroundToScene()
         setupDialogueUI()
@@ -80,9 +77,8 @@ class FrontShopScene: SKScene {
     }
 
     // MARK: - Nav icon strip (left edge)
-    // Four circular icon buttons stacked on the left side.
-    // Wardrobe does the same job as the old wardrobeNode sprite.
-    // Settings / Wallet / Storybook are V2 placeholders (no-op taps for now).
+    // Four circular icon buttons stacked on the left side:
+    // ⚙ Settings, 💰 Wallet (riddles), 👗 Wardrobe, 📖 Storybook.
     private func setupNavIcons() {
         let icons: [(symbol: String, name: String, y: CGFloat)] = [
             ("⚙",  "settingsNav",   105),
@@ -711,7 +707,6 @@ class FrontShopScene: SKScene {
     
     private func showFinishedGarmentOnFrontMannequin() {
         guard let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode else {
-            print("Could not find mannequin node in FrontShopScene")
             return
         }
 
@@ -745,7 +740,6 @@ class FrontShopScene: SKScene {
     
     private func fitBackgroundToScene() {
         guard let background = childNode(withName: "//background") as? SKSpriteNode else {
-            print("Could not find background node in FrontShopScene")
             return
         }
 

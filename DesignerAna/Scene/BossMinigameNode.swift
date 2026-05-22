@@ -30,7 +30,7 @@ class BossMinigameNode: SKNode {
     private var hero: SKSpriteNode!
     private var boss: SKSpriteNode!
     private var bossAura: SKShapeNode!     // state-feedback halo behind the boss
-    private var vulnStarsNode: SKNode?    // orbiting stars shown during vulnerability window
+    private var vulnStarsNode: SKNode?    // 💤 sleep indicator shown during the vulnerability window
     private var platformRects: [CGRect] = []   // climb-up ledges (kinematic landing)
     private var hpDots: [SKShapeNode] = []
     private var chestNode: SKSpriteNode?
@@ -96,9 +96,8 @@ class BossMinigameNode: SKNode {
     private let buttonRestingFill = UIColor.white.withAlphaComponent(0.25)
     private let buttonPressedFill = UIColor.black.withAlphaComponent(0.35)
 
-    // Boss-aura state colors
-    private let auraVulnerable = UIColor(red: 0.35, green: 0.95, blue: 0.45, alpha: 1)
-    private let auraCharging   = UIColor(red: 1.00, green: 0.82, blue: 0.20, alpha: 1)
+    // Boss-aura state color (attack telegraph)
+    private let auraCharging = UIColor(red: 1.00, green: 0.82, blue: 0.20, alpha: 1)
 
     // MARK: - Init
 
@@ -619,17 +618,14 @@ class BossMinigameNode: SKNode {
         vulnStarsNode = nil
     }
 
-    /// A quick bright flash (boss hit). Optionally resumes a steady pulse after.
-    private func flashAura(_ color: UIColor, thenPulse pulseColor: UIColor? = nil) {
+    /// A quick bright flash (boss hit / shield block).
+    private func flashAura(_ color: UIColor) {
         bossAura.removeAllActions()
         bossAura.fillColor = color
         bossAura.run(.sequence([
             .fadeAlpha(to: 0.85, duration: 0.06),
             .fadeAlpha(to: 0.0, duration: 0.14)
-        ])) { [weak self] in
-            guard let self, let pulseColor, !self.bossDefeated else { return }
-            self.pulseAura(pulseColor)
-        }
+        ]))
     }
 
     // MARK: - Vulnerability window

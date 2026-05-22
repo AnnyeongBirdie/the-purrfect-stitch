@@ -24,7 +24,6 @@ class RiddleScene: SKScene {
 
     // ── UI ──────────────────────────────────────────────────────────────────
     private var bubbleNode: SKShapeNode!
-    private var safeTop: CGFloat    = 0
     private var safeBottom: CGFloat = 0
 
     // Bubble dimensions — computed from scene size so layout scales to device
@@ -34,7 +33,6 @@ class RiddleScene: SKScene {
     // ── Lifecycle ────────────────────────────────────────────────────────────
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        safeTop    = view.safeAreaInsets.top
         safeBottom = view.safeAreaInsets.bottom
 
         setupBackground()

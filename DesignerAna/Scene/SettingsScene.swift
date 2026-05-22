@@ -18,7 +18,6 @@ class SettingsScene: SKScene {
     private var avatarNameLabel: SKLabelNode!
     private var dotNodes: [SKShapeNode] = []
 
-    private var safeTop: CGFloat    = 0
     private var safeBottom: CGFloat = 0
 
     private var panelW: CGFloat { min(size.width * 0.44, 310) }
@@ -28,7 +27,6 @@ class SettingsScene: SKScene {
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        safeTop    = view.safeAreaInsets.top
         safeBottom = view.safeAreaInsets.bottom
 
         setupBackground()

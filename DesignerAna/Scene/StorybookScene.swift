@@ -233,8 +233,6 @@ class StorybookScene: SKScene {
     // ── Nodes ─────────────────────────────────────────────────────────────────
 
     private var pageContentNode: SKNode?
-    private var safeTop:    CGFloat = 0
-    private var safeBottom: CGFloat = 0
 
     // ── Colour palette ────────────────────────────────────────────────────────
 
@@ -248,8 +246,6 @@ class StorybookScene: SKScene {
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        safeTop    = view.safeAreaInsets.top
-        safeBottom = view.safeAreaInsets.bottom
         // Warm tan background — frames the open book
         backgroundColor = UIColor(red: 0.86, green: 0.78, blue: 0.60, alpha: 1.0)
         drawBookFrame()

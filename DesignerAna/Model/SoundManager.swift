@@ -3,7 +3,7 @@
 //  DesignerAna
 //
 //  Thin singleton that gates all SFX behind a persistent mute flag.
-//  Usage:  SoundManager.shared.play("sfx_button_tap", on: self)
+//  Usage:  SoundManager.shared.play("sfx_button_tap.mp3", on: self)
 //
 
 import SpriteKit
