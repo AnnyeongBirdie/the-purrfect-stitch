@@ -7,7 +7,7 @@ class FrontShopScene: SKScene {
     
     private var currentState: FrontShopState = .greeting
     private var currentOrder: Order?
-    private var pendingClothingType: String = ""
+    private var pendingClothingType: ClothingType = .dress
     private var pendingDeposit: Int = 0
 
     private var dressButton: SKShapeNode!
@@ -225,18 +225,18 @@ class FrontShopScene: SKScene {
     
     private func handleChoice(named nodeName: String) {
     
-        let clothingType: String
+        let clothingType: ClothingType
         let deposit: Int
 
         switch nodeName {
         case "dressButton":
-            clothingType = "드레스"
+            clothingType = .dress
             deposit = 50
         case "shirtButton":
-            clothingType = "셔츠"
+            clothingType = .shirt
             deposit = 30
         case "pantsButton":
-            clothingType = "바지"
+            clothingType = .pants
             deposit = 40
         default:
             return
@@ -297,11 +297,11 @@ class FrontShopScene: SKScene {
     }
 
     private func handleFabricColorChoice(named nodeName: String) {
-        let fabricColor: String
+        let fabricColor: FabricColor
         switch nodeName {
-        case "pinkColorButton":  fabricColor = "분홍"
-        case "blueColorButton":  fabricColor = "파랑"
-        case "yellowColorButton": fabricColor = "노랑"
+        case "pinkColorButton":   fabricColor = .pink
+        case "blueColorButton":   fabricColor = .blue
+        case "yellowColorButton": fabricColor = .yellow
         default: return
         }
 
@@ -310,7 +310,7 @@ class FrontShopScene: SKScene {
                              fabricColor: fabricColor)
         currentState = .reviewingOrder
         hideFabricColorChoices()
-        dialogLabel.text = "\(fabricColor) 원단으로 주문서를 준비할게요."
+        dialogLabel.text = "\(fabricColor.displayName) 원단으로 주문서를 준비할게요."
         showOrderSheet()
     }
 
@@ -337,7 +337,7 @@ class FrontShopScene: SKScene {
         titleLabel.zPosition = 81
 
         let clothingLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        clothingLabel.text = "의상: \(order.clothingType)"
+        clothingLabel.text = "의상: \(order.clothingType.displayName)"
         clothingLabel.fontSize = 20
         clothingLabel.fontColor = .black
         clothingLabel.position = CGPoint(x: 0, y: 20)
@@ -345,7 +345,7 @@ class FrontShopScene: SKScene {
         clothingLabel.zPosition = 81
 
         let fabricLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        fabricLabel.text = "원단: \(order.fabricColor)"
+        fabricLabel.text = "원단: \(order.fabricColor.displayName)"
         fabricLabel.fontSize = 20
         fabricLabel.fontColor = .black
         fabricLabel.position = CGPoint(x: 0, y: -15)
@@ -449,14 +449,14 @@ class FrontShopScene: SKScene {
 
             switch nodeName {
             case "wardrobeNav":
-                if currentState == .greeting || currentState == .choosingClothing {
+                if currentState.accepts(.sideNavigation) {
                     Store.saveLastSeenCount(Store.loadGarmentCount())
                     transitionToDressingRoom()
                     return
                 }
 
             case "walletNav":
-                if currentState == .greeting || currentState == .choosingClothing {
+                if currentState.accepts(.sideNavigation) {
                     transitionToRiddleScene()
                 }
                 return
@@ -472,27 +472,27 @@ class FrontShopScene: SKScene {
                 return
 
             case "saveTrophyButton":
-                if currentState == .greeting && shouldShowFinishedGarment {
+                if currentState.accepts(.saveTrophy) && shouldShowFinishedGarment {
                     handleSaveTrophy()
                     return
                 }
 
             case "dressButton", "shirtButton", "pantsButton":
-                if currentState == .choosingClothing {
+                if currentState.accepts(.clothingChoice) {
                     SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleChoice(named: nodeName)
                     return
                 }
 
             case "pinkColorButton", "blueColorButton", "yellowColorButton":
-                if currentState == .choosingFabricColor {
+                if currentState.accepts(.fabricChoice) {
                     SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleFabricColorChoice(named: nodeName)
                     return
                 }
 
             case "fabricBackButton":
-                if currentState == .choosingFabricColor {
+                if currentState.accepts(.fabricBack) {
                     hideFabricColorChoices()
                     currentState = .choosingClothing
                     showClothingChoicesAgain()
@@ -501,28 +501,28 @@ class FrontShopScene: SKScene {
                 }
 
             case "confirmOrderButton":
-                if currentState == .reviewingOrder {
+                if currentState.accepts(.orderReview) {
                     SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleConfirmOrder()
                     return
                 }
 
             case "cancelOrderButton":
-                if currentState == .reviewingOrder {
+                if currentState.accepts(.orderReview) {
                     SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleCancelOrder()
                     return
                 }
 
             case "confirmPayButton":
-                if currentState == .awaitingPayment {
+                if currentState.accepts(.payment) {
                     SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handlePayment()
                     return
                 }
 
             case "goBackButton":
-                if currentState == .awaitingPayment {
+                if currentState.accepts(.payment) {
                     SoundManager.shared.play("sfx_button_tap.mp3", on: self)
                     handleGoBackFromPayment()
                     return
@@ -801,7 +801,7 @@ class FrontShopScene: SKScene {
         panel.addChild(title)
 
         let subtitle = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        subtitle.text = "\(saved.fabricColor) \(saved.clothingType)"
+        subtitle.text = "\(saved.fabricColor.displayName) \(saved.clothingType.displayName)"
         subtitle.fontSize = 18
         subtitle.fontColor = UIColor(red: 0.4, green: 0.2, blue: 0.0, alpha: 1.0)
         subtitle.position = CGPoint(x: 0, y: 88 * s)

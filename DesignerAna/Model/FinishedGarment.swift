@@ -8,7 +8,7 @@
 import Foundation
 
 struct FinishedGarment: Codable {
-    let clothingType: String   // "드레스" | "셔츠" | "바지"
-    let fabricColor: String    // "분홍" | "파랑" | "노랑"
+    let clothingType: ClothingType
+    let fabricColor: FabricColor
     let completedAt: Date
 }

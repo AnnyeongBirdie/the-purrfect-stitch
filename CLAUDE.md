@@ -92,8 +92,9 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 
 | Type | Key fields |
 |---|---|
-| `Order` (struct) | `clothingType: String`, `depositAmount: Int`, `fabricColor: String` |
-| `FrontShopState` (enum) | six cases, drives UI in FrontShopScene |
+| `Order` (struct) | `clothingType: ClothingType`, `depositAmount: Int`, `fabricColor: FabricColor` |
+| `ClothingType` / `FabricColor` (enums) | `String`-raw, `Codable`, `CaseIterable`; live in `Order.swift`. Korean raw values, kept identical to the old `String` model so `Codable` persistence stays byte-compatible. Helpers: `displayName`, `assetFragment` / `assetSuffix`, and `FabricColor.palette`. |
+| `FrontShopState` (enum) | six cases, drives UI in FrontShopScene. `ShopInput` + `FrontShopState.accepts(_:)` — a single exhaustive `switch self` — gate which buttons each state accepts. |
 | `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
 | `Wallet` (singleton) | `balance: Int` (starts at 200냥, not persisted across launches) |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
@@ -105,8 +106,7 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 ### Known gaps / in-progress state
 
 - `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code. A conversion to fully programmatic was considered alongside the layout fixes following the wardrobe + persistence ship at commit `2be2344`, but deferred — the regression risk wasn't worth the consistency win while that work was still settling. Revisit when another structural change is already on the table.
-- State checks in `FrontShopScene` use `if currentState == .case` guards instead of exhaustive switches; this loses Swift's compile-time exhaustiveness check.
-- `Order.fabricColor` and `Order.clothingType` are typed as `String` rather than enum. Couples with the if-guards concern; both will likely be refactored together.
+- *(Resolved)* `Order.clothingType` / `Order.fabricColor` are now the `ClothingType` / `FabricColor` enums, and `FrontShopScene`'s `if currentState == .case` guards now route through the exhaustive `FrontShopState.accepts(_:)` switch — restoring compile-time exhaustiveness. The stringly-typed switches in `GarmentNaming`, `BackRoomScene` (halo shades), and `DressingRoomScene` were converted to the enums in the same pass.
 
 ## Roadmap
 

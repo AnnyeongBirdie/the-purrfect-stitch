@@ -31,23 +31,23 @@ class BackRoomScene: SKScene {
 
     private var haloLight: UIColor {
         switch order?.fabricColor {
-        case "파랑": return UIColor(red: 0.75, green: 0.88, blue: 1.00, alpha: 1.0)
-        case "노랑": return UIColor(red: 1.00, green: 0.97, blue: 0.65, alpha: 1.0)
-        default:     return UIColor(red: 1.00, green: 0.80, blue: 0.86, alpha: 1.0)
+        case .blue:   return UIColor(red: 0.75, green: 0.88, blue: 1.00, alpha: 1.0)
+        case .yellow: return UIColor(red: 1.00, green: 0.97, blue: 0.65, alpha: 1.0)
+        default:      return UIColor(red: 1.00, green: 0.80, blue: 0.86, alpha: 1.0)  // .pink or nil
         }
     }
     private var haloMedium: UIColor {
         switch order?.fabricColor {
-        case "파랑": return UIColor(red: 0.20, green: 0.50, blue: 0.95, alpha: 1.0)
-        case "노랑": return UIColor(red: 0.95, green: 0.80, blue: 0.10, alpha: 1.0)
-        default:     return UIColor(red: 0.95, green: 0.38, blue: 0.60, alpha: 1.0)
+        case .blue:   return UIColor(red: 0.20, green: 0.50, blue: 0.95, alpha: 1.0)
+        case .yellow: return UIColor(red: 0.95, green: 0.80, blue: 0.10, alpha: 1.0)
+        default:      return UIColor(red: 0.95, green: 0.38, blue: 0.60, alpha: 1.0)  // .pink or nil
         }
     }
     private var haloDark: UIColor {
         switch order?.fabricColor {
-        case "파랑": return UIColor(red: 0.05, green: 0.15, blue: 0.70, alpha: 1.0)
-        case "노랑": return UIColor(red: 0.75, green: 0.50, blue: 0.00, alpha: 1.0)
-        default:     return UIColor(red: 0.70, green: 0.05, blue: 0.28, alpha: 1.0)
+        case .blue:   return UIColor(red: 0.05, green: 0.15, blue: 0.70, alpha: 1.0)
+        case .yellow: return UIColor(red: 0.75, green: 0.50, blue: 0.00, alpha: 1.0)
+        default:      return UIColor(red: 0.70, green: 0.05, blue: 0.28, alpha: 1.0)  // .pink or nil
         }
     }
 

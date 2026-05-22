@@ -11,8 +11,9 @@ class DressingRoomScene: SKScene {
 
     // Rows = clothing types (top → bottom: dress, shirt, pants)
     // Columns = fabric colors (left → right: pink, blue, yellow)
-    private let clothingTypes = ["드레스", "셔츠", "바지"]
-    private let fabricColors  = ["분홍", "파랑", "노랑"]
+    // .allCases follows declaration order, which matches that row/column layout.
+    private let clothingTypes = ClothingType.allCases
+    private let fabricColors  = FabricColor.allCases
 
     private var safeTop: CGFloat = 0
     private var safeBottom: CGFloat = 0
@@ -58,7 +59,7 @@ class DressingRoomScene: SKScene {
         }
     }
 
-    private func buildCell(cellSize: CGSize, clothing: String, color: String,
+    private func buildCell(cellSize: CGSize, clothing: ClothingType, color: FabricColor,
                            matches: [FinishedGarment], position: CGPoint) -> SKNode {
         let container = SKNode()
         container.position = position
@@ -84,8 +85,10 @@ class DressingRoomScene: SKScene {
             sprite.size = CGSize(width: native.width * fit, height: native.height * fit)
             sprite.alpha = 1.0
             sprite.zPosition = 2
-            // Name encodes clothing+color so touchesBegan can identify what was tapped
-            let cellName = "trophy_\(clothing)_\(color)"
+            // Name encodes clothing+color so touchesBegan can identify what was
+            // tapped. Korean raw values contain no underscores, so the
+            // "trophy_<clothing>_<color>" split stays unambiguous.
+            let cellName = "trophy_\(clothing.rawValue)_\(color.rawValue)"
             sprite.name = cellName
             container.name = cellName
             container.addChild(sprite)
@@ -115,20 +118,8 @@ class DressingRoomScene: SKScene {
         return container
     }
 
-    private func garmentImageNameFor(clothing: String, color: String) -> String {
-        let garmentPart: String
-        switch clothing {
-        case "셔츠": garmentPart = "Shirt"
-        case "바지": garmentPart = "Pants"
-        default:     garmentPart = "Dress"
-        }
-        let colorPart: String
-        switch color {
-        case "파랑": colorPart = "Blue"
-        case "노랑": colorPart = "Yellow"
-        default:     colorPart = "Pink"
-        }
-        return "Mannequin_\(garmentPart)_\(colorPart)"
+    private func garmentImageNameFor(clothing: ClothingType, color: FabricColor) -> String {
+        "Mannequin_\(clothing.assetFragment)_\(color.assetSuffix)"
     }
 
     private func setupBackButton() {
@@ -177,9 +168,9 @@ class DressingRoomScene: SKScene {
             // Tapped a filled trophy cell?
             if let name = node.name, name.hasPrefix("trophy_") {
                 let parts = name.dropFirst("trophy_".count).split(separator: "_", maxSplits: 1)
-                guard parts.count == 2 else { continue }
-                let clothing = String(parts[0])
-                let color    = String(parts[1])
+                guard parts.count == 2,
+                      let clothing = ClothingType(rawValue: String(parts[0])),
+                      let color    = FabricColor(rawValue: String(parts[1])) else { continue }
                 let garments = Store.loadGarments()
                 let count    = garments.filter { $0.clothingType == clothing && $0.fabricColor == color }.count
                 showEnlarged(clothing: clothing, color: color, count: count)
@@ -190,7 +181,7 @@ class DressingRoomScene: SKScene {
 
     // MARK: - Trophy enlarge overlay
 
-    private func showEnlarged(clothing: String, color: String, count: Int) {
+    private func showEnlarged(clothing: ClothingType, color: FabricColor, count: Int) {
         dismissEnlarged()   // safety — shouldn't be open already
 
         let overlay = SKNode()
@@ -226,7 +217,7 @@ class DressingRoomScene: SKScene {
 
         // Label: clothing type + color
         let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        label.text = "\(color) \(clothing)"
+        label.text = "\(color.displayName) \(clothing.displayName)"
         label.fontSize = 26
         label.fontColor = .white
         label.horizontalAlignmentMode = .center

@@ -9,8 +9,8 @@
 import Foundation
 
 struct ActiveOrder: Codable {
-    let clothingType: String
-    let fabricColor: String
+    let clothingType: ClothingType
+    let fabricColor: FabricColor
     let depositAmount: Int
     let backRoomStateName: String   // raw string of BackRoomState case
     let earnedMinigameRewards: Int
