@@ -30,7 +30,7 @@ class BossMinigameNode: SKNode {
     private var hero: SKSpriteNode!
     private var boss: SKSpriteNode!
     private var bossAura: SKShapeNode!     // state-feedback halo behind the boss
-    private var vulnStarsNode: SKNode?    // 💤 sleep indicator shown during the vulnerability window
+    private var sleepIndicatorNode: SKNode?    // 💤 sleep indicator shown during the vulnerability window
     private var platformRects: [CGRect] = []   // climb-up ledges (kinematic landing)
     private var hpDots: [SKShapeNode] = []
     private var chestNode: SKSpriteNode?
@@ -586,14 +586,14 @@ class BossMinigameNode: SKNode {
 
     /// Show one large blinking 💤 above the boss head — boss fell asleep after attacking.
     /// Replaces the green circle aura during the vulnerability window.
-    private func showVulnerabilityStars() {
-        hideVulnerabilityStars()
+    private func showSleepIndicator() {
+        hideSleepIndicator()
         let container = SKNode()
         // Boss top edge is at +97 from center; sleep bubble floats above that.
         container.position = CGPoint(x: 0, y: 118)
         container.zPosition = 5
         boss.addChild(container)
-        vulnStarsNode = container
+        sleepIndicatorNode = container
 
         let zzz = SKLabelNode(text: "💤")
         zzz.fontSize = 52
@@ -610,9 +610,9 @@ class BossMinigameNode: SKNode {
         ])), withKey: "zzzBlink")
     }
 
-    private func hideVulnerabilityStars() {
-        vulnStarsNode?.removeFromParent()
-        vulnStarsNode = nil
+    private func hideSleepIndicator() {
+        sleepIndicatorNode?.removeFromParent()
+        sleepIndicatorNode = nil
     }
 
     /// A quick bright flash (boss hit / shield block).
@@ -630,14 +630,14 @@ class BossMinigameNode: SKNode {
     private func openVulnerabilityWindow(duration: TimeInterval, onClose: @escaping () -> Void) {
         guard !bossDefeated else { onClose(); return }
         isVulnerable = true
-        hideAura()                    // no green circle — stars signal the opening instead
-        showVulnerabilityStars()
+        hideAura()                    // no green circle — the 💤 signals the opening instead
+        showSleepIndicator()
         instructionLabel.text = "지금이에요! 공격!"
 
         run(.wait(forDuration: duration)) { [weak self] in
             guard let self else { return }
             self.isVulnerable = false
-            self.hideVulnerabilityStars()
+            self.hideSleepIndicator()
             if !self.bossDefeated {
                 self.instructionLabel.text = "보스 괴물을 물리쳐요!"
             }
@@ -834,7 +834,7 @@ class BossMinigameNode: SKNode {
         boss.alpha = 1.0
         boss.setScale(1.0)
         hideAura()
-        hideVulnerabilityStars()
+        hideSleepIndicator()
         bossHP = 3
         isVulnerable = false
         isInvulnerable = false
