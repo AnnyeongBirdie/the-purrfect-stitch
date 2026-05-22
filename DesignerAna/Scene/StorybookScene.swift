@@ -3,8 +3,9 @@
 //  DesignerAna
 //
 //  The 📖 storybook scene — accessed from the nav strip in FrontShopScene.
-//  Shows a table of contents followed by five readable chapters about the
-//  game world, its economy, the tailor shop, and the characters who live there.
+//  Shows a table of contents followed by five readable chapters: the kingdom,
+//  the royal family, the economy, the workshop & its dungeon relics, and the
+//  cast of characters featured in the game.
 //
 
 import SpriteKit
@@ -20,6 +21,9 @@ class StorybookScene: SKScene {
         let illustrationEmoji: String?
         let pageTitle: String
         let pageBody:  String
+        /// Per-page multiplier applied on top of the shared illustration scale.
+        /// 1.0 = default size; >1 enlarges, <1 shrinks. Defaults to 1.0.
+        var illustrationScale: CGFloat = 1.0
     }
 
     private struct Chapter {
@@ -33,7 +37,7 @@ class StorybookScene: SKScene {
     private let chapters: [Chapter] = {
         return [
 
-            // ── 1. World Introduction ──────────────────────────────────────
+            // ── 1. World Introduction (merged: world + creator lore) ──────
             Chapter(
                 title:    "왕국 소개",
                 tocEmoji: "🏰",
@@ -49,25 +53,20 @@ class StorybookScene: SKScene {
                             "나쁜 몬스터는 아니에요. 사실 그들에게는 " +
                             "아직 아무도 모르는 비밀이 있거든요.\n\n" +
                             "이 왕국의 이야기를 함께 떠나볼까요? 📖"
-                    )
-                ]
-            ),
-
-            // ── 2. Kingdom Map & Creator Lore ─────────────────────────────
-            Chapter(
-                title:    "왕국 지도와 창조자",
-                tocEmoji: "🗺",
-                pages: [
+                    ),
                     Page(
                         illustrationAsset: nil,
-                        illustrationEmoji: "💝",
-                        pageTitle: "아나 엄마의 선물",
+                        illustrationEmoji: "💻",
+                        pageTitle: "신비한 창조자, 개발자",
                         pageBody:
-                            "이 왕국을 만든 사람은 바로 아나의 엄마예요.\n\n" +
-                            "아나 엄마는 이야기를 정말 좋아해서, " +
-                            "딸을 위해 직접 왕국을 그려냈답니다.\n\n" +
-                            "상상 속에서 태어난 왕국이지만, " +
-                            "그 안에서 벌어지는 일들은 진짜처럼 생생해요!"
+                            "먼지 왕국을 만든 분은 아주 신비한 존재예요. " +
+                            "사람들은 그분을 '개발자'라고 불러요.\n\n" +
+                            "아주 먼 옛날엔 누구나 아는 직업이었지만, 이제는 " +
+                            "그게 무슨 일인지 아무도 모른답니다. 전설에 따르면 " +
+                            "개발자는 반은 사람 엄마, 반은 인공지능(AI)이었대요.\n\n" +
+                            "개발자에겐 신기한 규칙이 있었어요. 버그(작은 벌레)를 " +
+                            "하나 잡을 때마다 새 버그 두 마리가 생겨났대요! " +
+                            "그래서 왕국엔 지금도 가끔 이상한 일이 벌어진답니다. 🐛✨"
                     ),
                     Page(
                         illustrationAsset: nil,
@@ -76,8 +75,71 @@ class StorybookScene: SKScene {
                         pageBody:
                             "왕국에는 커다란 성과 작은 마을들이 있어요.\n\n" +
                             "마법사의 탑, 재봉사 가게, 시장이 있는 광장...\n\n" +
-                            "아나 엄마가 하나하나 정성껏 만들어준 곳들이에요.\n\n" +
+                            "모두 개발자가 하나하나 정성껏 코드로 지어낸 곳들이래요.\n\n" +
                             "언젠가 왕국 지도 전체를 볼 수 있게 될 거예요! ✨"
+                    )
+                ]
+            ),
+
+            // ── 2. The Royal Family ───────────────────────────────────────
+            Chapter(
+                title:    "왕실 가족",
+                tocEmoji: "👑",
+                pages: [
+                    // King
+                    Page(
+                        illustrationAsset: "KingCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "고양이 임금님",
+                        pageBody:
+                            "먼지 왕국을 다스리는 마음 따뜻한 임금님이에요.\n\n" +
+                            "손에는 황금 도끼를 들고 있지만, 한 번도 누군가와 " +
+                            "싸운 적이 없답니다. 사실은 아주 다정한 분이거든요.\n\n" +
+                            "왕국과 백성들을 무척 사랑해요. 던전의 먼지 몬스터들도 " +
+                            "미워하지 않고, 분명 무슨 사연이 있을 거라 믿고 있답니다.\n\n" +
+                            "언젠가 임금님이 그 비밀을 풀어줄까요? 👑"
+                    ),
+                    // Queen
+                    Page(
+                        illustrationAsset: "QueenCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "지혜로운 왕비님",
+                        pageBody:
+                            "백성을 사랑으로 다스리는 지혜로운 왕비님이에요.\n\n" +
+                            "왕국의 오래된 이야기를 누구보다 많이 알고 있어요. " +
+                            "손에 든 보석 지팡이는 왕국에서 가장 오래된 보물이랍니다.\n\n" +
+                            "왕비님은 가끔 이렇게 속삭여요. " +
+                            "\"먼지 몬스터들도... 옛날엔 다른 모습이었단다.\"\n\n" +
+                            "왕비님이 아는 비밀은 과연 무엇일까요? 🤫"
+                    ),
+                    // First Princess — Estelle
+                    Page(
+                        illustrationAsset: "FirstPrincessCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "첫째 공주, 에스텔",
+                        pageBody:
+                            "왕국의 첫째 공주, 에스텔이에요. 보랏빛 눈동자와 " +
+                            "풍성한 곱슬털을 가졌답니다.\n\n" +
+                            "그림 그리는 걸 무척 좋아해서, 늘 필요한 것보다 훨씬 " +
+                            "많은 미술 도구를 들고 다닌답니다. 🎨\n\n" +
+                            "조용하지만 무척 용감해요. 어느 날 에스텔은 털실 몬스터와 " +
+                            "먼지 몬스터의 숨겨진 비밀을 풀기 위해 홀로 길을 떠났어요.\n\n" +
+                            "에스텔의 용감한 모험은 또 다른 이야기에서 펼쳐질 거예요. 📖"
+                    ),
+                    // Second Princess — Anastasia ("Ana")
+                    Page(
+                        illustrationAsset: "SecondPrincessCat",
+                        illustrationEmoji: nil,
+                        pageTitle: "둘째 공주, 아나스타샤",
+                        pageBody:
+                            "왕국의 둘째 공주, 아나스타샤예요. 다들 다정하게 " +
+                            "'아나'라고 부른답니다.\n\n" +
+                            "씩씩하고 호기심 많은 샴고양이 공주님이죠. 예쁜 " +
+                            "드레스를 좋아해서 재봉사 가게에 자주 놀러 온대요.\n\n" +
+                            "언니 에스텔이 모험을 떠난 뒤로, 아나는 온갖 사고를 " +
+                            "치며 왕국을 들썩이게 한답니다.\n\n" +
+                            "\"언니, 나도 가만히 있을 순 없어!\" " +
+                            "아나의 이야기는 이제 막 시작되었어요. ✨"
                     )
                 ]
             ),
@@ -111,9 +173,9 @@ class StorybookScene: SKScene {
                 ]
             ),
 
-            // ── 4. The Tailor Shop & Its Mysterious Dungeons ──────────────
+            // ── 4. The Workshop, Its Dungeons & Their Relics ──────────────
             Chapter(
-                title:    "재봉사 가게와 던전",
+                title:    "신기한 옷공방과 던전",
                 tocEmoji: "🧵",
                 pages: [
                     Page(
@@ -137,37 +199,72 @@ class StorybookScene: SKScene {
                             "각 방마다 먼지 몬스터들이 살고 있답니다.\n\n" +
                             "무서워 보이지만, 그들에게는 아직 " +
                             "아무도 모르는 비밀이 있어요. 과연 그 비밀은? 🤫"
+                    ),
+                    // Relic — purple jeweled scepter (fabric cabinet minigame)
+                    Page(
+                        illustrationAsset: "PurpleScepter",
+                        illustrationEmoji: nil,
+                        pageTitle: "보랏빛 보석 지팡이",
+                        pageBody:
+                            "던전 곳곳에는 오래전 잃어버린 신기한 보물들이 " +
+                            "숨어 있어요.\n\n" +
+                            "그중 하나는 왕비님의 빨간 보석 지팡이와 꼭 닮은 " +
+                            "보랏빛 지팡이예요.\n\n" +
+                            "원단 창고 미니게임을 깨면, 이 신비한 지팡이를 " +
+                            "손에 넣을 수 있답니다! 🔮"
+                    ),
+                    // Relic — Estelle's paint brushes (sewing machine minigame)
+                    Page(
+                        illustrationAsset: "PaintBrush",
+                        illustrationEmoji: nil,
+                        pageTitle: "에스텔의 그림 붓",
+                        pageBody:
+                            "첫째 공주 에스텔이 무척 아끼던 그림 붓들이에요.\n\n" +
+                            "모험을 떠나며 던전 어딘가에 두고 갔대요.\n\n" +
+                            "재봉틀 미니게임을 깨면, 이 붓들을 되찾을 수 있어요! 🖌"
+                    ),
+                    // Relic — Estelle's palette (buttons minigame)
+                    Page(
+                        illustrationAsset: "Palette",
+                        illustrationEmoji: nil,
+                        pageTitle: "에스텔의 팔레트",
+                        pageBody:
+                            "에스텔이 가장 좋아하던 그림 팔레트예요.\n\n" +
+                            "알록달록한 물감이 가득 묻어 있답니다.\n\n" +
+                            "단추 미니게임을 깨면, 이 팔레트를 찾을 수 있어요! 🎨"
+                    ),
+                    // Relic — royal family portrait (boss dungeon minigame)
+                    Page(
+                        illustrationAsset: "RoyalFamilyPortrait",
+                        illustrationEmoji: nil,
+                        pageTitle: "왕실 가족 초상화",
+                        pageBody:
+                            "왕실 가족 모두가 함께 그려진 소중한 초상화예요.\n\n" +
+                            "던전 가장 깊은 곳에서, 먼지 대장이 보물 상자 위에 " +
+                            "앉아 지키고 있어요.\n\n" +
+                            "보스 던전 미니게임을 깨면, 이 초상화를 되찾을 수 " +
+                            "있답니다! 🖼"
                     )
                 ]
             ),
 
-            // ── 5. Character Profiles ─────────────────────────────────────
+            // ── 5. Character Profiles (cast featured in the game) ─────────
             Chapter(
                 title:    "등장인물 소개",
                 tocEmoji: "👥",
                 pages: [
-                    // Mystery creator (Ana's mom — placeholder)
-                    Page(
-                        illustrationAsset: nil,
-                        illustrationEmoji: "🌌",
-                        pageTitle: "신비한 창조자",
-                        pageBody:
-                            "이 왕국을 만든 분이에요. 정체는 아직 비밀...\n\n" +
-                            "이야기를 몹시 사랑하는 분으로, " +
-                            "딸을 위해 먼지 왕국을 손수 만들었답니다.\n\n" +
-                            "언제쯤 그 모습을 볼 수 있을까요? " +
-                            "다음 이야기를 기대해주세요! 🌟"
-                    ),
                     // Shopkeeper
                     Page(
-                        illustrationAsset: nil,
-                        illustrationEmoji: "🧑‍💼",
+                        illustrationAsset: "Shopkeeper",
+                        illustrationEmoji: nil,
                         pageTitle: "가게 주인",
                         pageBody:
                             "재봉사 가게의 주인이에요.\n\n" +
-                            "항상 미소를 잃지 않는 다정한 분이죠. " +
-                            "오랫동안 던전 먼지 몬스터 때문에 골치가 아팠어요.\n\n" +
-                            "그래서 마법사의 조수를 작업실 관리자로 채용했답니다.\n\n" +
+                            "항상 미소를 잃지 않는 다정한 분이죠. 수수께끼와 퀴즈 " +
+                            "내는 걸 무척 좋아해서, 손님에게 종종 깜짝 문제를 " +
+                            "내곤 한답니다. 🧩\n\n" +
+                            "오랫동안 던전 몬스터 때문에 골치가 아팠던 가게 주인은, " +
+                            "마법사의 조수를 작업실 관리자로 채용했어요.\n\n" +
                             "\"던전 정리만 해주면 뭐든 해드릴게요!\" 🤝"
                     ),
                     // Tailor
@@ -182,19 +279,20 @@ class StorybookScene: SKScene {
                             "요술 바늘 하나면 어떤 옷이든 뚝딱! " +
                             "던전 몬스터도 마법으로 거뜬히 상대해요. ✨"
                     ),
-                    // Monster
+                    // Monster — a tangled ball of string & yarn (not dust)
                     Page(
                         illustrationAsset: "Monster",
                         illustrationEmoji: nil,
-                        pageTitle: "먼지 몬스터",
+                        pageTitle: "엉킨 실 몬스터",
                         pageBody:
-                            "던전에 사는 작은 먼지 덩어리예요.\n\n" +
-                            "처음엔 무섭게 보이지만 사실 무척 수줍음을 타요.\n\n" +
-                            "이들에겐 아직 아무도 모르는 비밀이 있어요. " +
-                            "나쁜 존재가 아닐지도 몰라요!\n\n" +
-                            "그 비밀은 다음 이야기에서 밝혀질 거예요. 🤔"
+                            "던전에 사는 작은 몬스터예요.\n\n" +
+                            "사실은 먼지가 아니라, 엉키고 엉킨 실과 " +
+                            "털실 뭉치랍니다!\n\n" +
+                            "처음엔 무섭게 보이지만 무척 수줍음을 타요. " +
+                            "이 몬스터에게도 아직 아무도 모르는 비밀이 숨어 있어요.\n\n" +
+                            "그 비밀은 다음 이야기에서 밝혀질 거예요. 🧶"
                     ),
-                    // Boss
+                    // Boss — drawn slightly larger than the other monsters
                     Page(
                         illustrationAsset: "Boss",
                         illustrationEmoji: nil,
@@ -204,9 +302,10 @@ class StorybookScene: SKScene {
                             "작은 몬스터들의 대장으로, 무려 3번의 공격을 " +
                             "버틸 수 있는 강인한 존재랍니다.\n\n" +
                             "보물 상자 위에 앉아 무언가를 지키고 있어요. " +
-                            "과연 상자 안에는 무엇이 있을까요? 📦"
+                            "과연 상자 안에는 무엇이 있을까요? 📦",
+                        illustrationScale: 1.12
                     ),
-                    // Minions (BossAdd)
+                    // Minions (BossAdd) — drawn smaller than the 엉킨 실 몬스터
                     Page(
                         illustrationAsset: "BossAdd",
                         illustrationEmoji: nil,
@@ -217,71 +316,8 @@ class StorybookScene: SKScene {
                             "혼자서는 별로 강하지 않지만, " +
                             "여럿이 모이면 꽤 당황스럽답니다.\n\n" +
                             "대장을 무척 따르는 것 같아요. 어쩌면 이 꼬마들이 " +
-                            "먼지 몬스터의 비밀을 알고 있을지도 몰라요... 💫"
-                    )
-                ]
-            ),
-
-            // ── 6. The Royal Family ───────────────────────────────────────
-            Chapter(
-                title:    "왕실 가족",
-                tocEmoji: "👑",
-                pages: [
-                    // King
-                    Page(
-                        illustrationAsset: "KingCat",
-                        illustrationEmoji: nil,
-                        pageTitle: "고양이 임금님",
-                        pageBody:
-                            "먼지 왕국을 다스리는 마음 따뜻한 임금님이에요.\n\n" +
-                            "손에는 황금 도끼를 들고 있지만, 한 번도 누군가와 " +
-                            "싸운 적이 없답니다. 사실은 아주 다정한 분이거든요.\n\n" +
-                            "왕국과 백성들을 무척 사랑해요. 던전의 먼지 몬스터들도 " +
-                            "미워하지 않고, 분명 무슨 사연이 있을 거라 믿고 있답니다.\n\n" +
-                            "언젠가 임금님이 그 비밀을 풀어줄까요? 👑"
-                    ),
-                    // Queen
-                    Page(
-                        illustrationAsset: "QueenCat",
-                        illustrationEmoji: nil,
-                        pageTitle: "지혜로운 왕비님",
-                        pageBody:
-                            "임금님 곁을 지키는 지혜로운 왕비님이에요.\n\n" +
-                            "왕국의 오래된 이야기를 누구보다 많이 알고 있어요. " +
-                            "손에 든 보석 지팡이는 왕국에서 가장 오래된 보물이랍니다.\n\n" +
-                            "왕비님은 가끔 이렇게 속삭여요. " +
-                            "\"먼지 몬스터들도... 옛날엔 다른 모습이었단다.\"\n\n" +
-                            "왕비님이 아는 비밀은 과연 무엇일까요? 🤫"
-                    ),
-                    // First Princess — Estelle
-                    Page(
-                        illustrationAsset: "FirstPrincessCat",
-                        illustrationEmoji: nil,
-                        pageTitle: "첫째 공주, 에스텔",
-                        pageBody:
-                            "왕국의 첫째 공주, 에스텔이에요. 보랏빛 눈동자와 " +
-                            "왕국에서 가장 풍성한 곱슬털을 가진 공주님이랍니다.\n\n" +
-                            "조용하지만 무척 용감해요. 어느 날 에스텔은 홀로 " +
-                            "먼 길을 떠났어요. 털실 몬스터와 먼지 몬스터의 " +
-                            "숨겨진 비밀을 풀기 위해서죠.\n\n" +
-                            "왕국의 문제를 해결하는 건, 다음 임금이 될 " +
-                            "공주님의 소중한 임무니까요.\n\n" +
-                            "에스텔의 용감한 모험은 또 다른 이야기에서 펼쳐질 거예요. 📖"
-                    ),
-                    // Second Princess — Anastasia ("Ana")
-                    Page(
-                        illustrationAsset: "SecondPrincessCat",
-                        illustrationEmoji: nil,
-                        pageTitle: "둘째 공주, 아나스타샤",
-                        pageBody:
-                            "왕국의 둘째 공주, 아나스타샤예요. 다들 다정하게 " +
-                            "'아나'라고 부른답니다.\n\n" +
-                            "씩씩하고 호기심 많은 샴고양이 공주님이죠. 예쁜 " +
-                            "드레스를 좋아해서 재봉사 가게에 자주 놀러 온대요.\n\n" +
-                            "언니 에스텔이 모험을 떠난 뒤로, 아나는 온갖 사고를 " +
-                            "치며 왕국을 들썩이게 한답니다.\n\n" +
-                            "\"언니, 나도 가만히 있을 순 없어!\" " +
-                            "아나의 이야기는 이제 막 시작되었어요. ✨"
+                            "먼지 몬스터의 비밀을 알고 있을지도 몰라요... 💫",
+                        illustrationScale: 0.45
                     )
                 ]
             )
@@ -363,11 +399,11 @@ class StorybookScene: SKScene {
         // Title
         let titleLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         titleLbl.text                    = "📖 이야기의 세계로"
-        titleLbl.fontSize                = 22
+        titleLbl.fontSize                = 26
         titleLbl.fontColor               = brownDark
         titleLbl.horizontalAlignmentMode = .center
         titleLbl.verticalAlignmentMode   = .center
-        titleLbl.position = CGPoint(x: 0, y: size.height * 0.30)
+        titleLbl.position = CGPoint(x: 0, y: size.height * 0.33)
         content.addChild(titleLbl)
 
         // Chapter buttons — spread evenly in the middle of the book
@@ -390,7 +426,7 @@ class StorybookScene: SKScene {
 
             let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
             lbl.text                    = "\(ch.tocEmoji)  \(i + 1). \(ch.title)"
-            lbl.fontSize                = 17
+            lbl.fontSize                = 19
             lbl.fontColor               = .white
             lbl.horizontalAlignmentMode = .center
             lbl.verticalAlignmentMode   = .center
@@ -435,7 +471,7 @@ class StorybookScene: SKScene {
             let sprite = SKSpriteNode(imageNamed: assetName)
             let nativeH = sprite.texture?.size().height ?? 100
             let scale   = nativeH > 0 ? illuTargetH / nativeH : 1.0
-            sprite.setScale(scale)
+            sprite.setScale(scale * page.illustrationScale)
             sprite.position  = CGPoint(x: leftCX, y: 0)
             sprite.zPosition = 3
             content.addChild(sprite)
@@ -458,38 +494,38 @@ class StorybookScene: SKScene {
         // Tiny chapter tag
         let tagLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
         tagLbl.text                    = "제 \(chapterIndex + 1)장  ·  \(chapter.title)"
-        tagLbl.fontSize                = 11
+        tagLbl.fontSize                = 12
         tagLbl.fontColor               = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.60)
         tagLbl.horizontalAlignmentMode = .left
         tagLbl.verticalAlignmentMode   = .top
-        tagLbl.position  = CGPoint(x: rightX, y: size.height * 0.33)
+        tagLbl.position  = CGPoint(x: rightX, y: size.height * 0.34)
         tagLbl.zPosition = 3
         content.addChild(tagLbl)
 
         // Page title
         let titleLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         titleLbl.text                  = page.pageTitle
-        titleLbl.fontSize              = 18
+        titleLbl.fontSize              = 19
         titleLbl.fontColor             = brownDark
         titleLbl.horizontalAlignmentMode = .left
         titleLbl.verticalAlignmentMode   = .top
         titleLbl.numberOfLines           = 2
         titleLbl.preferredMaxLayoutWidth = rightWidth
-        titleLbl.position  = CGPoint(x: rightX, y: size.height * 0.29)
+        titleLbl.position  = CGPoint(x: rightX, y: size.height * 0.30)
         titleLbl.zPosition = 3
         content.addChild(titleLbl)
 
         // Body text
         let bodyLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
         bodyLbl.text                   = page.pageBody
-        bodyLbl.fontSize               = 13
+        bodyLbl.fontSize               = 15
         bodyLbl.fontColor              = UIColor(red: 0.20, green: 0.10, blue: 0.00, alpha: 1.0)
         bodyLbl.horizontalAlignmentMode  = .left
         bodyLbl.verticalAlignmentMode    = .top
         bodyLbl.numberOfLines            = 0
         bodyLbl.preferredMaxLayoutWidth  = rightWidth
         bodyLbl.lineBreakMode            = .byWordWrapping
-        bodyLbl.position  = CGPoint(x: rightX, y: size.height * 0.19)
+        bodyLbl.position  = CGPoint(x: rightX, y: size.height * 0.235)
         bodyLbl.zPosition = 3
         content.addChild(bodyLbl)
 
@@ -509,7 +545,7 @@ class StorybookScene: SKScene {
                                   chapterIndex: Int,
                                   pageIndex: Int,
                                   in node: SKNode) {
-        let navY = -size.height * 0.36
+        let navY = -size.height * 0.386
 
         // ← Back to ToC (top-left of book)
         addPillButton(to: node,
