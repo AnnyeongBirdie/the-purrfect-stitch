@@ -37,7 +37,9 @@ BossMinigame_prompt.md
 .claude/settings.local.json
 *_prompt.md
 
-# Raw asset working folders at repo root (temporary — revisit end of session).
-# Leading slash anchors to repo root so DesignerAna/SoundEffects/ is NOT ignored.
-/SoundEffects/
-/SpriteArt/
+# Raw-asset staging folder at repo root (local-only by design).
+# Holds source PNG exports and downloaded SFX before they are imported into
+# the asset catalog / DesignerAna/SoundEffects/, which ARE tracked and used by
+# the build. Leading slash anchors to repo root so DesignerAna/SoundEffects/
+# is NOT ignored. Back up _RawAssets/ separately — git does not version it.
+/_RawAssets/
