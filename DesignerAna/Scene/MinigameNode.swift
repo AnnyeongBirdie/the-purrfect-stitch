@@ -107,10 +107,8 @@ class MinigameNode: SKNode {
         let peakHeight = sceneH * jumpPeakFraction
         gAscent = 2 * peakHeight / (timeToApex * timeToApex)
         jumpVelocity = 2 * peakHeight / timeToApex
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
-        // ContactDelegate needs to be set on the scene; we bridge through a stored ref.
+        // Stored so touch handling can map touches into scene coordinates.
         sceneRef = scene
-        scene.physicsWorld.contactDelegate = contactBridge
 
         buildDungeon()
         buildHero()
@@ -123,9 +121,7 @@ class MinigameNode: SKNode {
         animateEntrance()
     }
 
-    // Weak bridge so we can be the contact delegate without subclassing SKScene.
     private weak var sceneRef: SKScene?
-    private lazy var contactBridge = ContactBridge(owner: self)
 
     // MARK: - Build
 
@@ -909,46 +905,5 @@ class MinigameNode: SKNode {
                 .removeFromParent()
             ]))
         }
-    }
-
-    // MARK: - Ground contact (called from ContactBridge)
-
-    fileprivate func didBeginContact(_ contact: SKPhysicsContact) {
-        let maskA = contact.bodyA.categoryBitMask
-        let maskB = contact.bodyB.categoryBitMask
-
-        let isHeroGroundContact =
-            (maskA == PhysicsCategory.hero && maskB == PhysicsCategory.ground) ||
-            (maskA == PhysicsCategory.ground && maskB == PhysicsCategory.hero)
-
-        if isHeroGroundContact {
-            let vy = hero.physicsBody?.velocity.dy ?? 0
-            if vy <= 0 {
-                isOnGround = true
-                isJumping = false
-                inDescent = false
-                sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
-            }
-        }
-
-        let isHeroHazardContact =
-            (maskA == PhysicsCategory.hero && maskB == PhysicsCategory.hazard) ||
-            (maskA == PhysicsCategory.hazard && maskB == PhysicsCategory.hero)
-
-        if isHeroHazardContact {
-            handleDeath()
-        }
-    }
-}
-
-// MARK: - ContactBridge
-// SKScene.physicsWorld.contactDelegate must be an SKPhysicsContactDelegate.
-// MinigameNode is an SKNode (not SKScene), so we use a tiny bridge object.
-private class ContactBridge: NSObject, SKPhysicsContactDelegate {
-    weak var owner: MinigameNode?
-    init(owner: MinigameNode) { self.owner = owner }
-
-    func didBegin(_ contact: SKPhysicsContact) {
-        owner?.didBeginContact(contact)
     }
 }

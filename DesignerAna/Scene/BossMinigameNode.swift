@@ -122,9 +122,7 @@ class BossMinigameNode: SKNode {
         let peakHeight = sceneH * jumpPeakFraction
         gAscent = 2 * peakHeight / (timeToApex * timeToApex)
         jumpVelocity = 2 * peakHeight / timeToApex
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
         sceneRef = scene
-        scene.physicsWorld.contactDelegate = contactBridge
 
         (bgTint, accentColor) = fabricColors(for: order)
 
@@ -141,7 +139,6 @@ class BossMinigameNode: SKNode {
     }
 
     private weak var sceneRef: SKScene?
-    private lazy var contactBridge = BossContactBridge(owner: self)
 
     // MARK: - Arena
 
@@ -1052,26 +1049,6 @@ class BossMinigameNode: SKNode {
         syncHPDotPositions()
     }
 
-    // MARK: - Physics contact (ground / sweep projectile)
-
-    fileprivate func didBeginContact(_ contact: SKPhysicsContact) {
-        let a = contact.bodyA.categoryBitMask
-        let b = contact.bodyB.categoryBitMask
-
-        let heroGround = (a == PhysicsCategory.hero && b == PhysicsCategory.ground) ||
-                         (a == PhysicsCategory.ground && b == PhysicsCategory.hero)
-        if heroGround, (hero.physicsBody?.velocity.dy ?? 0) <= 0 {
-            isOnGround = true
-            isJumping = false
-            inDescent = false
-            sceneRef?.physicsWorld.gravity = CGVector(dx: 0, dy: -gAscent)
-        }
-
-        let heroHazard = (a == PhysicsCategory.hero && b == PhysicsCategory.hazard) ||
-                         (a == PhysicsCategory.hazard && b == PhysicsCategory.hero)
-        if heroHazard { handleDeath() }
-    }
-
     // MARK: - Sparkles
 
     private func spawnSparkles(at position: CGPoint, color: UIColor) {
@@ -1091,11 +1068,4 @@ class BossMinigameNode: SKNode {
         }
     }
 
-}
-
-// MARK: - BossContactBridge
-private class BossContactBridge: NSObject, SKPhysicsContactDelegate {
-    weak var owner: BossMinigameNode?
-    init(owner: BossMinigameNode) { self.owner = owner }
-    func didBegin(_ contact: SKPhysicsContact) { owner?.didBeginContact(contact) }
 }
