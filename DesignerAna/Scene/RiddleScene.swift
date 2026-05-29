@@ -216,6 +216,7 @@ class RiddleScene: SKScene {
             guard let name = node.name else { continue }
 
             if name == "closeBtn" {
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 transitionToFrontShop()
                 return
             }
@@ -225,6 +226,7 @@ class RiddleScene: SKScene {
                let idxStr = name.split(separator: "_").last,
                let idx    = Int(String(idxStr)) {
                 answering = true
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 handleAnswer(index: idx)
                 return
             }

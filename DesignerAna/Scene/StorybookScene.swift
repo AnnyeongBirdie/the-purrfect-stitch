@@ -650,7 +650,7 @@ class StorybookScene: SKScene {
 
             // Chapter title buttons on the ToC
             case _ where name.hasPrefix("chapterBtn_"):
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 if let i = Int(name.dropFirst("chapterBtn_".count)) {
                     showChapterPage(chapterIndex: i, pageIndex: 0)
                 }
@@ -658,26 +658,26 @@ class StorybookScene: SKScene {
 
             // Page-turn arrows
             case "nextPageBtn":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 showChapterPage(chapterIndex: currentChapterIndex,
                                 pageIndex:    currentPageIndex + 1)
                 return
 
             case "prevPageBtn":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 showChapterPage(chapterIndex: currentChapterIndex,
                                 pageIndex:    currentPageIndex - 1)
                 return
 
             // Back to table of contents
             case "toTocBtn":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 showTableOfContents()
                 return
 
             // Back to the front shop
             case "backToShopBtn":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 transitionToFrontShop()
                 return
 

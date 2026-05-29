@@ -44,7 +44,7 @@ class FrontShopScene: SKScene {
         fixCharacterLayout()
         setupNavIcons()
         if !suppressEntryBell {
-            SoundManager.shared.play("sfx_shop_bell.mp3", on: self)
+            SoundManager.shared.play("sfx_shop_bell.mp3")
         }
 
         if shouldShowFinishedGarment {
@@ -62,10 +62,6 @@ class FrontShopScene: SKScene {
             showGreeting()
             showClothingChoices()
             currentState = .choosingClothing
-        }
-
-        if Store.loadGarmentCount() > Store.loadLastSeenCount() {
-            spawnWardrobeSparkle()
         }
 
         if let shopkeeper = childNode(withName: "shopkeeper") as? SKSpriteNode {
@@ -118,31 +114,6 @@ class FrontShopScene: SKScene {
         }
     }
 
-    private func spawnWardrobeSparkle() {
-        let wardrobePos = CGPoint(x: -size.width * 0.38, y: -25)
-        for i in 0..<8 {
-            let spark = SKShapeNode(circleOfRadius: 5)
-            spark.fillColor = UIColor(red: 1.0, green: 0.9, blue: 0.2, alpha: 1.0)
-            spark.strokeColor = .clear
-            spark.glowWidth = 8
-            spark.zPosition = 6
-            spark.position = wardrobePos
-            addChild(spark)
-
-            let angle = CGFloat(i) / 8.0 * .pi * 2
-            let dx = cos(angle) * CGFloat.random(in: 40...80)
-            let dy = sin(angle) * CGFloat.random(in: 40...80)
-            spark.run(.sequence([
-                .wait(forDuration: Double(i) * 0.07),
-                .group([
-                    .moveBy(x: dx, y: dy, duration: 1.5),
-                    .sequence([.fadeIn(withDuration: 0.2), .fadeOut(withDuration: 1.3)])
-                ]),
-                .removeFromParent()
-            ]))
-        }
-    }
-    
     private func setupDialogueUI() {
         let bubbleWidth = size.width * 0.58
         let bubbleHeight: CGFloat = 95
@@ -461,6 +432,7 @@ class FrontShopScene: SKScene {
             switch nodeName {
             case "wardrobeNav":
                 if currentState.accepts(.sideNavigation) {
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     Store.saveLastSeenCount(Store.loadGarmentCount())
                     transitionToDressingRoom()
                     return
@@ -468,20 +440,21 @@ class FrontShopScene: SKScene {
 
             case "walletNav":
                 if currentState.accepts(.sideNavigation) {
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     transitionToRiddleScene()
                 }
                 return
 
             case "settingsNav":
                 if currentState.accepts(.appNavigation) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     transitionToSettingsScene()
                 }
                 return
 
             case "storybookNav":
                 if currentState.accepts(.appNavigation) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     transitionToStorybookScene()
                 }
                 return
@@ -494,14 +467,14 @@ class FrontShopScene: SKScene {
 
             case "dressButton", "shirtButton", "pantsButton":
                 if currentState.accepts(.clothingChoice) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     handleChoice(named: nodeName)
                     return
                 }
 
             case "pinkColorButton", "blueColorButton", "yellowColorButton":
                 if currentState.accepts(.fabricChoice) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     handleFabricColorChoice(named: nodeName)
                     return
                 }
@@ -517,28 +490,28 @@ class FrontShopScene: SKScene {
 
             case "confirmOrderButton":
                 if currentState.accepts(.orderReview) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     handleConfirmOrder()
                     return
                 }
 
             case "cancelOrderButton":
                 if currentState.accepts(.orderReview) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     handleCancelOrder()
                     return
                 }
 
             case "confirmPayButton":
                 if currentState.accepts(.payment) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     handlePayment()
                     return
                 }
 
             case "goBackButton":
                 if currentState.accepts(.payment) {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                     handleGoBackFromPayment()
                     return
                 }
@@ -554,7 +527,7 @@ class FrontShopScene: SKScene {
         hideOrderSheet()
         hideReviewButtons()
         dialogLabel.text = "좋아요! 선수금을 내주세요."
-        SoundManager.shared.play("sfx_order_stamp.mp3", on: self)
+        SoundManager.shared.play("sfx_order_stamp.mp3")
         showPaymentPanel()
         
     }
@@ -641,7 +614,7 @@ class FrontShopScene: SKScene {
             currentState = .sendingOrder
             hidePaymentPanel()
             hidePayButtons()
-            SoundManager.shared.play("sfx_coin_pay.mp3", on: self)
+            SoundManager.shared.play("sfx_coin_pay.mp3")
             sendOrderToBackRoom()
         } else {
             currentState = .choosingClothing
@@ -697,7 +670,7 @@ class FrontShopScene: SKScene {
     
     private func transitionToBackRoom() {
         guard let view = self.view else { return }
-        SoundManager.shared.play("sfx_transition_fade.mp3", on: self)
+        SoundManager.shared.play("sfx_transition_fade.mp3")
 
         let backRoomScene = BackRoomScene(size: self.size)
         backRoomScene.scaleMode = self.scaleMode
@@ -948,6 +921,8 @@ class FrontShopScene: SKScene {
     }
 
     private func handleSaveTrophy() {
+        // Warm "saved" sound as the garment is stored in the wardrobe.
+        SoundManager.shared.play("sfx_trophy_save.mp3")
         if let order = completedOrder {
             var garments = Store.loadGarments()
             garments.append(FinishedGarment(

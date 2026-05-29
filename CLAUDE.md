@@ -99,7 +99,7 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 | `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
 | `Wallet` (singleton) | `balance: Int` (0냥 on a player's first launch, then persisted across launches via `Store`) |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
-| `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String, on: SKNode)`. All SFX route through this — silent no-op when muted. |
+| `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String)`, `stop(_ filename: String)`, `stopAll()`. Backed by an `AVAudioPlayer` pool keyed by filename — multiple concurrent plays of the same cue are pooled, and `stop(_:)` cancels every in-flight copy. All SFX route through this — silent no-op when muted; `toggleMute()` also calls `stopAll()`. |
 | `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 11 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. |
 
 `currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state is `Wallet.shared.balance` — same value read from both scenes, no property handoff needed.
@@ -134,11 +134,11 @@ Each station (fabric cabinet, sewing station, button station, mannequin) gates p
 
 ### Phase 4 — Audio pass
 
-In progress. A full sound pass across every scene, and a **v1 release gate** — v1 ships with working sound. The `SoundManager` singleton and the settings mute toggle already shipped (commit `b256239`), so Phase 4 is purely content sourcing and wiring, with no new infrastructure.
+Effectively shipped — a full sound pass across every scene, and the **v1 release gate**.
 
-The game needs 28 sound effects in total. The five front-shop UI/ambient SFX are sourced and bundled in `DesignerAna/SoundEffects/`; the remaining 23 — back room, minigame movement, minigame combat, boss fight, and wardrobe — are not yet sourced. Sourcing royalty-free MP3s is the current blocker and is owner-driven. Per-SFX sourced-vs-wired status is tracked in `SOUND_INVENTORY.md` (git-tracked, at the repo root).
+All 28 SFX are sourced and bundled in `DesignerAna/SoundEffects/`. **23 are wired in code**; the remaining 5 sit on disk for revival — 2 retired (`sfx_wardrobe_sparkle`, `sfx_wardrobe_open` — the dress nav icon now uses the standard `sfx_button_tap` and the firefly badge was removed), and 3 un-wired pending review (`sfx_dungeon_fanfare`, `sfx_land`, `sfx_tailor_walk` — each felt repetitive or unnecessary in owner playtests). Per-SFX status, source filenames, and re-wire hints all live in `SOUND_INVENTORY.md` (git-tracked, at the repo root).
 
-Wiring lags sourcing. `RiddleScene` and `DressingRoomScene` do not yet play button taps even though `sfx_button_tap` is available; rather than wire that one gap on its own, each scene is wired completely — button taps plus its own SFX — once its full sound set is sourced. This absorbs what was previously tracked as a standalone "sound-wiring gap" cleanup item.
+`SoundManager` was refactored mid-Phase-4 from `SKAction.playSoundFileNamed` to an `AVAudioPlayer` pool with a `stop(_:)` API. This was needed because the original SKAction-based approach could not cancel in-flight audio — long cues (footstep loops, boss attack telegraphs) were bleeding into the next scene when the SKAction sequence ended but the audio file kept playing. Boss-attack telegraphs now stop on defeat / hero death / reset via `stopBossAttackSFX()` in `BossMinigameNode`.
 
 ### Currency & economy
 

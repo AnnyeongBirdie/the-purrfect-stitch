@@ -27,6 +27,8 @@ class DressingRoomScene: SKScene {
         setupBackground()
         setupTrophyGrid()
         setupBackButton()
+        // (sfx_wardrobe_open intentionally un-wired — the dress nav button's
+        //  standard sfx_button_tap is the only audible cue for opening here.)
     }
 
     private func setupBackground() {
@@ -156,11 +158,13 @@ class DressingRoomScene: SKScene {
 
         for node in nodes(at: location) {
             if node.name == "backButton" {
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 transitionToFrontShop()
                 return
             }
             // Tapped an empty slot?
             if node.name == "emptyCell" {
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 showEmptySlotToast()
                 return
             }
@@ -173,6 +177,7 @@ class DressingRoomScene: SKScene {
                       let color    = FabricColor(rawValue: String(parts[1])) else { continue }
                 let garments = Store.loadGarments()
                 let count    = garments.filter { $0.clothingType == clothing && $0.fabricColor == color }.count
+                SoundManager.shared.play("sfx_trophy_tap.mp3")
                 showEnlarged(clothing: clothing, color: color, count: count)
                 return
             }

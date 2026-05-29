@@ -30,7 +30,7 @@ class MinigameNode: SKNode {
     private var rightArrowButton: SKShapeNode!
 
     // MARK: - State
-    private var isOnGround = false
+    private var isOnGround = true   // hero spawns standing on the floor
     private var isJumping = false
     private var monsterDefeated = false
     private var chestOpened = false
@@ -605,6 +605,7 @@ class MinigameNode: SKNode {
         isJumping = true
         inDescent = false
         heroVelY = jumpVelocity          // kinematic launch — integrated in update()
+        SoundManager.shared.play("sfx_jump.mp3")
     }
 
     // MARK: - Update (called by BackRoomScene.update)
@@ -647,6 +648,7 @@ class MinigameNode: SKNode {
         }
 
         if heroVelY <= 0, newHeroY <= landingY {
+            // (sfx_land intentionally un-wired — owner felt the thud was unnecessary.)
             hero.position.y = landingY            // landed / standing
             heroVelY = 0
             isOnGround = true
@@ -723,6 +725,7 @@ class MinigameNode: SKNode {
         guard !isDead, !isCompleting else { return }
         isDead = true
         isJumping = false
+        SoundManager.shared.play("sfx_hero_hurt.mp3")
         moveDirection = 0
         leftButtonTouch = nil
         rightButtonTouch = nil
@@ -769,6 +772,7 @@ class MinigameNode: SKNode {
     private func defeatMonster() {
         guard !monsterDefeated else { return }
         monsterDefeated = true
+        SoundManager.shared.play("sfx_monster_stomp.mp3")
         removeAction(forKey: "spawnButtons")
         monster?.removeAction(forKey: "lungePattern")
         // Sweep already-airborne falling buttons so they can't kill the hero
@@ -833,6 +837,22 @@ class MinigameNode: SKNode {
         guard !chestOpened else { return }
         chestOpened = true
         isCompleting = true
+
+        // Sound cascade: chest creak now, ascending coin jingle as the +냥 pop-up
+        // rises, then a short celebration sting as the station clears.
+        SoundManager.shared.play("sfx_chest_open.mp3")
+        run(.sequence([
+            .wait(forDuration: 0.25),
+            .run { [weak self] in
+                guard let self = self else { return }
+                SoundManager.shared.play("sfx_coin_earn.mp3")
+            },
+            .wait(forDuration: 0.45),
+            .run { [weak self] in
+                guard let self = self else { return }
+                SoundManager.shared.play("sfx_station_complete.mp3")
+            }
+        ]))
 
         // Stop the attract pulse, swap to the open-chest art, then bounce
         chestNode?.removeAction(forKey: "chestPulse")

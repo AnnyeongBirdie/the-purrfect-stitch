@@ -468,7 +468,7 @@ class BackRoomScene: SKScene {
 
         tailor.run(group)
     }
-    
+
     private func moveTailor(to targetX: CGFloat, completion: (() -> Void)? = nil) {
         let leftLimit = -self.size.width / 2 + 50
         let rightLimit = self.size.width / 2 - 50
@@ -499,7 +499,7 @@ class BackRoomScene: SKScene {
             completion?()
         }
     }
-    
+
     // MARK: - Minigame overlay
 
     private func presentMinigame(for station: MinigameStation) {
@@ -585,6 +585,8 @@ class BackRoomScene: SKScene {
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
         }
+        // Sparkle "ding" as the next station becomes ready.
+        SoundManager.shared.play("sfx_station_unlock.mp3")
         updateQuitButtonVisibility()
         updateWalletHUD()
     }
@@ -651,6 +653,9 @@ class BackRoomScene: SKScene {
         let targetScale = max(size.width, size.height) * 2.0 / 70.0
         let expand = SKAction.scale(to: targetScale, duration: 0.85)
         expand.timingMode = .easeIn
+
+        // Sustained warm bloom as the halo fills the screen.
+        SoundManager.shared.play("sfx_halo_expand.mp3")
 
         halo.run(expand) { [weak self] in
             self?.returnToFrontShop()

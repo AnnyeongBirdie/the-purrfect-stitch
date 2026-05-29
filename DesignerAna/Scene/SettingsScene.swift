@@ -249,18 +249,18 @@ class SettingsScene: SKScene {
                 SoundManager.shared.toggleMute()
                 refreshMuteButton()
                 if !SoundManager.shared.isMuted {
-                    SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                    SoundManager.shared.play("sfx_button_tap.mp3")
                 }
                 return
 
             case "avatarLeft":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 ProfileManager.shared.retreat()
                 refreshAvatar()
                 return
 
             case "avatarRight":
-                SoundManager.shared.play("sfx_button_tap.mp3", on: self)
+                SoundManager.shared.play("sfx_button_tap.mp3")
                 ProfileManager.shared.advance()
                 refreshAvatar()
                 return

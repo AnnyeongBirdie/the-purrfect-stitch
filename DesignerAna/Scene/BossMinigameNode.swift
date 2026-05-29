@@ -41,7 +41,7 @@ class BossMinigameNode: SKNode {
     private var adds: [SKSpriteNode] = []
 
     // MARK: - Hero state
-    private var isOnGround = false
+    private var isOnGround = true   // hero spawns standing on the floor
     private var isJumping = false
     private var moveDirection: CGFloat = 0
     private var leftButtonTouch: UITouch?
@@ -449,6 +449,9 @@ class BossMinigameNode: SKNode {
             .fadeAlpha(to: 0.3, duration: 0.2)
         ])), withKey: "padFlash")
 
+        // Low rumble while the red slam-pad warning flashes.
+        SoundManager.shared.play("sfx_boss_telegraph_slam.mp3")
+
         run(.wait(forDuration: 2.0)) { [weak self] in
             guard let self, !self.bossDefeated else { pad.removeFromParent(); return }
             pad.removeAllActions()
@@ -460,6 +463,8 @@ class BossMinigameNode: SKNode {
             drop.timingMode = .easeIn
             self.boss.run(drop) { [weak self] in
                 guard let self else { return }
+                // Heavy thud as the boss lands.
+                SoundManager.shared.play("sfx_boss_slam_impact.mp3")
                 self.spawnSparkles(at: pad.position, color: .red)
                 // Point-in-time check: hero standing on the pad when boss lands
                 if abs(self.hero.position.x - padX) < 88 {
@@ -483,6 +488,7 @@ class BossMinigameNode: SKNode {
 
         // Telegraph: a charging-yellow halo for the 2s wind-up.
         pulseAura(auraCharging)
+        SoundManager.shared.play("sfx_boss_telegraph_sweep.mp3")
 
         run(.wait(forDuration: 2.0)) { [weak self] in
             guard let self, !self.bossDefeated else { return }
@@ -510,6 +516,8 @@ class BossMinigameNode: SKNode {
             proj.physicsBody = projBody
 
             self.addChild(proj)
+            // Projectile whoosh as the sweep launches.
+            SoundManager.shared.play("sfx_boss_sweep_fire.mp3")
             proj.run(.sequence([.wait(forDuration: 3.0), .removeFromParent()]))
 
             // Vulnerability opens after projectile crosses the screen
@@ -533,6 +541,9 @@ class BossMinigameNode: SKNode {
             .fadeAlpha(to: 0.5, duration: 0.3),
             .fadeAlpha(to: 1.0, duration: 0.3)
         ])), withKey: "summonPulse")
+
+        // Mystical shimmer as the minions spawn.
+        SoundManager.shared.play("sfx_boss_summon.mp3")
 
         let floorTop = floorCenterY + 9
         for i in 0..<2 {
@@ -650,13 +661,15 @@ class BossMinigameNode: SKNode {
     private func hitBoss() {
         guard !bossDefeated else { return }
         guard isVulnerable, !isInvulnerable else {
-            // Shield flash when hit outside the vulnerability window.
+            // Shield flash + clank when hit outside the vulnerability window.
             flashAura(.white)
+            SoundManager.shared.play("sfx_boss_shield.mp3")
             return
         }
 
         bossHP -= 1
         isInvulnerable = true
+        SoundManager.shared.play("sfx_boss_hit.mp3")
         updateHPDots()
         spawnSparkles(at: boss.position, color: .white)
 
@@ -670,6 +683,16 @@ class BossMinigameNode: SKNode {
 
     // MARK: - Boss defeat + chest reveal
 
+    /// Silence every in-flight boss attack cue. Used whenever the boss state
+    /// changes abruptly (defeat, hero death, reset) so the long telegraph
+    /// audio files don't outlive the SKAction sequence that triggered them.
+    private func stopBossAttackSFX() {
+        SoundManager.shared.stop("sfx_boss_telegraph_slam.mp3")
+        SoundManager.shared.stop("sfx_boss_telegraph_sweep.mp3")
+        SoundManager.shared.stop("sfx_boss_sweep_fire.mp3")
+        SoundManager.shared.stop("sfx_boss_summon.mp3")
+    }
+
     private func defeatBoss() {
         guard !bossDefeated else { return }
         bossDefeated = true
@@ -678,6 +701,12 @@ class BossMinigameNode: SKNode {
 
         removeAllActions()
         boss.removeAllActions()
+        stopBossAttackSFX()
+
+        // Celebratory fanfare — the climax of the whole game. Played after the
+        // removeAllActions() calls above so the sound action is not cancelled.
+        SoundManager.shared.play("sfx_boss_defeat.mp3")
+
         hideAura()
         let snapshot = adds
         adds.removeAll()
@@ -734,6 +763,16 @@ class BossMinigameNode: SKNode {
         chestOpened = true
         isCompleting = true
 
+        // Chest creak now, ascending coin jingle as the +냥 pop-up rises.
+        SoundManager.shared.play("sfx_chest_open.mp3")
+        run(.sequence([
+            .wait(forDuration: 0.25),
+            .run { [weak self] in
+                guard let self = self else { return }
+                SoundManager.shared.play("sfx_coin_earn.mp3")
+            }
+        ]))
+
         // Stop the attract pulse, swap to the open-chest art, then bounce
         chestNode?.removeAction(forKey: "chestPulse")
         chestNode?.texture = SKTexture(imageNamed: "ChestOpen")
@@ -783,6 +822,8 @@ class BossMinigameNode: SKNode {
     private func handleDeath() {
         guard !isDead, !isCompleting, !bossDefeated else { return }
         isDead = true
+        SoundManager.shared.play("sfx_hero_hurt.mp3")
+        stopBossAttackSFX()
         moveDirection = 0
         leftButtonTouch = nil
         rightButtonTouch = nil
@@ -830,6 +871,7 @@ class BossMinigameNode: SKNode {
         // Reset boss — cancel running actions first, then restore state
         removeAllActions()
         boss.removeAllActions()
+        stopBossAttackSFX()
         boss.position = bossAnchor
         boss.alpha = 1.0
         boss.setScale(1.0)
@@ -927,6 +969,7 @@ class BossMinigameNode: SKNode {
         isJumping = true
         inDescent = false
         heroVelY = jumpVelocity          // kinematic launch — integrated in update()
+        SoundManager.shared.play("sfx_jump.mp3")
     }
 
     // MARK: - Update (called by BackRoomScene.update)
@@ -967,6 +1010,7 @@ class BossMinigameNode: SKNode {
         }
 
         if heroVelY <= 0, newHeroY <= landingY {
+            // (sfx_land intentionally un-wired — owner felt the thud was unnecessary.)
             hero.position.y = landingY            // landed / standing
             heroVelY = 0
             isOnGround = true
