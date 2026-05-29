@@ -20,7 +20,10 @@ class BackRoomScene: SKScene {
     }
 
     private var currentState: BackRoomState = .waitingForCabinetTap {
-        didSet { saveActiveOrderSnapshot() }
+        didSet {
+            saveActiveOrderSnapshot()
+            updateStationFireflies()
+        }
     }
 
     var order: Order?
@@ -70,6 +73,13 @@ class BackRoomScene: SKScene {
     private var earnedMinigameRewards: Int = 0
     private var quitButton: SKShapeNode?
     private var exitDialogNode: SKNode?
+
+    // Per-station firefly containers — only the active station's group is
+    // visible at a time (see updateStationFireflies()).
+    private var fireflyGroupFabric: SKNode?
+    private var fireflyGroupSewing: SKNode?
+    private var fireflyGroupButtons: SKNode?
+    private var fireflyGroupMannequin: SKNode?
 
 
     override func didMove(to view: SKView) {
@@ -177,51 +187,94 @@ class BackRoomScene: SKScene {
     }
 
     private func setupStationFireflies() {
-        let centers: [CGPoint] = [
-            CGPoint(x: -280, y: 20),   // fabric cabinet
-            CGPoint(x: 190, y: 0),     // sewing station
-            CGPoint(x: 300, y: 0),     // button station
-            CGPoint(x: 0, y: 10),      // mannequin
-        ]
+        fireflyGroupFabric    = makeFireflyGroup(at: CGPoint(x: -280, y: 20))
+        fireflyGroupSewing    = makeFireflyGroup(at: CGPoint(x: 190,  y: 0))
+        fireflyGroupButtons   = makeFireflyGroup(at: CGPoint(x: 300,  y: 0))
+        fireflyGroupMannequin = makeFireflyGroup(at: CGPoint(x: 0,    y: 10))
+        updateStationFireflies()
+    }
+
+    /// Builds one station's firefly cluster as a single container at the
+    /// station's center. Fireflies use container-local positions so the
+    /// container alpha (driven by updateStationFireflies()) gates all four
+    /// without touching the individual cycle animations.
+    private func makeFireflyGroup(at center: CGPoint) -> SKNode {
+        let group = SKNode()
+        group.position = center
+        group.zPosition = 4
+        group.alpha = 0                  // initial visibility set by updateStationFireflies()
+        addChild(group)
+
         let fireflyColor = UIColor(red: 1.0, green: 0.95, blue: 0.5, alpha: 1.0)
+        for i in 0..<4 {
+            let firefly = SKShapeNode(circleOfRadius: 3.5)
+            firefly.fillColor = fireflyColor
+            firefly.strokeColor = .clear
+            firefly.glowWidth = 6
+            firefly.alpha = 0
+            firefly.position = CGPoint(
+                x: CGFloat.random(in: -40...40),
+                y: CGFloat.random(in: -60...30)
+            )
+            group.addChild(firefly)
 
-        for center in centers {
-            for i in 0..<4 {
-                let firefly = SKShapeNode(circleOfRadius: 3.5)
-                firefly.fillColor = fireflyColor
-                firefly.strokeColor = .clear
-                firefly.glowWidth = 6
-                firefly.zPosition = 4
-                firefly.alpha = 0
-                firefly.position = CGPoint(
-                    x: center.x + CGFloat.random(in: -40...40),
-                    y: center.y + CGFloat.random(in: -60...30)
-                )
-                addChild(firefly)
+            let cycle = SKAction.sequence([
+                SKAction.run { [weak firefly] in
+                    firefly?.position = CGPoint(
+                        x: CGFloat.random(in: -40...40),
+                        y: CGFloat.random(in: -60...30)
+                    )
+                    firefly?.alpha = 0
+                },
+                SKAction.fadeIn(withDuration: 0.5),
+                SKAction.group([
+                    SKAction.moveBy(x: 0, y: 55, duration: 1.6),
+                    SKAction.sequence([
+                        SKAction.wait(forDuration: 0.9),
+                        SKAction.fadeOut(withDuration: 0.7)
+                    ])
+                ]),
+                SKAction.wait(forDuration: 0.3)
+            ])
+            firefly.run(.sequence([
+                .wait(forDuration: Double(i) * 0.6),
+                .repeatForever(cycle)
+            ]))
+        }
+        return group
+    }
 
-                let cycle = SKAction.sequence([
-                    SKAction.run { [weak firefly] in
-                        firefly?.position = CGPoint(
-                            x: center.x + CGFloat.random(in: -40...40),
-                            y: center.y + CGFloat.random(in: -60...30)
-                        )
-                        firefly?.alpha = 0
-                    },
-                    SKAction.fadeIn(withDuration: 0.5),
-                    SKAction.group([
-                        SKAction.moveBy(x: 0, y: 55, duration: 1.6),
-                        SKAction.sequence([
-                            SKAction.wait(forDuration: 0.9),
-                            SKAction.fadeOut(withDuration: 0.7)
-                        ])
-                    ]),
-                    SKAction.wait(forDuration: 0.3)
-                ])
-                firefly.run(.sequence([
-                    .wait(forDuration: Double(i) * 0.6),
-                    .repeatForever(cycle)
-                ]))
-            }
+    /// Fades the active station's firefly group in and the others out, based
+    /// on currentState. Called from setupStationFireflies() and from
+    /// currentState's didSet so the visible group always tracks the player's
+    /// next target.
+    private func updateStationFireflies() {
+        let target = activeFireflyGroup()
+        let groups: [SKNode?] = [
+            fireflyGroupFabric,
+            fireflyGroupSewing,
+            fireflyGroupButtons,
+            fireflyGroupMannequin,
+        ]
+        for group in groups {
+            guard let group = group else { continue }
+            let goal: CGFloat = (group === target) ? 1.0 : 0.0
+            group.run(.fadeAlpha(to: goal, duration: 0.3), withKey: "fireflyFade")
+        }
+    }
+
+    private func activeFireflyGroup() -> SKNode? {
+        switch currentState {
+        case .waitingForCabinetTap, .walkingToCabinet:
+            return fireflyGroupFabric
+        case .waitingForSewing, .walkingToSewing:
+            return fireflyGroupSewing
+        case .waitingForButtons, .walkingToButtons:
+            return fireflyGroupButtons
+        case .waitingForMannequin, .walkingToMannequin:
+            return fireflyGroupMannequin
+        case .finalCheck, .completed:
+            return nil
         }
     }
 
