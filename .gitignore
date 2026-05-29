@@ -32,6 +32,7 @@ Pods/
 DesignerAna_handoff.md
 GAME_VOCABULARY.md
 BossMinigame_prompt.md
+RELICS.md
 
 # Claude Code per-machine settings (absolute paths, machine-specific)
 .claude/settings.local.json
