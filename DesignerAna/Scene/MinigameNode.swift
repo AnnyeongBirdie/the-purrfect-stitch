@@ -302,7 +302,11 @@ class MinigameNode: SKNode {
         // monster on a surface, i.e. surfaceTop + (halfHeight - 20) = surfaceTop + 25.
         // (Applies to all sprite characters placed on floors or platforms — remind Claude Code too.)
         let platformTop = sceneH * 0.06 + 8   // top of the seed-1 upper platform
-        let monsterX = config.levelSeed == 1 ? sceneW * 0.22 : sceneW * 0.10
+        // Seed-1 platform is positioned with an absolute x (x: 100, width: 200,
+        // so it spans 0..200). The monster's x must be absolute too — using
+        // sceneW * 0.22 puts it past the right edge on landscape phones
+        // (~187 of 0..200, half off the platform). 80 keeps it cleanly inside.
+        let monsterX = config.levelSeed == 1 ? CGFloat(80) : sceneW * 0.10
         let monsterY = config.levelSeed == 1
             ? platformTop + 25                  // on the upper platform, padding-corrected
             : floorCenterY + 34                 // on the floor (seeds 2-4), padding-corrected
@@ -698,11 +702,14 @@ class MinigameNode: SKNode {
         }
 
         // Proximity chest claim — hero walks up to the chest to open it.
-        // The 80-pt range is forgiving enough for young players without firing
-        // accidentally while the hero is still fighting the monster.
+        // The 80-pt x-range is forgiving enough for young players without firing
+        // accidentally while the hero is still fighting the monster; the 60-pt
+        // y-range prevents a mid-fall claim when the chest is on a different
+        // surface (the seed-1 chest sits on the upper platform).
         if monsterDefeated, chestClaimable, !chestOpened, !isCompleting, !isDead,
            let chest = chestNode,
-           abs(hero.position.x - chest.position.x) < 80 {
+           abs(hero.position.x - chest.position.x) < 80,
+           abs(hero.position.y - chest.position.y) < 60 {
             openChest()
         }
 
@@ -810,9 +817,19 @@ class MinigameNode: SKNode {
 
         let chest = SKSpriteNode(imageNamed: "Chest")
         chest.size = CGSize(width: 70, height: 58)
-        // Sit the chest on the floor surface
-        let floorTop = floorCenterY + 9
-        chest.position = CGPoint(x: sceneW * 0.30, y: floorTop + 29)
+        // Seed 1: chest sits on the upper platform a short walk to the right
+        // of where the monster was, so the hero claims it without leaving the
+        // platform — and the chest can't open mid-fall through the x-only
+        // proximity check below. Seeds 2-4: chest on the dungeon floor.
+        let chestPosition: CGPoint
+        if config.levelSeed == 1 {
+            let platformTop = sceneH * 0.06 + 8
+            chestPosition = CGPoint(x: 160, y: platformTop + 29)
+        } else {
+            let floorTop = floorCenterY + 9
+            chestPosition = CGPoint(x: sceneW * 0.30, y: floorTop + 29)
+        }
+        chest.position = chestPosition
         chest.zPosition = 2
         chest.name = "chest"
 

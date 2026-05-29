@@ -1082,10 +1082,13 @@ class BossMinigameNode: SKNode {
             }
         }
 
-        // Proximity chest claim — hero walks up to the boss chest to open it
+        // Proximity chest claim — hero walks up to the boss chest to open it.
+        // The y-range pairs with the x-range so the chest doesn't claim from
+        // an upper stepping-stone while the hero is at a different height.
         if bossDefeated, !chestOpened, !isCompleting, !isDead,
            let chest = chestNode,
-           abs(hero.position.x - chest.position.x) < 80 {
+           abs(hero.position.x - chest.position.x) < 80,
+           abs(hero.position.y - chest.position.y) < 60 {
             openChest()
         }
 
