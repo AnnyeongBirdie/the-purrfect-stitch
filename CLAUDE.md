@@ -140,6 +140,18 @@ All 28 SFX are sourced and bundled in `DesignerAna/SoundEffects/`. **23 are wire
 
 `SoundManager` was refactored mid-Phase-4 from `SKAction.playSoundFileNamed` to an `AVAudioPlayer` pool with a `stop(_:)` API. This was needed because the original SKAction-based approach could not cancel in-flight audio — long cues (footstep loops, boss attack telegraphs) were bleeding into the next scene when the SKAction sequence ended but the audio file kept playing. Boss-attack telegraphs now stop on defeat / hero death / reset via `stopBossAttackSFX()` in `BossMinigameNode`.
 
+### Phase 5 — Relics Quest (planned, designed)
+
+The next major feature — a meta-quest layered onto the existing dungeon loop. Across the four dungeons the tailor collects four of Princess Estelle's relics: Purple Scepter (fabric cabinet) → Paint Brushes (sewing) → Palette (buttons) → Royal Family Portrait (boss). The mapping is canonical per the storybook restructure (commit `6de95f9`); Estelle's purple color signature drives the relic glow tint.
+
+**Mechanic.** Designer-placed walk-over pickups, one per level, with 1냥 breadcrumb-coin trails leading the player to each relic so beelining doesn't lose it. Chest 냥 rewards drop proportionally so per-level totals stay at 10 / 20 / 30 / 50. Safety net: if the player opens the chest without collecting the relic, it auto-pulls to the hero with the standard pickup animation. Picked-up relics fly to a new HUD icon row left of the 냥 counter.
+
+**Narrative payoff.** After the 4th relic, a cinematic `TailorChoiceScene` triggers (backdrop `WizardAssistant_Dungeon.png`, the four relics circled around the tailor). A/B branch: Option A opens `AuroraChamberScene` — the tailor's former wizard mentor, an odd-eyed white cat using the existing `WizardCat` avatar art, who gates her advice on a `RiddleBank` riddle before magically teleporting the tailor to the palace. Option B skips Aurora. Both paths converge at `PrincessAnaScene` (backdrop `PrincessAna_Room.png`), where Ana receives the relics one by one, the portrait reveal summons her fairy godmother (existing `GodmotherCat` avatar art), and the godmother delivers the curse story behind the dust + yarn monsters — including the framing that defeated monsters *fall asleep, not killed*, and return when they wake. That framing aligns with the existing respawn behaviour and preserves the gameplay loop after the quest completes.
+
+**Working spec.** `RELICS.md` at the repo root (gitignored — owner-local). All decided directions and remaining open questions live there. Five cross-cutting opens still need resolving before code: breadcrumb count (uniform vs scaled), Tailor's Choice revisit mechanism, Aurora's riddle source (random vs pinned), post-quest HUD persistence, and NPC sprite overlap with `ProfileManager` avatars.
+
+**Scope estimate.** ~600–900 lines across a new `DungeonItem` enum in `Model/`, `Store` extensions for `loadCollectedRelics()` / `saveCollectedRelics(_:)`, relic + breadcrumb spawn / collection in `MinigameNode` and `BossMinigameNode`, the HUD icon row in `BackRoomScene`, three new scene classes, and the trigger plumbing from the boss outro into the Tailor's Choice scene. Backdrops staged in `_RawAssets/SpriteArt/`.
+
 ### Currency & economy
 
 - **Wallet:** `Wallet.shared.balance: Int`, 0냥 on a player's first launch and persisted across launches thereafter (`Store.loadWalletBalance` / `saveWalletBalance`, saved on every `balance` change). Depleted by deposits in the front shop. Read directly from both scenes — no property handoff between scenes.
