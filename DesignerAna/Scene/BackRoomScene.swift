@@ -28,7 +28,7 @@ class BackRoomScene: SKScene {
 
     var order: Order?
     var resumeStateName: String?
-    var resumeEarnedRewards: Int = 0
+    // (resumeEarnedRewards removed — Economy refactor #2)
 
     private let cabinetInteractionX: CGFloat = -180
 
@@ -71,7 +71,7 @@ class BackRoomScene: SKScene {
     private var magicLabel: SKLabelNode?
     private var instructionShadowLabel: SKLabelNode!
 
-    private var earnedMinigameRewards: Int = 0
+    // (earnedMinigameRewards removed — Economy refactor #2; dungeons now credit Magic directly)
     private var quitButton: SKShapeNode?
     private var exitDialogNode: SKNode?
 
@@ -366,13 +366,9 @@ class BackRoomScene: SKScene {
             case "exitRefund":
                 exitDialogNode?.removeFromParent()
                 exitDialogNode = nil
-                Wallet.shared.balance += order.depositAmount - earnedMinigameRewards
-                Store.clearActiveOrder()
-                returnToFrontShopEmpty()
-                return
-            case "exitCashOut":
-                exitDialogNode?.removeFromParent()
-                exitDialogNode = nil
+                // Full deposit refund. 마력 earned this session stays in
+                // Magic.shared.points — Magic is monotonic, no rollback needed.
+                Wallet.shared.balance += order.depositAmount
                 Store.clearActiveOrder()
                 returnToFrontShopEmpty()
                 return
@@ -620,7 +616,6 @@ class BackRoomScene: SKScene {
         tailor.isPaused = false
         updateQuitButtonVisibility()
 
-        earnedMinigameRewards += 50
         Store.clearActiveOrder()
 
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
@@ -644,18 +639,15 @@ class BackRoomScene: SKScene {
         // Advance back-room state machine
         switch station {
         case .fabricCabinet:
-            earnedMinigameRewards += 10
             celebrateTailor()
             showTailorHalo(color: haloLight)
             setInstructionText("잘했어요! 재봉대로 가보세요.")
             currentState = .waitingForSewing
         case .sewingStation:
-            earnedMinigameRewards += 20
             setInstructionText("단추를 달아볼까요?")
             updateHaloColor(to: haloMedium)
             currentState = .waitingForButtons
         case .buttonStation:
-            earnedMinigameRewards += 30
             setInstructionText("완성된 \(garmentNoun(for: order))를 마네킹에 입혀볼까요?")
             updateHaloColor(to: haloDark)
             currentState = .waitingForMannequin
@@ -769,7 +761,6 @@ class BackRoomScene: SKScene {
             fabricColor: order.fabricColor,
             depositAmount: order.depositAmount,
             backRoomStateName: currentState.rawValue,
-            earnedMinigameRewards: earnedMinigameRewards,
             savedAt: Date()
         )
         Store.saveActiveOrder(snapshot)
@@ -778,8 +769,6 @@ class BackRoomScene: SKScene {
     private func applyResumeStateIfNeeded() {
         guard let stateName = resumeStateName,
               let saved = BackRoomState(rawValue: stateName) else { return }
-
-        earnedMinigameRewards = resumeEarnedRewards
 
         // Map saved state → nearest forward .waitingForX station
         let resumeTarget: BackRoomState
@@ -845,9 +834,7 @@ class BackRoomScene: SKScene {
 
         exitDialogNode?.removeFromParent()
 
-        let deposit = order.depositAmount
-        let refundedBalance  = Wallet.shared.balance + deposit - earnedMinigameRewards
-        let currentBalance   = Wallet.shared.balance
+        let refundedBalance = Wallet.shared.balance + order.depositAmount
 
         let overlay = SKNode()
         overlay.zPosition = 60
@@ -863,7 +850,7 @@ class BackRoomScene: SKScene {
         overlay.addChild(dim)
 
         // Panel
-        let panel = SKShapeNode(rectOf: CGSize(width: 320, height: 280), cornerRadius: 24)
+        let panel = SKShapeNode(rectOf: CGSize(width: 320, height: 210), cornerRadius: 24)
         panel.fillColor = UIColor(red: 0.96, green: 0.91, blue: 0.80, alpha: 0.98)
         panel.strokeColor = UIColor.brown
         panel.lineWidth = 4
@@ -874,36 +861,27 @@ class BackRoomScene: SKScene {
         title.text = "정말 그만할래요?"
         title.fontSize = 24
         title.fontColor = .black
-        title.position = CGPoint(x: 0, y: 100)
+        title.position = CGPoint(x: 0, y: 70)
         title.verticalAlignmentMode = .center
         panel.addChild(title)
 
-        // Option A: refund deposit
+        // Full deposit refund — 마력 earned stays (Magic is monotonic)
         let btnA = makeDialogButton(
             text: "보증금 환불 → 지갑 \(refundedBalance)냥",
             name: "exitRefund",
-            position: CGPoint(x: 0, y: 30),
+            position: CGPoint(x: 0, y: 5),
             width: 280
         )
         panel.addChild(btnA)
 
-        // Option B: cash out
-        let btnB = makeDialogButton(
-            text: "지금까지 모은 거 챙기기 → 지갑 \(currentBalance)냥",
-            name: "exitCashOut",
-            position: CGPoint(x: 0, y: -45),
-            width: 280
-        )
-        panel.addChild(btnB)
-
         // Cancel
-        let btnC = makeDialogButton(
+        let btnB = makeDialogButton(
             text: "취소",
             name: "exitCancel",
-            position: CGPoint(x: 0, y: -115),
+            position: CGPoint(x: 0, y: -65),
             width: 160
         )
-        panel.addChild(btnC)
+        panel.addChild(btnB)
     }
 
     private func makeDialogButton(text: String, name: String, position: CGPoint, width: CGFloat) -> SKShapeNode {

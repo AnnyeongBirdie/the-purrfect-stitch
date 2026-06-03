@@ -753,7 +753,7 @@ class FrontShopScene: SKScene {
     private func showRelaunchDialog(for saved: ActiveOrder) {
         relaunchDialogNode?.removeFromParent()
 
-        let refundedBalance = Wallet.shared.balance + saved.depositAmount - saved.earnedMinigameRewards
+        let refundedBalance = Wallet.shared.balance + saved.depositAmount
         let currentBalance  = Wallet.shared.balance
 
         let overlay = SKNode()
@@ -861,7 +861,7 @@ class FrontShopScene: SKScene {
         case "relaunchRefund":
             relaunchDialogNode?.removeFromParent()
             relaunchDialogNode = nil
-            Wallet.shared.balance += saved.depositAmount - saved.earnedMinigameRewards
+            Wallet.shared.balance += saved.depositAmount
             Store.clearActiveOrder()
             showGreeting()
             showClothingChoices()
@@ -892,7 +892,6 @@ class FrontShopScene: SKScene {
         backRoom.scaleMode = self.scaleMode
         backRoom.order = order
         backRoom.resumeStateName = saved.backRoomStateName
-        backRoom.resumeEarnedRewards = saved.earnedMinigameRewards
 
         let transition = SKTransition.fade(withDuration: 0.8)
         view.presentScene(backRoom, transition: transition)

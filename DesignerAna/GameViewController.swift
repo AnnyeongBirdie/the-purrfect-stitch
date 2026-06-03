@@ -13,19 +13,24 @@ class GameViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         if let view = self.view as! SKView? {
-            // Load the FrontShopScene using the GameScene.sks layout
-            if let scene = FrontShopScene(fileNamed: "GameScene") {
-                // Set the scale mode to scale to fit the window
+            if Store.loadSelectedCustomer() != nil {
+                // Returning player — straight to front shop.
+                if let scene = FrontShopScene(fileNamed: "GameScene") {
+                    scene.scaleMode = .resizeFill
+                    view.presentScene(scene)
+                }
+            } else {
+                // First launch (or post-새 손님 reset) — customer picker.
+                let scene = SettingsScene(size: view.bounds.size)
                 scene.scaleMode = .resizeFill
-                
-                // Present the scene
+                scene.isFirstLaunchPicker = true
                 view.presentScene(scene)
             }
-            
+
             view.ignoresSiblingOrder = true
-            
+
             view.showsFPS = true
             view.showsNodeCount = true
         }

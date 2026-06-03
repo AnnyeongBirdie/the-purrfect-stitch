@@ -899,10 +899,10 @@ class MinigameNode: SKNode {
         rise.timingMode = .easeOut
         reward.run(.sequence([rise, .fadeOut(withDuration: 0.3), .removeFromParent()]))
 
-        // 냥 reward awarded and displayed
-        Wallet.shared.balance += config.completionReward
+        // 마력 reward awarded and displayed
+        Magic.shared.add(config.completionReward)
         let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        coinPop.text = "+\(config.completionReward)냥"
+        coinPop.text = "+\(config.completionReward)마력"
         coinPop.fontSize = 28
         coinPop.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
         coinPop.position = CGPoint(x: chestPos.x, y: chestPos.y + 40)

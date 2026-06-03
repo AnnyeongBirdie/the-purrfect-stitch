@@ -13,6 +13,7 @@ struct ActiveOrder: Codable {
     let fabricColor: FabricColor
     let depositAmount: Int
     let backRoomStateName: String   // raw string of BackRoomState case
-    let earnedMinigameRewards: Int
     let savedAt: Date
+    // earnedMinigameRewards was removed in Economy refactor #2. Swift's synthesized
+    // Decodable silently ignores extra JSON keys, so old saved records decode fine.
 }

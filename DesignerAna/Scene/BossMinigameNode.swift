@@ -763,7 +763,7 @@ class BossMinigameNode: SKNode {
         chestOpened = true
         isCompleting = true
 
-        // Chest creak now, ascending coin jingle as the +냥 pop-up rises.
+        // Chest creak now, ascending jingle as the +마력 pop-up rises.
         SoundManager.shared.play("sfx_chest_open.mp3")
         run(.sequence([
             .wait(forDuration: 0.25),
@@ -798,10 +798,10 @@ class BossMinigameNode: SKNode {
         rise.timingMode = .easeOut
         reward.run(.sequence([rise, .fadeOut(withDuration: 0.3), .removeFromParent()]))
 
-        // 냥 reward awarded and displayed
-        Wallet.shared.balance += bossReward
+        // 마력 reward awarded and displayed
+        Magic.shared.add(bossReward)
         let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        coinPop.text = "+\(bossReward)냥"
+        coinPop.text = "+\(bossReward)마력"
         coinPop.fontSize = 32
         coinPop.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
         coinPop.position = CGPoint(x: chestPos.x, y: chestPos.y + 40)

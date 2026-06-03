@@ -44,7 +44,7 @@ struct MinigameConfig {
     let hazardKind: HazardKind
     let chestRewardLabel: String        // shown when chest opens, e.g. "원단 획득!"
     let chestRewardImageName: String    // item sprite inside the chest
-    let completionReward: Int           // 냥 awarded when chest is opened
+    let completionReward: Int           // 마력 awarded when chest is opened
     let backgroundTint: UIColor         // dungeon atmosphere, derived from fabricColor
     let accentColor: UIColor            // platform tint and UI accents
 
