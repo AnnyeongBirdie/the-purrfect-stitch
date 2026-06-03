@@ -123,8 +123,7 @@ class SettingsScene: SKScene {
         title.zPosition               = 1
         panelNode.addChild(title)
 
-        if !isFirstLaunchPicker {
-            // ── Mute toggle ──────────────────────────────────────────────────
+       
             let muted = SoundManager.shared.isMuted
 
             let muteBtn = SKShapeNode(rectOf: CGSize(width: btnW, height: 50), cornerRadius: 14)
@@ -160,7 +159,7 @@ class SettingsScene: SKScene {
             divider.lineWidth   = 1.5
             divider.zPosition   = 1
             panelNode.addChild(divider)
-        }
+       
 
         // ── Avatar section label ─────────────────────────────────────────────
         let avatarSectionLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
