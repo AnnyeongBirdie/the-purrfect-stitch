@@ -50,7 +50,7 @@ The tailor shop has three functional spaces, each with a deliberate POV. The sho
 | Space | Scenes | POV |
 |---|---|---|
 | Shop front | `FrontShopScene`, `SettingsScene`, `RiddleScene`, `DressingRoomScene` | Customer (player) |
-| Back room | `BackRoomScene` | Tailor |
+| Back room | `BackRoomScene` (HUD column top-to-bottom: 🐾 마력 above, 💰 냥 below, 그만할래 quit button below that — the slot below 💰 is occupied by the quit button) | Tailor |
 | Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene` | Tailor |
 
 ### State machines

@@ -304,7 +304,7 @@ class BackRoomScene: SKScene {
         walletBubble.addChild(walletLbl)
         walletLabel = walletLbl
 
-        let magicCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44 - 42)
+        let magicCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44 + 42)
         let magicBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
         bubbleStyle(magicBubble, magicCenter)
 
