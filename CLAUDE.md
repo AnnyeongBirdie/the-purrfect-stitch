@@ -39,9 +39,19 @@ GameViewController
                  with shouldShowFinishedGarment = true
 ```
 
-Scene-to-scene communication is a plain property set on the destination before `presentScene()`. Currency state lives in a `Wallet.shared` singleton, read directly from both scenes. There is no shared coordinator or persistent storage across launches.
+Scene-to-scene communication is a plain property set on the destination before `presentScene()`. There is no shared coordinator or persistent storage across launches.
 
 Side-scenes (DressingRoomScene, RiddleScene, SettingsScene) all set `scene.suppressEntryBell = true` before presenting FrontShopScene on return, so the shop bell only plays on genuine entries (app launch, back-room completion), not on return from navigation.
+
+### Three functional spaces + POV map
+
+The tailor shop has three functional spaces, each with a deliberate POV. The shop **front** is customer POV — the player picks a customer in settings and that customer pays for and receives orders. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `WizardAssistant_Dungeon`, `Wizard_Chamber`, and `PrincessAna_Room` scenes. All basement scenes are tailor POV.
+
+| Space | Scenes | POV |
+|---|---|---|
+| Shop front | `FrontShopScene`, `SettingsScene`, `RiddleScene`, `DressingRoomScene` | Customer (player) |
+| Back room | `BackRoomScene` | Tailor |
+| Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene` | Tailor |
 
 ### State machines
 
@@ -97,12 +107,13 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 | `ClothingType` / `FabricColor` (enums) | `String`-raw, `Codable`, `CaseIterable`; live in `Order.swift`. Korean raw values, kept identical to the old `String` model so `Codable` persistence stays byte-compatible. Helpers: `displayName`, `assetFragment` / `assetSuffix`, and `FabricColor.palette`. |
 | `FrontShopState` (enum) | seven cases, drives UI in FrontShopScene. `ShopInput` + `FrontShopState.accepts(_:)` — a single exhaustive `switch self` — gate which buttons each state accepts. |
 | `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
-| `Wallet` (singleton) | `balance: Int` (0냥 on a player's first launch, then persisted across launches via `Store`) |
+| `Wallet` (singleton) | `balance: Int` — **customer-side** 냥. 0 on a fresh install and on every 새 손님 reset. Persisted via `Store.loadWalletBalance` / `saveWalletBalance`. |
+| `Magic` (singleton) | `points: Int` — **tailor-side** 마력 (cat wizarding XP, 🐾). Monotonically grows via `add(_:)`. Persists across 새 손님; tied to the tailor's wizard-apprentice growth arc and v2 expansion. |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
 | `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String)`, `stop(_ filename: String)`, `stopAll()`. Backed by an `AVAudioPlayer` pool keyed by filename — multiple concurrent plays of the same cue are pooled, and `stop(_:)` cancels every in-flight copy. All SFX route through this — silent no-op when muted; `toggleMute()` also calls `stopAll()`. |
 | `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 11 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. |
 
-`currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state is `Wallet.shared.balance` — same value read from both scenes, no property handoff needed.
+`currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state: `Wallet.shared.balance` (customer 냥) and `Magic.shared.points` (tailor 마력) — both singletons, read directly from any scene, no property handoff needed.
 
 ### Known gaps / in-progress state
 
@@ -154,12 +165,16 @@ The next major feature — a meta-quest layered onto the existing dungeon loop. 
 
 ### Currency & economy
 
-- **Wallet:** `Wallet.shared.balance: Int`, 0냥 on a player's first launch and persisted across launches thereafter (`Store.loadWalletBalance` / `saveWalletBalance`, saved on every `balance` change). Depleted by deposits in the front shop. Read directly from both scenes — no property handoff between scenes.
-- **Earning paths:**
-  - **Minigame rewards (shipped):** 10 / 20 / 30 / 50 냥 awarded on chest open at cabinet / sewing / buttons / boss respectively. Shown as a gold pop-up rising from the chest; tracked in the back-room wallet HUD.
-  - **Riddle fallback (later):** when the wallet runs low, the NPC shopkeeper offers simple math or trivia questions and awards 냥 for correct answers. Question content sourced from external curriculum, TBD.
-- **Design constraint:** wallet, deposits, minigame rewards, and riddle rewards share a single currency system (`Wallet.shared`) — no duplicated transaction logic across scenes.
-- **Persistence (shipped):** the wallet is saved to `UserDefaults` on every change and reloaded on launch — no per-launch reset. A brand-new player starts at 0냥 and earns their way in via riddles and minigame rewards.
+Two separate currencies with distinct economic shapes:
+
+- **Customer's 냥 (`Wallet.shared.balance`)** — circular economy. Starts at 0냥 on a fresh install or 새 손님 reset. Depleted by front-shop deposits; replenished by dungeon chest refunds (크만할래 path) and shopkeeper riddle rewards. The wardrobe is the stamp-collection win condition. A brand-new customer starts broke and earns their way in.
+- **Tailor's 마력 (`Magic.shared.points`, 🐾)** — expansive economy. Monotonically grows from dungeon chest rewards (wiring lands in Economy refactor #2). Never decreases: the tailor "learns from her mistakes" — 그만할래 retains earned 마력 while refunding the customer's deposit. Tied to the tailor's wizard-apprentice growth arc and v2 Aurora mentorship dialogue.
+
+**새 손님 reset** (UI in Settings, wired in Economy refactor #2): calls `Store.resetCustomerSide()`, which zeroes `Wallet`, empties the wardrobe, clears badge counters, clears the active order, and clears the `customer.selected` sticky flag. Tailor-side state — `Magic.shared.points`, future relics, dungeon progress, and the global storybook — is untouched.
+
+**Persistence schema:** flat `UserDefaults` keys; no per-customer namespacing. Only one customer is "alive" at a time, identified by `customer.selected` (holds the avatar asset-name string, e.g. `"ChefCat"`). The shopkeeper riddle still credits `Wallet.shared.balance` — it's shopkeeper-driven, customer-side.
+
+**Minigame rewards (current):** 10 / 20 / 30 / 50 냥 awarded on chest open at cabinet / sewing / buttons / boss. These still flow to `Wallet` until Economy refactor #2 reroutes them to `Magic`.
 
 ### V2 expansion ideas (post-roadmap)
 

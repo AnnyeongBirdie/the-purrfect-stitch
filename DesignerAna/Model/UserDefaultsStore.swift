@@ -13,6 +13,8 @@ enum UserDefaultsKey {
     static let garmentCount         = "wardrobe.garmentCount"
     static let lastSeenGarmentCount = "wardrobe.lastSeenCount"
     static let activeOrder          = "order.active"
+    static let magicPoints          = "magic.points"
+    static let customerSelected     = "customer.selected"
 }
 
 enum Store {
@@ -67,5 +69,50 @@ enum Store {
     }
     static func clearActiveOrder() {
         defaults.removeObject(forKey: UserDefaultsKey.activeOrder)
+    }
+
+    // MARK: - Magic (tailor's 마력)
+
+    static func loadMagicPoints() -> Int? {
+        defaults.object(forKey: UserDefaultsKey.magicPoints) as? Int
+    }
+    static func saveMagicPoints(_ points: Int) {
+        defaults.set(points, forKey: UserDefaultsKey.magicPoints)
+    }
+
+    // MARK: - Selected customer (sticky)
+
+    static func loadSelectedCustomer() -> String? {
+        defaults.string(forKey: UserDefaultsKey.customerSelected)
+    }
+    static func saveSelectedCustomer(_ assetName: String) {
+        defaults.set(assetName, forKey: UserDefaultsKey.customerSelected)
+    }
+    static func clearSelectedCustomer() {
+        defaults.removeObject(forKey: UserDefaultsKey.customerSelected)
+    }
+
+    // MARK: - 새 손님 reset
+
+    /// Wipes customer-side state. Tailor-side (Magic, relics, dungeons)
+    /// and global state (storybook, profile migration flag) are preserved.
+    /// Called by the 새 손님 button in Settings — UI wired in Economy refactor #2.
+    static func resetCustomerSide() {
+        // Go through Wallet's setter so the in-memory singleton stays in sync
+        // (raw defaults.removeObject would let Wallet's cached balance re-save itself stale).
+        Wallet.shared.balance = 0
+
+        // Wardrobe + badge counters reload from Store each access — clearing
+        // the persisted values is sufficient.
+        saveGarments([])
+        saveGarmentCount(0)
+        saveLastSeenCount(0)
+
+        // Active order — full clear.
+        clearActiveOrder()
+
+        // Customer identity flag — back to unset; first-launch picker UX
+        // (wired in Economy refactor #2) will re-prompt.
+        clearSelectedCustomer()
     }
 }

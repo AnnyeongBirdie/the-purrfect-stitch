@@ -68,6 +68,7 @@ class BackRoomScene: SKScene {
 
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
+    private var magicLabel: SKLabelNode?
     private var instructionShadowLabel: SKLabelNode!
 
     private var earnedMinigameRewards: Int = 0
@@ -93,7 +94,7 @@ class BackRoomScene: SKScene {
         setupButtonZone()
         setupMannequinZone()
         setupInstructionLabel()
-        setupWalletHUD()
+        setupHUDCounters()
         setupStationFireflies()
         setupQuitButton()
         applyResumeStateIfNeeded()
@@ -278,29 +279,50 @@ class BackRoomScene: SKScene {
         }
     }
 
-    private func setupWalletHUD() {
-        let bubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
-        bubble.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
-        bubble.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
-        bubble.lineWidth = 2
-        bubble.position = CGPoint(x: size.width * 0.36, y: size.height * 0.44)
-        bubble.zPosition = 20
-        addChild(bubble)
+    private func setupHUDCounters() {
+        let bubbleStyle: (SKShapeNode, CGPoint) -> Void = { bubble, center in
+            bubble.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
+            bubble.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+            bubble.lineWidth = 2
+            bubble.position = center
+            bubble.zPosition = 20
+            self.addChild(bubble)
+        }
 
-        let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        lbl.text = "💰 \(Wallet.shared.balance)냥"
-        lbl.fontSize = 17
-        lbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
-        lbl.horizontalAlignmentMode = .center
-        lbl.verticalAlignmentMode = .center
-        lbl.position = .zero
-        lbl.zPosition = 1
-        bubble.addChild(lbl)
-        walletLabel = lbl
+        let walletCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44)
+        let walletBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
+        bubbleStyle(walletBubble, walletCenter)
+
+        let walletLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        walletLbl.text = "💰 \(Wallet.shared.balance)냥"
+        walletLbl.fontSize = 17
+        walletLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
+        walletLbl.horizontalAlignmentMode = .center
+        walletLbl.verticalAlignmentMode = .center
+        walletLbl.position = .zero
+        walletLbl.zPosition = 1
+        walletBubble.addChild(walletLbl)
+        walletLabel = walletLbl
+
+        let magicCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44 - 42)
+        let magicBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
+        bubbleStyle(magicBubble, magicCenter)
+
+        let magicLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        magicLbl.text = "🐾 \(Magic.shared.points)"
+        magicLbl.fontSize = 17
+        magicLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
+        magicLbl.horizontalAlignmentMode = .center
+        magicLbl.verticalAlignmentMode = .center
+        magicLbl.position = .zero
+        magicLbl.zPosition = 1
+        magicBubble.addChild(magicLbl)
+        magicLabel = magicLbl
     }
 
-    private func updateWalletHUD() {
+    private func updateHUDCounters() {
         walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
+        magicLabel?.text  = "🐾 \(Magic.shared.points)"
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -604,7 +626,7 @@ class BackRoomScene: SKScene {
         // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
         setInstructionText(garmentCompletionText(for: order))
-        updateWalletHUD()
+        updateHUDCounters()
         placeDressOnMannequin()
     }
 
@@ -641,7 +663,7 @@ class BackRoomScene: SKScene {
         // Sparkle "ding" as the next station becomes ready.
         SoundManager.shared.play("sfx_station_unlock.mp3")
         updateQuitButtonVisibility()
-        updateWalletHUD()
+        updateHUDCounters()
     }
 
     private func setupMannequinZone() {
