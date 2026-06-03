@@ -304,12 +304,12 @@ class BackRoomScene: SKScene {
         walletBubble.addChild(walletLbl)
         walletLabel = walletLbl
 
-        let magicCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44 + 42)
+        let magicCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44 - 99)
         let magicBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
         bubbleStyle(magicBubble, magicCenter)
 
         let magicLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        magicLbl.text = "🐾 \(Magic.shared.points)"
+        magicLbl.text = "🐾 \(Magic.shared.points)마력"
         magicLbl.fontSize = 17
         magicLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
         magicLbl.horizontalAlignmentMode = .center
@@ -322,7 +322,7 @@ class BackRoomScene: SKScene {
 
     private func updateHUDCounters() {
         walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
-        magicLabel?.text  = "🐾 \(Magic.shared.points)"
+        magicLabel?.text  = "🐾 \(Magic.shared.points)마력"
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
