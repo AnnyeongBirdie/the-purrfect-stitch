@@ -15,6 +15,7 @@ enum UserDefaultsKey {
     static let activeOrder          = "order.active"
     static let magicPoints          = "magic.points"
     static let customerSelected     = "customer.selected"
+    static let collectedRelics      = "relics.collected"
 }
 
 enum Store {
@@ -90,6 +91,18 @@ enum Store {
     }
     static func clearSelectedCustomer() {
         defaults.removeObject(forKey: UserDefaultsKey.customerSelected)
+    }
+
+    // MARK: - Collected relics (tailor-side; not cleared by resetCustomerSide)
+
+    static func loadCollectedRelics() -> Set<DungeonItem> {
+        guard let data = defaults.data(forKey: UserDefaultsKey.collectedRelics) else { return [] }
+        let array = (try? decoder.decode([DungeonItem].self, from: data)) ?? []
+        return Set(array)
+    }
+    static func saveCollectedRelics(_ relics: Set<DungeonItem>) {
+        guard let data = try? encoder.encode(Array(relics)) else { return }
+        defaults.set(data, forKey: UserDefaultsKey.collectedRelics)
     }
 
     // MARK: - 새 손님 reset

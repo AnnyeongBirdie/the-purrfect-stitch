@@ -74,6 +74,7 @@ class BackRoomScene: SKScene {
     // (earnedMinigameRewards removed — Economy refactor #2; dungeons now credit Magic directly)
     private var quitButton: SKShapeNode?
     private var exitDialogNode: SKNode?
+    private var relicSlots: [SKShapeNode] = []
 
     // Per-station firefly containers — only the active station's group is
     // visible at a time (see updateStationFireflies()).
@@ -95,6 +96,8 @@ class BackRoomScene: SKScene {
         setupMannequinZone()
         setupInstructionLabel()
         setupHUDCounters()
+        setupRelicHUD()
+        updateRelicHUD()
         setupStationFireflies()
         setupQuitButton()
         applyResumeStateIfNeeded()
@@ -323,6 +326,49 @@ class BackRoomScene: SKScene {
     private func updateHUDCounters() {
         walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
         magicLabel?.text  = "🐾 \(Magic.shared.points)마력"
+    }
+
+    private func setupRelicHUD() {
+        let slotSize: CGFloat = 28
+        let spacing: CGFloat  = 6
+        // wallet bubble: center x = size.width * 0.36, width = 138 → left edge at size.width * 0.36 - 69
+        let walletLeft = size.width * 0.36 - 69
+        let slotY = size.height * 0.44
+        let outlineColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.4)
+        let count = DungeonItem.allCases.count
+
+        relicSlots.forEach { $0.removeFromParent() }
+        relicSlots = []
+
+        // i=0 → Scepter (leftmost); i=3 → Portrait (rightmost, closest to wallet)
+        for i in 0..<count {
+            let fromRight = CGFloat(count - 1 - i)
+            let centerX = walletLeft - 20 - slotSize / 2 - fromRight * (slotSize + spacing)
+            let slot = SKShapeNode(rectOf: CGSize(width: slotSize, height: slotSize), cornerRadius: 6)
+            slot.fillColor = .clear
+            slot.strokeColor = outlineColor
+            slot.lineWidth = 1.5
+            slot.position = CGPoint(x: centerX, y: slotY)
+            slot.zPosition = 20
+            addChild(slot)
+            relicSlots.append(slot)
+        }
+    }
+
+    private func updateRelicHUD() {
+        let collected = Store.loadCollectedRelics()
+        for (i, relic) in DungeonItem.allCases.enumerated() {
+            guard i < relicSlots.count else { continue }
+            let slot = relicSlots[i]
+            slot.removeAllChildren()
+            if collected.contains(relic) {
+                let img = SKSpriteNode(imageNamed: relic.assetName)
+                img.size = CGSize(width: 22, height: 22)
+                img.position = .zero
+                img.zPosition = 1
+                slot.addChild(img)
+            }
+        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
