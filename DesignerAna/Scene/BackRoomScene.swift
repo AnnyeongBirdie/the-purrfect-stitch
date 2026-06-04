@@ -307,7 +307,10 @@ class BackRoomScene: SKScene {
         walletBubble.addChild(walletLbl)
         walletLabel = walletLbl
 
-        let magicCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44 - 99)
+        // Magic bubble: top-left corner, left-aligned with relic row (leftPad=24, bubbleHalf=69),
+        // sitting 8 pt below the top edge.
+        let magicCenter = CGPoint(x: -size.width / 2 + 24 + 69,
+                                  y:  size.height / 2 - 8 - 18)
         let magicBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
         bubbleStyle(magicBubble, magicCenter)
 
@@ -330,11 +333,11 @@ class BackRoomScene: SKScene {
 
     private func setupRelicHUD() {
         let slotSize: CGFloat = 28
-        let spacing: CGFloat  = 6
-        let padding: CGFloat  = 14
-        // Top-left corner: x anchored to left edge, y anchored to top edge.
-        let slotX0 = -size.width  / 2 + padding + slotSize / 2
-        let slotY  =  size.height / 2 - padding - slotSize / 2
+        let spacing:  CGFloat = 6
+        let leftPad:  CGFloat = 24   // left inset (matches magic bubble's left edge)
+        // Relic row sits directly below the magic bubble (36 tall, 8 pt top inset, 6 pt gap).
+        let slotX0 = -size.width  / 2 + leftPad + slotSize / 2
+        let slotY  =  size.height / 2 - 8 - 36 - 6 - slotSize / 2
         let outlineColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.4)
 
         relicSlots.forEach { $0.removeFromParent() }
