@@ -331,19 +331,18 @@ class BackRoomScene: SKScene {
     private func setupRelicHUD() {
         let slotSize: CGFloat = 28
         let spacing: CGFloat  = 6
-        // wallet bubble: center x = size.width * 0.36, width = 138 → left edge at size.width * 0.36 - 69
-        let walletLeft = size.width * 0.36 - 69
-        let slotY = size.height * 0.44
+        let padding: CGFloat  = 14
+        // Top-left corner: x anchored to left edge, y anchored to top edge.
+        let slotX0 = -size.width  / 2 + padding + slotSize / 2
+        let slotY  =  size.height / 2 - padding - slotSize / 2
         let outlineColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.4)
-        let count = DungeonItem.allCases.count
 
         relicSlots.forEach { $0.removeFromParent() }
         relicSlots = []
 
-        // i=0 → Scepter (leftmost); i=3 → Portrait (rightmost, closest to wallet)
-        for i in 0..<count {
-            let fromRight = CGFloat(count - 1 - i)
-            let centerX = walletLeft - 20 - slotSize / 2 - fromRight * (slotSize + spacing)
+        // i=0 → Scepter (leftmost); i=3 → Portrait (rightmost)
+        for i in 0..<DungeonItem.allCases.count {
+            let centerX = slotX0 + CGFloat(i) * (slotSize + spacing)
             let slot = SKShapeNode(rectOf: CGSize(width: slotSize, height: slotSize), cornerRadius: 6)
             slot.fillColor = .clear
             slot.strokeColor = outlineColor
