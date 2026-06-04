@@ -84,9 +84,17 @@ class MinigameNode: SKNode {
     private var platformRects: [CGRect] = []  // floor + platforms, for landing checks
     private let proximityRange: CGFloat = 60  // tap-to-defeat range
 
+    // MARK: - Relic state
+    private var relicNode: SKSpriteNode?
+    private var relicCollected = false
+    private var onRelicCollected: ((DungeonItem) -> Void)?
+
     // MARK: - Init
-    init(config: MinigameConfig, onCompletion: @escaping (MinigameStation) -> Void) {
+    init(config: MinigameConfig,
+         onRelicCollected: ((DungeonItem) -> Void)? = nil,
+         onCompletion: @escaping (MinigameStation) -> Void) {
         self.config = config
+        self.onRelicCollected = onRelicCollected
         self.onCompletion = onCompletion
         super.init()
     }
@@ -119,6 +127,8 @@ class MinigameNode: SKNode {
         buildJumpButton()
         buildInstructionLabel()
         animateEntrance()
+        spawnRelicIfNeeded()
+        spawnBreadcrumbs()
     }
 
     private weak var sceneRef: SKScene?
@@ -271,7 +281,12 @@ class MinigameNode: SKNode {
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
         hero.setScale(0.15)
-        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 40)
+        // Seed 1: start at midpoint so the Scepter on the lower-left platform
+        // feels like a deliberate "go left" tutorial detour.
+        heroStartPosition = CGPoint(
+            x: config.levelSeed == 1 ? 0 : -sceneW * 0.38,
+            y: floorCenterY + 40
+        )
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
@@ -701,6 +716,15 @@ class MinigameNode: SKNode {
             }
         }
 
+        // Relic walk-over collection
+        if !relicCollected, !isDead, !isCompleting,
+           let rn = relicNode,
+           let relic = DungeonItem.allCases.first(where: { $0.dungeonSeed == config.levelSeed }),
+           abs(hero.position.x - rn.position.x) < 28,
+           abs(hero.position.y - rn.position.y) < 28 {
+            collectRelic(relic, from: rn.position)
+        }
+
         // Proximity chest claim — hero walks up to the chest to open it.
         // The 80-pt x-range is forgiving enough for young players without firing
         // accidentally while the hero is still fighting the monster; the 60-pt
@@ -851,6 +875,13 @@ class MinigameNode: SKNode {
     }
 
     private func openChest() {
+        // Safety net: if relic exists but wasn't collected, auto-pull it now.
+        if !relicCollected,
+           let rn = relicNode,
+           let relic = DungeonItem.allCases.first(where: { $0.dungeonSeed == config.levelSeed }) {
+            collectRelic(relic, from: rn.position)
+        }
+
         guard !chestOpened else { return }
         chestOpened = true
         isCompleting = true
@@ -918,6 +949,125 @@ class MinigameNode: SKNode {
         run(.wait(forDuration: 1.0)) { [weak self] in
             guard let self else { return }
             self.onCompletion(self.config.station)
+        }
+    }
+
+    // MARK: - Relic
+
+    private func spawnRelicIfNeeded() {
+        guard let relic = DungeonItem.allCases.first(where: { $0.dungeonSeed == config.levelSeed }),
+              !Store.loadCollectedRelics().contains(relic) else { return }
+
+        let sprite = SKSpriteNode(imageNamed: relic.assetName)
+        sprite.size = CGSize(width: 28, height: 28)
+        sprite.position = relicSpawnPosition(for: config.levelSeed)
+        sprite.zPosition = 4
+        sprite.name = "relic"
+        sprite.run(.repeatForever(.sequence([
+            .moveBy(x: 0, y: 5, duration: 0.6),
+            .moveBy(x: 0, y: -5, duration: 0.6)
+        ])))
+
+        let glow = SKShapeNode(circleOfRadius: 18)
+        glow.fillColor = UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 0.25)
+        glow.strokeColor = .clear
+        glow.zPosition = -1
+        glow.run(.repeatForever(.sequence([
+            .fadeAlpha(to: 0.45, duration: 0.8),
+            .fadeAlpha(to: 0.15, duration: 0.8)
+        ])))
+        sprite.addChild(glow)
+        addChild(sprite)
+        relicNode = sprite
+    }
+
+    private func relicSpawnPosition(for seed: Int) -> CGPoint {
+        // Platform top = centerY + halfHeight(8). Sprite sits on surface:
+        // surfaceTop + spriteHalfHeight(14) = surfaceTop + 14.
+        switch seed {
+        case 2:
+            // Highest platform (x:170, y:sceneH*0.04, w:120) — right side
+            return CGPoint(x: 210, y: sceneH * 0.04 + 8 + 14)
+        case 3:
+            // Upper platform (x:-20, y:sceneH*0.10, w:110) — center, under button rain
+            return CGPoint(x: -20, y: sceneH * 0.10 + 8 + 14)
+        default: // seed 1
+            // Lower platform (x:-60, y:-sceneH*0.08, w:130) — left edge
+            return CGPoint(x: -110, y: -sceneH * 0.08 + 8 + 14)
+        }
+    }
+
+    private func collectRelic(_ relic: DungeonItem, from position: CGPoint) {
+        guard !relicCollected else { return }
+        relicCollected = true
+        relicNode?.removeAllActions()
+        relicNode?.removeFromParent()
+        relicNode = nil
+
+        SoundManager.shared.play("sfx_coin_earn.mp3")
+
+        let pop = SKSpriteNode(imageNamed: relic.assetName)
+        pop.size = CGSize(width: 28, height: 28)
+        pop.position = position
+        pop.zPosition = 55
+        addChild(pop)
+        spawnSparkles(at: position)
+
+        let slotSize: CGFloat = 28
+        let spacing:  CGFloat = 6
+        let leftPad:  CGFloat = 24
+        let slotX0 = -sceneW / 2 + leftPad + slotSize / 2
+        let slotY  =  sceneH / 2 - 8 - 36 - 6 - slotSize / 2
+        let idx = DungeonItem.allCases.firstIndex(of: relic) ?? 0
+        let target = CGPoint(x: slotX0 + CGFloat(idx) * (slotSize + spacing), y: slotY)
+
+        let scaleUp   = SKAction.scale(to: 1.5, duration: 0.15)
+        let scaleDown = SKAction.scale(to: 0.8, duration: 0.10)
+        let arc = SKAction.move(to: target, duration: 0.5)
+        arc.timingMode = .easeIn
+        let fade = SKAction.fadeOut(withDuration: 0.15)
+        pop.run(.sequence([scaleUp, scaleDown, arc, fade, .removeFromParent()])) { [weak self] in
+            guard let self else { return }
+            Store.saveCollectedRelics(Store.loadCollectedRelics().union([relic]))
+            self.onRelicCollected?(relic)
+        }
+    }
+
+    // MARK: - Breadcrumbs
+
+    private func spawnBreadcrumbs() {
+        for pos in breadcrumbPositions(for: config.levelSeed) {
+            let paw = SKSpriteNode(imageNamed: "CatPaw")
+            paw.size = CGSize(width: 18, height: 18)
+            paw.alpha = 0.7
+            paw.position = pos
+            paw.zPosition = 1
+            paw.name = "breadcrumb"
+            addChild(paw)
+        }
+    }
+
+    private func breadcrumbPositions(for seed: Int) -> [CGPoint] {
+        let floorSurface = floorCenterY + 9 + 9  // floor top + paw half-height
+        switch seed {
+        case 2:
+            return [
+                CGPoint(x: -90, y: -sceneH * 0.18 + 8 + 9),
+                CGPoint(x:  40, y: -sceneH * 0.08 + 8 + 9),
+                CGPoint(x: 170, y:  sceneH * 0.04 + 8 + 9),
+            ]
+        case 3:
+            return [
+                CGPoint(x: -60, y: -sceneH * 0.18 + 8 + 9),
+                CGPoint(x:  30, y: floorSurface),
+                CGPoint(x: -20, y:  sceneH * 0.10 + 8 + 9),
+            ]
+        default: // seed 1
+            return [
+                CGPoint(x: -35, y: floorSurface),
+                CGPoint(x: -70, y: floorSurface),
+                CGPoint(x: -95, y: -sceneH * 0.08 + 8 + 9),
+            ]
         }
     }
 

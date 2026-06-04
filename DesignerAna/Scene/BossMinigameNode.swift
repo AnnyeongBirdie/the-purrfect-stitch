@@ -99,10 +99,18 @@ class BossMinigameNode: SKNode {
     // Boss-aura state color (attack telegraph)
     private let auraCharging = UIColor(red: 1.00, green: 0.82, blue: 0.20, alpha: 1)
 
+    // MARK: - Relic state
+    private var portraitNode: SKSpriteNode?
+    private var portraitCollected = false
+    private var onRelicCollected: ((DungeonItem) -> Void)?
+
     // MARK: - Init
 
-    init(order: Order?, onCompletion: @escaping () -> Void) {
+    init(order: Order?,
+         onRelicCollected: ((DungeonItem) -> Void)? = nil,
+         onCompletion: @escaping () -> Void) {
         self.order = order
+        self.onRelicCollected = onRelicCollected
         self.onCompletion = onCompletion
         super.init()
     }
@@ -726,6 +734,7 @@ class BossMinigameNode: SKNode {
             .removeFromParent()
         ])) { [weak self] in
             self?.spawnChest(at: bossLastPos)
+            self?.spawnPortrait()
         }
     }
 
@@ -1094,6 +1103,77 @@ class BossMinigameNode: SKNode {
 
         // HP dots track boss as it moves
         syncHPDotPositions()
+    }
+
+    // MARK: - Relic (Royal Family Portrait)
+
+    private func spawnPortrait() {
+        let relic = DungeonItem.royalFamilyPortrait
+        guard !Store.loadCollectedRelics().contains(relic) else { return }
+
+        let sprite = SKSpriteNode(imageNamed: relic.assetName)
+        sprite.size = CGSize(width: 34, height: 34)
+        sprite.position = CGPoint(x: 0, y: sceneH * 0.5)
+        sprite.zPosition = 4
+        sprite.alpha = 0
+
+        let glow = SKShapeNode(circleOfRadius: 22)
+        glow.fillColor = UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 0.3)
+        glow.strokeColor = .clear
+        glow.zPosition = -1
+        sprite.addChild(glow)
+        addChild(sprite)
+        portraitNode = sprite
+
+        let floorSurface = floorCenterY + 9 + 17
+        let descend = SKAction.move(to: CGPoint(x: 0, y: floorSurface), duration: 1.0)
+        descend.timingMode = .easeOut
+        sprite.run(.sequence([
+            .fadeIn(withDuration: 0.3),
+            descend
+        ])) { [weak self] in
+            self?.run(.wait(forDuration: 1.5)) { [weak self] in
+                self?.collectPortrait()
+            }
+        }
+    }
+
+    private func collectPortrait() {
+        guard !portraitCollected else { return }
+        portraitCollected = true
+        let relic = DungeonItem.royalFamilyPortrait
+        let position = portraitNode?.position ?? .zero
+        portraitNode?.removeAllActions()
+        portraitNode?.removeFromParent()
+        portraitNode = nil
+
+        SoundManager.shared.play("sfx_coin_earn.mp3")
+
+        let pop = SKSpriteNode(imageNamed: relic.assetName)
+        pop.size = CGSize(width: 34, height: 34)
+        pop.position = position
+        pop.zPosition = 55
+        addChild(pop)
+        spawnSparkles(at: position, color: accentColor)
+
+        let slotSize: CGFloat = 28
+        let spacing:  CGFloat = 6
+        let leftPad:  CGFloat = 24
+        let slotX0 = -sceneW / 2 + leftPad + slotSize / 2
+        let slotY  =  sceneH / 2 - 8 - 36 - 6 - slotSize / 2
+        let idx = DungeonItem.allCases.firstIndex(of: relic) ?? 3
+        let target = CGPoint(x: slotX0 + CGFloat(idx) * (slotSize + spacing), y: slotY)
+
+        let scaleUp   = SKAction.scale(to: 1.5, duration: 0.15)
+        let scaleDown = SKAction.scale(to: 0.8, duration: 0.10)
+        let arc = SKAction.move(to: target, duration: 0.5)
+        arc.timingMode = .easeIn
+        let fade = SKAction.fadeOut(withDuration: 0.15)
+        pop.run(.sequence([scaleUp, scaleDown, arc, fade, .removeFromParent()])) { [weak self] in
+            guard let self else { return }
+            Store.saveCollectedRelics(Store.loadCollectedRelics().union([relic]))
+            self.onRelicCollected?(relic)
+        }
     }
 
     // MARK: - Sparkles

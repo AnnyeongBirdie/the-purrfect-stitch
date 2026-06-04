@@ -632,7 +632,12 @@ class BackRoomScene: SKScene {
         // early-return, so no separate touch-shield node is needed.
 
         let config = MinigameConfig.make(for: station, order: order)
-        let minigame = MinigameNode(config: config) { [weak self] completedStation in
+        let minigame = MinigameNode(
+            config: config,
+            onRelicCollected: { [weak self] _ in
+                self?.updateRelicHUD()
+            }
+        ) { [weak self] completedStation in
             self?.handleMinigameCompletion(for: completedStation)
         }
         minigame.zPosition = 50
@@ -647,7 +652,12 @@ class BackRoomScene: SKScene {
         tailor.isPaused = true
         quitButton?.isHidden = true
 
-        let boss = BossMinigameNode(order: order) { [weak self] in
+        let boss = BossMinigameNode(
+            order: order,
+            onRelicCollected: { [weak self] _ in
+                self?.updateRelicHUD()
+            }
+        ) { [weak self] in
             self?.handleBossCompletion()
         }
         boss.zPosition = 50
