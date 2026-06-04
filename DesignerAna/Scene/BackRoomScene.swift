@@ -338,8 +338,6 @@ class BackRoomScene: SKScene {
         // Relic row sits directly below the magic bubble (36 tall, 8 pt top inset, 6 pt gap).
         let slotX0 = -size.width  / 2 + leftPad + slotSize / 2
         let slotY  =  size.height / 2 - 8 - 36 - 6 - slotSize / 2
-        let outlineColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.4)
-
         relicSlots.forEach { $0.removeFromParent() }
         relicSlots = []
 
@@ -347,8 +345,8 @@ class BackRoomScene: SKScene {
         for i in 0..<DungeonItem.allCases.count {
             let centerX = slotX0 + CGFloat(i) * (slotSize + spacing)
             let slot = SKShapeNode(rectOf: CGSize(width: slotSize, height: slotSize), cornerRadius: 6)
-            slot.fillColor = .clear
-            slot.strokeColor = outlineColor
+            slot.fillColor   = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 0.12)
+            slot.strokeColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 0.55)
             slot.lineWidth = 1.5
             slot.position = CGPoint(x: centerX, y: slotY)
             slot.zPosition = 20
@@ -362,13 +360,23 @@ class BackRoomScene: SKScene {
         for (i, relic) in DungeonItem.allCases.enumerated() {
             guard i < relicSlots.count else { continue }
             let slot = relicSlots[i]
-            slot.removeAllChildren()
-            if collected.contains(relic) {
+            let alreadyFilled = slot.children.contains { $0.name == "relicImage" }
+            let shouldBeFilled = collected.contains(relic)
+
+            if shouldBeFilled, !alreadyFilled {
                 let img = SKSpriteNode(imageNamed: relic.assetName)
                 img.size = CGSize(width: 22, height: 22)
                 img.position = .zero
                 img.zPosition = 1
+                img.name = "relicImage"
                 slot.addChild(img)
+                slot.setScale(1.0)
+                slot.run(.sequence([
+                    .scale(to: 1.4, duration: 0.12),
+                    .scale(to: 1.0, duration: 0.10)
+                ]))
+            } else if !shouldBeFilled, alreadyFilled {
+                slot.removeAllChildren()
             }
         }
     }

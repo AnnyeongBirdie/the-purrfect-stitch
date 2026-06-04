@@ -768,6 +768,11 @@ class BossMinigameNode: SKNode {
     private let bossReward = 50
 
     private func openChest() {
+        // Safety net: collect portrait now if the auto-collect timer hasn't fired yet.
+        if !portraitCollected, portraitNode != nil {
+            collectPortrait()
+        }
+
         guard !chestOpened else { return }
         chestOpened = true
         isCompleting = true
@@ -1112,12 +1117,12 @@ class BossMinigameNode: SKNode {
         guard !Store.loadCollectedRelics().contains(relic) else { return }
 
         let sprite = SKSpriteNode(imageNamed: relic.assetName)
-        sprite.size = CGSize(width: 34, height: 34)
+        sprite.size = CGSize(width: 64, height: 64)
         sprite.position = CGPoint(x: 0, y: sceneH * 0.5)
         sprite.zPosition = 4
         sprite.alpha = 0
 
-        let glow = SKShapeNode(circleOfRadius: 22)
+        let glow = SKShapeNode(circleOfRadius: 36)
         glow.fillColor = UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 0.3)
         glow.strokeColor = .clear
         glow.zPosition = -1

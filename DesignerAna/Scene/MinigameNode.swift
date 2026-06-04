@@ -720,9 +720,20 @@ class MinigameNode: SKNode {
         if !relicCollected, !isDead, !isCompleting,
            let rn = relicNode,
            let relic = DungeonItem.allCases.first(where: { $0.dungeonSeed == config.levelSeed }),
-           abs(hero.position.x - rn.position.x) < 28,
-           abs(hero.position.y - rn.position.y) < 28 {
+           abs(hero.position.x - rn.position.x) < 36,   // hero halfW(14) + relic halfW(22)
+           abs(hero.position.y - rn.position.y) < 36 {
             collectRelic(relic, from: rn.position)
+        }
+
+        // Breadcrumb paw collection — disappear on contact, award 1 마력 each
+        if !isDead, !isCompleting {
+            for paw in children where paw.name == "breadcrumb" {
+                if abs(hero.position.x - paw.position.x) < 20,
+                   abs(hero.position.y - paw.position.y) < 20 {
+                    paw.removeFromParent()
+                    Magic.shared.add(1)
+                }
+            }
         }
 
         // Proximity chest claim — hero walks up to the chest to open it.
@@ -959,7 +970,7 @@ class MinigameNode: SKNode {
               !Store.loadCollectedRelics().contains(relic) else { return }
 
         let sprite = SKSpriteNode(imageNamed: relic.assetName)
-        sprite.size = CGSize(width: 28, height: 28)
+        sprite.size = CGSize(width: 44, height: 44)
         sprite.position = relicSpawnPosition(for: config.levelSeed)
         sprite.zPosition = 4
         sprite.name = "relic"
@@ -1051,22 +1062,32 @@ class MinigameNode: SKNode {
         let floorSurface = floorCenterY + 9 + 9  // floor top + paw half-height
         switch seed {
         case 2:
+            // Trail from far-left floor up the three stepped platforms to top-right relic
             return [
+                CGPoint(x: -sceneW * 0.30, y: floorSurface),
+                CGPoint(x: -sceneW * 0.15, y: floorSurface),
                 CGPoint(x: -90, y: -sceneH * 0.18 + 8 + 9),
+                CGPoint(x: -20, y: -sceneH * 0.18 + 8 + 9),
                 CGPoint(x:  40, y: -sceneH * 0.08 + 8 + 9),
                 CGPoint(x: 170, y:  sceneH * 0.04 + 8 + 9),
             ]
         case 3:
+            // Trail from far-left floor up toward upper-center platform relic
             return [
+                CGPoint(x: -sceneW * 0.30, y: floorSurface),
+                CGPoint(x: -sceneW * 0.15, y: floorSurface),
                 CGPoint(x: -60, y: -sceneH * 0.18 + 8 + 9),
-                CGPoint(x:  30, y: floorSurface),
+                CGPoint(x:  10, y: -sceneH * 0.18 + 8 + 9),
+                CGPoint(x:  80, y: -sceneH * 0.05 + 8 + 9),
                 CGPoint(x: -20, y:  sceneH * 0.10 + 8 + 9),
             ]
-        default: // seed 1
+        default: // seed 1 — hero starts at x:0, relic on lower-left platform
             return [
-                CGPoint(x: -35, y: floorSurface),
-                CGPoint(x: -70, y: floorSurface),
-                CGPoint(x: -95, y: -sceneH * 0.08 + 8 + 9),
+                CGPoint(x:  -25, y: floorSurface),
+                CGPoint(x:  -55, y: floorSurface),
+                CGPoint(x:  -80, y: floorSurface),
+                CGPoint(x:  -95, y: -sceneH * 0.08 + 8 + 9),
+                CGPoint(x: -110, y: -sceneH * 0.08 + 8 + 9),
             ]
         }
     }

@@ -364,6 +364,13 @@ class SettingsScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
+        #if DEBUG
+        if touch.tapCount >= 3 {
+            Store.saveCollectedRelics([])
+            print("DEBUG: relics cleared")
+        }
+        #endif
+
         for node in nodes(at: location) {
             guard let name = node.name else { continue }
 
