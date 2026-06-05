@@ -277,9 +277,15 @@ class TailorChoiceScene: SKScene {
 
     private func routeAfterChoice(_ choice: String) {
         guard let view = self.view else { return }
-        // TODO: Phase 5 — Path A: present AuroraChamberScene
+        if choice == "A" {
+            let aurora = AuroraChamberScene()
+            aurora.scaleMode = .resizeFill
+            aurora.completedOrder = completedOrder
+            view.presentScene(aurora, transition: SKTransition.crossFade(withDuration: 0.6))
+            return
+        }
         // TODO: Phase 5 — Path B: present PrincessAnaScene
-        // Placeholder: both paths return to front shop for now.
+        // Placeholder: Path B returns to front shop for now.
         guard let next = FrontShopScene(fileNamed: "GameScene") else { return }
         next.scaleMode = .resizeFill
         next.shouldShowFinishedGarment = true
