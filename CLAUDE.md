@@ -55,6 +55,18 @@ The tailor shop has three functional spaces, each with a deliberate POV. The sho
 | Back room | `BackRoomScene` (HUD column top-to-bottom: 💰 냥, then 그만할래 quit button, then 🐾 마력 at the bottom — do not place anything between 💰 and 그만할래, or between 그만할래 and 🐾) | Tailor |
 | Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene` | Tailor |
 
+### Back room HUD layout convention
+
+The back room HUD is split by ownership: **tailor-side elements anchor to the top-left; customer-side elements anchor to the top-right.** This design language must be preserved for all future HUD additions.
+
+| Side | Elements | Position |
+|---|---|---|
+| Top-left (tailor) | 🐾 마력 counter, relic slot row | `size.width * -0.36`, upper portion |
+| Top-right (customer) | 💰 냥 counter | `size.width * 0.36`, upper portion |
+| Center | 그만할래 quit button | `size.width * 0.36` x, between the two counters |
+
+New back-room UI that belongs to the tailor (dungeon progress, quest state, keepsakes) goes top-left. New UI that belongs to the customer's order goes top-right. Do not add elements between 💰 and 그만할래, or between 그만할래 and 🐾 on the right column.
+
 ### State machines
 
 **FrontShopScene** uses the `FrontShopState` enum (in `Model/`):
@@ -112,9 +124,10 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 | `Wallet` (singleton) | `balance: Int` — **customer-side** 냥. 0 on a fresh install and on every 새 손님 reset. Persisted via `Store.loadWalletBalance` / `saveWalletBalance`. |
 | `Magic` (singleton) | `points: Int` — **tailor-side** 마력 (cat wizarding XP, 🐾). Monotonically grows via `add(_:)`. Persists across 새 손님; tied to the tailor's wizard-apprentice growth arc and v2 expansion. |
 | `ActiveOrder` (struct, Codable) | Crash-recovery snapshot: `clothingType`, `fabricColor`, `depositAmount`, `backRoomStateName`, `savedAt`. Saved on every `BackRoomState` transition; cleared on completion or quit. Uses Swift's synthesized `Decodable` which silently ignores unknown keys — old saves with the removed `earnedMinigameRewards` field decode cleanly. |
+| `DungeonItem` (enum) | `String`-raw, `Codable`, `CaseIterable`. Four cases: `purpleScepter`, `paintBrush`, `palette`, `royalFamilyPortrait`. Each maps to a dungeon seed via `dungeonSeed`. Used by `Store.loadCollectedRelics()` / `saveCollectedRelics(_:)`. |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
 | `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String)`, `stop(_ filename: String)`, `stopAll()`. Backed by an `AVAudioPlayer` pool keyed by filename — multiple concurrent plays of the same cue are pooled, and `stop(_:)` cancels every in-flight copy. All SFX route through this — silent no-op when muted; `toggleMute()` also calls `stopAll()`. |
-| `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 11 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. |
+| `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 9 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. `GodmotherCat` and `WizardCat` removed in v2 migration — NPC-only assets now. |
 
 `currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state: `Wallet.shared.balance` (customer 냥) and `Magic.shared.points` (tailor 마력) — both singletons, read directly from any scene, no property handoff needed.
 
@@ -144,7 +157,7 @@ The NPC shopkeeper guides the player through three ordering steps in sequence:
 ### Phase 3 — Station minigames
 Each station (fabric cabinet, sewing station, button station, mannequin) gates progress with a Super Mario–style platformer minigame. The player navigates a small dungeon, defeats a monster, and reaches a treasure chest containing the needed item (fabric, thread, buttons, finished dress) before that station unlocks.
 
-**Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — lunging monster, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
+**Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — pacing monster on the right side of the arena, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
 
 ### Phase 4 — Audio pass
 
@@ -154,17 +167,23 @@ All 28 SFX are sourced and bundled in `DesignerAna/SoundEffects/`. **23 are wire
 
 `SoundManager` was refactored mid-Phase-4 from `SKAction.playSoundFileNamed` to an `AVAudioPlayer` pool with a `stop(_:)` API. This was needed because the original SKAction-based approach could not cancel in-flight audio — long cues (footstep loops, boss attack telegraphs) were bleeding into the next scene when the SKAction sequence ended but the audio file kept playing. Boss-attack telegraphs now stop on defeat / hero death / reset via `stopBossAttackSFX()` in `BossMinigameNode`.
 
-### Phase 5 — Relics Quest (planned, designed)
+### Phase 5 — Relics Quest (partially shipped)
 
-The next major feature — a meta-quest layered onto the existing dungeon loop. Across the four dungeons the tailor collects four of Princess Estelle's relics: Purple Scepter (fabric cabinet) → Paint Brushes (sewing) → Palette (buttons) → Royal Family Portrait (boss). The mapping is canonical per the storybook restructure (commit `6de95f9`); Estelle's purple color signature drives the relic glow tint.
+A meta-quest layered onto the existing dungeon loop. The tailor collects four of Princess Estelle's relics: Purple Scepter (fabric cabinet) → Paint Brushes (sewing) → Palette (buttons) → Royal Family Portrait (boss). Estelle's purple color signature drives the relic glow tint.
 
-**Mechanic.** Designer-placed walk-over pickups, one per level, with 1냥 breadcrumb-coin trails leading the player to each relic so beelining doesn't lose it. Chest 냥 rewards drop proportionally so per-level totals stay at 10 / 20 / 30 / 50. Safety net: if the player opens the chest without collecting the relic, it auto-pulls to the hero with the standard pickup animation. Picked-up relics fly to a new HUD icon row left of the 냥 counter.
+**Shipped (June 4 session):**
+- `DungeonItem` enum + `Store.loadCollectedRelics()` / `saveCollectedRelics(_:)` persistence.
+- HUD relic row: four slots top-left of the back room (tailor-side), left of the 🐾 counter. Persists across launches. Stays visible permanently as a keepsake after quest completes.
+- In-dungeon relic spawning in `MinigameNode` (seeds 1–3) and `BossMinigameNode` (seed 4). Walk-over collection: scale pop + sparkle burst + arc animation to HUD slot. Safety net auto-pull if the chest is opened before the relic is collected.
+- `CatPaw` breadcrumb trails in all four dungeons. Each paw awards 1 마력 on contact and disappears. Seeds 1–3: 10 paws per level along the path to the relic. Boss: 8 paws scattered across the arena floor and platforms. Portrait relic bobs on the upper stepping stone from the start of the boss fight (walk-over collection, not auto-collect).
 
-**Narrative payoff.** After the 4th relic, a cinematic `TailorChoiceScene` triggers (backdrop `WizardAssistant_Dungeon.png`, the four relics circled around the tailor). A/B branch: Option A opens `AuroraChamberScene` — the tailor's former wizard mentor, an odd-eyed white cat using the existing `WizardCat` avatar art, who gates her advice on a `RiddleBank` riddle before magically teleporting the tailor to the palace. Option B skips Aurora. Both paths converge at `PrincessAnaScene` (backdrop `PrincessAna_Room.png`), where Ana receives the relics one by one, the portrait reveal summons her fairy godmother (existing `GodmotherCat` avatar art), and the godmother delivers the curse story behind the dust + yarn monsters — including the framing that defeated monsters *fall asleep, not killed*, and return when they wake. That framing aligns with the existing respawn behaviour and preserves the gameplay loop after the quest completes.
+**Remaining (next sessions):**
+- `TailorChoiceScene` trigger after the 4th relic is collected.
+- `AuroraChamberScene` (Option A — Aurora the wizard mentor, `WizardCat` sprite, riddle gate, swirling purple teleport).
+- `PrincessAnaScene` (final scene — relics handed to Ana, godmother reveal, curse story).
+- Back-room selfie keepsake (`Selfie_TailorAndPrincessAna` on the wall) after quest completes.
 
-**Working spec.** `RELICS.md` at the repo root (gitignored — owner-local). All decided directions and remaining open questions live there. Five cross-cutting opens still need resolving before code: breadcrumb count (uniform vs scaled), Tailor's Choice revisit mechanism, Aurora's riddle source (random vs pinned), post-quest HUD persistence, and NPC sprite overlap with `ProfileManager` avatars.
-
-**Scope estimate.** ~600–900 lines across a new `DungeonItem` enum in `Model/`, `Store` extensions for `loadCollectedRelics()` / `saveCollectedRelics(_:)`, relic + breadcrumb spawn / collection in `MinigameNode` and `BossMinigameNode`, the HUD icon row in `BackRoomScene`, three new scene classes, and the trigger plumbing from the boss outro into the Tailor's Choice scene. Backdrops staged in `_RawAssets/SpriteArt/`.
+**Full design spec** in `RELICS.md` (gitignored — owner-local). All cross-cutting opens resolved as of June 3. NPC sprites (`WizardCat`, `GodmotherCat`) are xcassets-only — removed from the player-selectable carousel in the ProfileManager 11→9 reduction.
 
 ### Currency & economy
 

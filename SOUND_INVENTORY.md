@@ -54,7 +54,7 @@ Sourcing royalty-free MP3s is the current blocker and is owner-driven.
 | `sfx_dungeon_fanfare` | Short ~2s dungeon entry jingle ("보물 던전에 입장!") | yes | no — un-wired pending a better clip (repetitive on replay) | pwlpl-countdown-beep-377323 | - |
 | `sfx_chest_open` | Treasure chest opens (creak + sparkle) | yes | yes | litupsubway-ui-open-sfx-513358 | - |
 | `sfx_coin_earn` | Ascending coin jingle for the "+X냥" pop-up | yes | yes | 49447089-game-start-317318 | - |
-| `sfx_station_complete` | Short celebration sting after a station clears | yes | yes | freesound_community-windoot-96335 | - |
+| `sfx_station_complete` | Short celebration sting after a station clears | yes | yes | doubleducks-11l-game_complete_notifi-1749489486836-360350 | ⚠️ new sound switched for testing |
 
 ## Boss fight — station 4
 

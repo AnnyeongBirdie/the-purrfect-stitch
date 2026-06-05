@@ -345,9 +345,9 @@ class BackRoomScene: SKScene {
         for i in 0..<DungeonItem.allCases.count {
             let centerX = slotX0 + CGFloat(i) * (slotSize + spacing)
             let slot = SKShapeNode(rectOf: CGSize(width: slotSize, height: slotSize), cornerRadius: 6)
-            slot.fillColor   = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 0.12)
-            slot.strokeColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 0.55)
-            slot.lineWidth = 1.5
+            slot.fillColor   = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
+            slot.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+            slot.lineWidth = 2
             slot.position = CGPoint(x: centerX, y: slotY)
             slot.zPosition = 20
             addChild(slot)

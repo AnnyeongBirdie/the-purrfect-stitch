@@ -235,9 +235,9 @@ class MinigameNode: SKNode {
         case 3:
             return [
                 floor,
-                makePlatform(x: -60, y: -sceneH * 0.18, width: 110, height: 16),
-                makePlatform(x:  80, y: -sceneH * 0.05, width: 110, height: 16),
-                makePlatform(x: -20, y:  sceneH * 0.10, width: 110, height: 16),
+                makePlatform(x: -60, y: -sceneH * 0.08, width: 110, height: 16),
+                makePlatform(x:  80, y:  sceneH * 0.06, width: 110, height: 16),
+                makePlatform(x: -20, y:  sceneH * 0.18, width: 110, height: 16),
             ]
         case 4:
             return [
@@ -281,12 +281,7 @@ class MinigameNode: SKNode {
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
         hero.setScale(0.15)
-        // Seed 1: start at midpoint so the Scepter on the lower-left platform
-        // feels like a deliberate "go left" tutorial detour.
-        heroStartPosition = CGPoint(
-            x: config.levelSeed == 1 ? 0 : -sceneW * 0.38,
-            y: floorCenterY + 40
-        )
+        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 40)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
@@ -321,7 +316,12 @@ class MinigameNode: SKNode {
         // so it spans 0..200). The monster's x must be absolute too — using
         // sceneW * 0.22 puts it past the right edge on landscape phones
         // (~187 of 0..200, half off the platform). 80 keeps it cleanly inside.
-        let monsterX = config.levelSeed == 1 ? CGFloat(80) : sceneW * 0.10
+        let monsterX: CGFloat
+        switch config.levelSeed {
+        case 1: monsterX = 90
+        case 3: monsterX = sceneW * 0.28   // right side, patrols with pacing behavior
+        default: monsterX = sceneW * 0.10
+        }
         let monsterY = config.levelSeed == 1
             ? platformTop + 25                  // on the upper platform, padding-corrected
             : floorCenterY + 34                 // on the floor (seeds 2-4), padding-corrected
@@ -438,32 +438,42 @@ class MinigameNode: SKNode {
     }
 
     private func buildHazards() {
-        guard case .scissorBlades(let count, let spacing) = config.hazardKind else { return }
+        guard case .scissorBlades = config.hazardKind else { return }
 
-        // Small scissor blades standing on the floor — short enough to hop over
-        // one at a time. The sprite is sized directly (not via setScale) so the
-        // node stays at scale 1.0 and the physics body keeps its true size.
-        let floorTop = floorCenterY + 9
-        let bladeSize = CGSize(width: 26, height: 50)   // a touch shorter than the hero
-        let startX: CGFloat = -sceneW * 0.28            // blades on the left side of the arena
-        for i in 0..<count {
-            let blade = SKSpriteNode(imageNamed: "Scissors")
-            blade.size = bladeSize
-            blade.position = CGPoint(x: startX + CGFloat(i) * spacing,
-                                     y: floorTop + bladeSize.height / 2)   // sits on the floor
-            blade.zPosition = 2
-            blade.name = "scissorHazard"
+        let bladeSize = CGSize(width: 26, height: 50)
+        let floorTop  = floorCenterY + 9
 
-            // Hitbox a little smaller than the sprite so near-misses don't kill.
-            let body = SKPhysicsBody(rectangleOf: CGSize(width: 20, height: 38))
-            body.isDynamic = false
-            body.categoryBitMask = PhysicsCategory.hazard
-            body.contactTestBitMask = PhysicsCategory.hero
-            body.collisionBitMask = PhysicsCategory.none
-            blade.physicsBody = body
-
-            addChild(blade)
+        if config.levelSeed == 2 {
+            // One blade on the floor (between the two ground paws),
+            // one on platform 2 (before the three platform-2 paws).
+            let platform2Top = -sceneH * 0.08 + 8
+            placeBlade(at: CGPoint(x: -230, y: floorTop + bladeSize.height / 2), size: bladeSize)
+            placeBlade(at: CGPoint(x:   70, y: platform2Top + bladeSize.height / 2), size: bladeSize)
+        } else {
+            // Default: blades evenly spaced on the floor starting left of centre.
+            guard case .scissorBlades(let count, let spacing) = config.hazardKind else { return }
+            let startX: CGFloat = -sceneW * 0.28
+            for i in 0..<count {
+                placeBlade(at: CGPoint(x: startX + CGFloat(i) * spacing,
+                                       y: floorTop + bladeSize.height / 2), size: bladeSize)
+            }
         }
+    }
+
+    private func placeBlade(at position: CGPoint, size: CGSize) {
+        let blade = SKSpriteNode(imageNamed: "Scissors")
+        blade.size = size
+        blade.position = position
+        blade.zPosition = 2
+        blade.name = "scissorHazard"
+        // Hitbox a little smaller than the sprite so near-misses don't kill.
+        let body = SKPhysicsBody(rectangleOf: CGSize(width: 20, height: 38))
+        body.isDynamic = false
+        body.categoryBitMask = PhysicsCategory.hazard
+        body.contactTestBitMask = PhysicsCategory.hero
+        body.collisionBitMask = PhysicsCategory.none
+        blade.physicsBody = body
+        addChild(blade)
     }
 
     private func buildDirectionalButtons() {
@@ -728,10 +738,22 @@ class MinigameNode: SKNode {
         // Breadcrumb paw collection — disappear on contact, award 1 마력 each
         if !isDead, !isCompleting {
             for paw in children where paw.name == "breadcrumb" {
-                if abs(hero.position.x - paw.position.x) < 20,
-                   abs(hero.position.y - paw.position.y) < 20 {
+                if abs(hero.position.x - paw.position.x) < 28,
+                   abs(hero.position.y - paw.position.y) < 30 {
+                    let pawPos = paw.position
                     paw.removeFromParent()
                     Magic.shared.add(1)
+                    // +1마력 pop-up
+                    let pop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+                    pop.text = "+1마력"
+                    pop.fontSize = 16
+                    pop.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+                    pop.position = CGPoint(x: pawPos.x, y: pawPos.y + 10)
+                    pop.zPosition = 6
+                    addChild(pop)
+                    let rise = SKAction.moveBy(x: 0, y: 40, duration: 0.5)
+                    rise.timingMode = .easeOut
+                    pop.run(.sequence([rise, .fadeOut(withDuration: 0.2), .removeFromParent()]))
                 }
             }
         }
@@ -998,13 +1020,13 @@ class MinigameNode: SKNode {
         switch seed {
         case 2:
             // Highest platform (x:170, y:sceneH*0.04, w:120) — right side
-            return CGPoint(x: 210, y: sceneH * 0.04 + 8 + 14)
+            return CGPoint(x: 210, y: sceneH * 0.04 + 8 + 22)
         case 3:
-            // Upper platform (x:-20, y:sceneH*0.10, w:110) — center, under button rain
-            return CGPoint(x: -20, y: sceneH * 0.10 + 8 + 14)
+            // Upper platform (x:-20, y:sceneH*0.18, w:110) — center, under button rain
+            return CGPoint(x: -20, y: sceneH * 0.18 + 8 + 22)
         default: // seed 1
-            // Lower platform (x:-60, y:-sceneH*0.08, w:130) — left edge
-            return CGPoint(x: -110, y: -sceneH * 0.08 + 8 + 14)
+            // Lower platform (x:-60, y:-sceneH*0.08, w:130) — shifted right of breadcrumb trail end
+            return CGPoint(x: -40, y: -sceneH * 0.08 + 8 + 22)
         }
     }
 
@@ -1062,33 +1084,53 @@ class MinigameNode: SKNode {
         let floorSurface = floorCenterY + 9 + 9  // floor top + paw half-height
         switch seed {
         case 2:
-            // Trail from far-left floor up the three stepped platforms to top-right relic
+            let p1y = -sceneH * 0.18 + 8 + 9   // platform 1 surface + paw half
+            let p2y = -sceneH * 0.08 + 8 + 9   // platform 2 surface + paw half
+            let p3y =  sceneH * 0.04 + 8 + 9   // platform 3 surface + paw half
             return [
-                CGPoint(x: -sceneW * 0.30, y: floorSurface),
-                CGPoint(x: -sceneW * 0.15, y: floorSurface),
-                CGPoint(x: -90, y: -sceneH * 0.18 + 8 + 9),
-                CGPoint(x: -20, y: -sceneH * 0.18 + 8 + 9),
-                CGPoint(x:  40, y: -sceneH * 0.08 + 8 + 9),
-                CGPoint(x: 170, y:  sceneH * 0.04 + 8 + 9),
+                // 3 on ground — blade at x:-230 between paw2 and paw3
+                CGPoint(x: -290, y: floorSurface),
+                CGPoint(x: -260, y: floorSurface),
+                CGPoint(x: -185, y: floorSurface),
+                // 3 on platform 1
+                CGPoint(x: -120, y: p1y),
+                CGPoint(x:  -90, y: p1y),
+                CGPoint(x:  -55, y: p1y),
+                // 2 on platform 2 — blade at x:70 after paw2
+                CGPoint(x:   10, y: p2y),
+                CGPoint(x:   45, y: p2y),
+                // 2 on platform 3, leading to relic at x:210
+                CGPoint(x:  130, y: p3y),
+                CGPoint(x:  165, y: p3y),
             ]
         case 3:
-            // Trail from far-left floor up toward upper-center platform relic
+            let p1y = -sceneH * 0.08 + 8 + 9   // platform 1 surface + paw half
+            let p2y =  sceneH * 0.06 + 8 + 9   // platform 2 surface + paw half
             return [
-                CGPoint(x: -sceneW * 0.30, y: floorSurface),
-                CGPoint(x: -sceneW * 0.15, y: floorSurface),
-                CGPoint(x: -60, y: -sceneH * 0.18 + 8 + 9),
-                CGPoint(x:  10, y: -sceneH * 0.18 + 8 + 9),
-                CGPoint(x:  80, y: -sceneH * 0.05 + 8 + 9),
-                CGPoint(x: -20, y:  sceneH * 0.10 + 8 + 9),
+                // 4 on ground, trailing toward platform 1 left edge (~x:-115)
+                CGPoint(x: -290, y: floorSurface),
+                CGPoint(x: -240, y: floorSurface),
+                CGPoint(x: -190, y: floorSurface),
+                CGPoint(x: -140, y: floorSurface),
+                // 3 on platform 1 (x:-60, w:110, spans -115 to 5)
+                CGPoint(x: -100, y: p1y),
+                CGPoint(x:  -60, y: p1y),
+                CGPoint(x:  -20, y: p1y),
+                // 3 on platform 2 (x:80, w:110, spans 25 to 135)
+                CGPoint(x:   35, y: p2y),
+                CGPoint(x:   75, y: p2y),
+                CGPoint(x:  115, y: p2y),
             ]
-        default: // seed 1 — hero starts at x:0, relic on lower-left platform
-            return [
-                CGPoint(x:  -25, y: floorSurface),
-                CGPoint(x:  -55, y: floorSurface),
-                CGPoint(x:  -80, y: floorSurface),
-                CGPoint(x:  -95, y: -sceneH * 0.08 + 8 + 9),
-                CGPoint(x: -110, y: -sceneH * 0.08 + 8 + 9),
-            ]
+        default: // seed 1 — 10 paws equally spaced, first paw 40pt ahead of hero start
+            let firstPawX = -sceneW * 0.38 + 40  // safely outside the 28pt x-threshold
+            let lastPawX:  CGFloat = -75          // stops before scepter at -40
+            let platformSurface = -sceneH * 0.08 + 8 + 9   // lower platform top + paw half
+            let platformLeftEdge: CGFloat = -125             // platform x:-60, w:130 → left at -125
+            return (0..<10).map { i in
+                let x = firstPawX + CGFloat(i) * (lastPawX - firstPawX) / 9
+                let y = x > platformLeftEdge ? platformSurface : floorSurface
+                return CGPoint(x: x, y: y)
+            }
         }
     }
 

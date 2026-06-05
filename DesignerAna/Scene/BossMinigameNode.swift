@@ -138,6 +138,8 @@ class BossMinigameNode: SKNode {
         buildHero()
         buildBoss()
         buildPlatforms()
+        spawnBreadcrumbs()
+        spawnPortrait()
         buildDirectionalButtons()
         buildJumpButton()
         buildInstructionLabel()
@@ -267,7 +269,7 @@ class BossMinigameNode: SKNode {
         // PNG transparent-padding rule: Boss PNG has ~30pt of transparent space at the bottom
         // (more than regular monsters), so visual feet land at surfaceTop + (halfHeight - 30)
         // = floorTop + 97 - 30 = floorTop + 67.
-        bossAnchor = CGPoint(x: sceneW * 0.20, y: floorTop + 67)
+        bossAnchor = CGPoint(x: sceneW * 0.20 + 20, y: floorTop + 67)
 
         let node = SKSpriteNode(imageNamed: "Boss")
         node.size = CGSize(width: 130, height: 195)
@@ -734,7 +736,6 @@ class BossMinigameNode: SKNode {
             .removeFromParent()
         ])) { [weak self] in
             self?.spawnChest(at: bossLastPos)
-            self?.spawnPortrait()
         }
     }
 
@@ -1096,6 +1097,36 @@ class BossMinigameNode: SKNode {
             }
         }
 
+        // Breadcrumb paw collection
+        if !isDead, !isCompleting {
+            for paw in children where paw.name == "breadcrumb" {
+                if abs(hero.position.x - paw.position.x) < 28,
+                   abs(hero.position.y - paw.position.y) < 30 {
+                    let pawPos = paw.position
+                    paw.removeFromParent()
+                    Magic.shared.add(1)
+                    let pop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+                    pop.text = "+1마력"
+                    pop.fontSize = 16
+                    pop.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+                    pop.position = CGPoint(x: pawPos.x, y: pawPos.y + 10)
+                    pop.zPosition = 6
+                    addChild(pop)
+                    let rise = SKAction.moveBy(x: 0, y: 40, duration: 0.5)
+                    rise.timingMode = .easeOut
+                    pop.run(.sequence([rise, .fadeOut(withDuration: 0.2), .removeFromParent()]))
+                }
+            }
+        }
+
+        // Portrait walk-over collection
+        if !portraitCollected, !isDead, !isCompleting,
+           let pn = portraitNode,
+           abs(hero.position.x - pn.position.x) < 36,
+           abs(hero.position.y - pn.position.y) < 36 {
+            collectPortrait()
+        }
+
         // Proximity chest claim — hero walks up to the boss chest to open it.
         // The y-range pairs with the x-range so the chest doesn't claim from
         // an upper stepping-stone while the hero is at a different height.
@@ -1110,17 +1141,52 @@ class BossMinigameNode: SKNode {
         syncHPDotPositions()
     }
 
+    // MARK: - Breadcrumbs
+
+    private func spawnBreadcrumbs() {
+        let floorSurface = floorCenterY + 18               // floor top + paw half
+        let lowerPlatY   = floorCenterY + 9 + 49 + 8 + 9  // lower step surface + paw half
+        let upperPlatY   = floorCenterY + 9 + 101 + 8 + 9 // upper step surface + paw half
+        // Lower step spans x: -sceneW*0.12 ± 75; upper step spans x: sceneW*0.04 ± 75
+        let positions: [CGPoint] = [
+            // 3 on floor
+            CGPoint(x: -sceneW * 0.30, y: floorSurface),
+            CGPoint(x: -sceneW * 0.10, y: floorSurface),
+            CGPoint(x:  sceneW * 0.25, y: floorSurface),
+            // 3 on lower platform
+            CGPoint(x: -sceneW * 0.12 - 50, y: lowerPlatY),
+            CGPoint(x: -sceneW * 0.12,       y: lowerPlatY),
+            CGPoint(x: -sceneW * 0.12 + 50, y: lowerPlatY),
+            // 2 on upper platform, flanking the portrait at x:sceneW*0.04
+            CGPoint(x:  sceneW * 0.04 - 50, y: upperPlatY),
+            CGPoint(x:  sceneW * 0.04 + 50, y: upperPlatY),
+        ]
+        for pos in positions {
+            let paw = SKSpriteNode(imageNamed: "CatPaw")
+            paw.size = CGSize(width: 18, height: 18)
+            paw.alpha = 0.7
+            paw.position = pos
+            paw.zPosition = 1
+            paw.name = "breadcrumb"
+            addChild(paw)
+        }
+    }
+
     // MARK: - Relic (Royal Family Portrait)
 
     private func spawnPortrait() {
         let relic = DungeonItem.royalFamilyPortrait
         guard !Store.loadCollectedRelics().contains(relic) else { return }
 
+        // Upper platform: centerY = floorCenterY+9+101, top = floorCenterY+118
+        // Portrait sits on top: center = platformTop + half(32) = floorCenterY + 150
+        let upperPlatTop = floorCenterY + 9 + 101 + 8
+        let portraitY    = upperPlatTop + 32
+
         let sprite = SKSpriteNode(imageNamed: relic.assetName)
         sprite.size = CGSize(width: 64, height: 64)
-        sprite.position = CGPoint(x: 0, y: sceneH * 0.5)
+        sprite.position = CGPoint(x: sceneW * 0.04, y: portraitY)
         sprite.zPosition = 4
-        sprite.alpha = 0
 
         let glow = SKShapeNode(circleOfRadius: 36)
         glow.fillColor = UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 0.3)
@@ -1130,17 +1196,11 @@ class BossMinigameNode: SKNode {
         addChild(sprite)
         portraitNode = sprite
 
-        let floorSurface = floorCenterY + 9 + 17
-        let descend = SKAction.move(to: CGPoint(x: 0, y: floorSurface), duration: 1.0)
-        descend.timingMode = .easeOut
-        sprite.run(.sequence([
-            .fadeIn(withDuration: 0.3),
-            descend
-        ])) { [weak self] in
-            self?.run(.wait(forDuration: 1.5)) { [weak self] in
-                self?.collectPortrait()
-            }
-        }
+        sprite.run(.repeatForever(.sequence([
+            .moveBy(x: 0, y: 6, duration: 0.6),
+            .moveBy(x: 0, y: -6, duration: 0.6)
+        ])), withKey: "portraitBob")
+        // Walk-over collection handled in update(). Safety net in openChest().
     }
 
     private func collectPortrait() {

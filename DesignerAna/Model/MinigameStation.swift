@@ -67,7 +67,7 @@ struct MinigameConfig {
         case .buttonStation:
             return MinigameConfig(
                 station: station, levelSeed: 3, enemyKind: .dustMonster, enemyCount: 1,
-                defeatMechanism: .either, monsterBehavior: .lunging(lungeInterval: 3.0),
+                defeatMechanism: .either, monsterBehavior: .pacing(speed: 80, range: 80),
                 hazardKind: .fallingButtons(spawnInterval: 1.5),
                 chestRewardLabel: "단추 획득!", chestRewardImageName: "Buttons_Regular",
                 completionReward: 30, backgroundTint: bgTint, accentColor: accent)
