@@ -16,6 +16,8 @@ enum UserDefaultsKey {
     static let magicPoints          = "magic.points"
     static let customerSelected     = "customer.selected"
     static let collectedRelics      = "relics.collected"
+    static let relicDeductionShown  = "relics.deductionShown"
+    static let relicChoiceFirst     = "relics.choiceFirst"
 }
 
 enum Store {
@@ -103,6 +105,23 @@ enum Store {
     static func saveCollectedRelics(_ relics: Set<DungeonItem>) {
         guard let data = try? encoder.encode(Array(relics)) else { return }
         defaults.set(data, forKey: UserDefaultsKey.collectedRelics)
+    }
+
+    // MARK: - Relic quest milestones (tailor-side; not cleared by resetCustomerSide)
+
+    static func loadRelicDeductionShown() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.relicDeductionShown)
+    }
+    static func saveRelicDeductionShown() {
+        defaults.set(true, forKey: UserDefaultsKey.relicDeductionShown)
+    }
+    static func loadRelicChoiceFirst() -> String? {
+        defaults.string(forKey: UserDefaultsKey.relicChoiceFirst)
+    }
+    static func saveRelicChoiceFirst(_ choice: String) {
+        // Only records the *first* choice — don't overwrite if already set.
+        guard defaults.string(forKey: UserDefaultsKey.relicChoiceFirst) == nil else { return }
+        defaults.set(choice, forKey: UserDefaultsKey.relicChoiceFirst)
     }
 
     // MARK: - 새 손님 reset

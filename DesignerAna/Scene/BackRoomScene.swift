@@ -681,14 +681,29 @@ class BackRoomScene: SKScene {
         scene?.physicsWorld.gravity = .zero
         tailor.isPaused = false
         updateQuitButtonVisibility()
-
         Store.clearActiveOrder()
-
-        // .finalCheck: the brief beat between boss defeat and the dress appearing.
         currentState = .finalCheck
         setInstructionText(garmentCompletionText(for: order))
         updateHUDCounters()
-        placeDressOnMannequin()
+
+        // Phase 5 — TailorChoiceScene fires once when all four relics have been
+        // collected and the deduction scene hasn't been shown yet.
+        let allRelicsCollected = Store.loadCollectedRelics().count == DungeonItem.allCases.count
+        if allRelicsCollected && !Store.loadRelicDeductionShown() {
+            Store.saveRelicDeductionShown()
+            presentTailorChoiceScene()
+        } else {
+            placeDressOnMannequin()
+        }
+    }
+
+    private func presentTailorChoiceScene() {
+        guard let view = self.view else { return }
+        let scene = TailorChoiceScene()
+        scene.scaleMode = .resizeFill
+        scene.completedOrder = order
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
     }
 
     private func handleMinigameCompletion(for station: MinigameStation) {
