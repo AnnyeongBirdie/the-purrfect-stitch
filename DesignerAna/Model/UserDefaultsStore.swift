@@ -18,6 +18,7 @@ enum UserDefaultsKey {
     static let collectedRelics      = "relics.collected"
     static let relicDeductionShown  = "relics.deductionShown"
     static let relicChoiceFirst     = "relics.choiceFirst"
+    static let relicQuestComplete   = "relics.questComplete"
 }
 
 enum Store {
@@ -122,6 +123,22 @@ enum Store {
         // Only records the *first* choice — don't overwrite if already set.
         guard defaults.string(forKey: UserDefaultsKey.relicChoiceFirst) == nil else { return }
         defaults.set(choice, forKey: UserDefaultsKey.relicChoiceFirst)
+    }
+
+    static func loadRelicQuestComplete() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.relicQuestComplete)
+    }
+    static func saveRelicQuestComplete() {
+        defaults.set(true, forKey: UserDefaultsKey.relicQuestComplete)
+    }
+
+    /// Debug helper — wipes all relic quest flags so the full arc can be
+    /// replayed from the start. Does NOT touch collectedRelics separately;
+    /// call saveCollectedRelics([]) before this if you also want a fresh relic set.
+    static func clearRelicQuestState() {
+        defaults.removeObject(forKey: UserDefaultsKey.relicDeductionShown)
+        defaults.removeObject(forKey: UserDefaultsKey.relicChoiceFirst)
+        defaults.removeObject(forKey: UserDefaultsKey.relicQuestComplete)
     }
 
     // MARK: - 새 손님 reset

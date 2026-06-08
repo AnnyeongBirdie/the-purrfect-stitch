@@ -833,6 +833,7 @@ class MinigameNode: SKNode {
         }
     }
 
+    // Lore note (PrincessAnaScene): monsters fall asleep, not killed — they respawn on re-entry by design.
     private func defeatMonster() {
         guard !monsterDefeated else { return }
         monsterDefeated = true

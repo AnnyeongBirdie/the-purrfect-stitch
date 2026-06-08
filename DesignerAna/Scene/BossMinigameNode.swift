@@ -703,6 +703,7 @@ class BossMinigameNode: SKNode {
         SoundManager.shared.stop("sfx_boss_summon.mp3")
     }
 
+    // Lore note (PrincessAnaScene): monsters fall asleep, not killed — they respawn on re-entry by design.
     private func defeatBoss() {
         guard !bossDefeated else { return }
         bossDefeated = true

@@ -102,6 +102,17 @@ class BackRoomScene: SKScene {
         setupQuitButton()
         applyResumeStateIfNeeded()
         saveActiveOrderSnapshot()
+        if Store.loadRelicQuestComplete() {
+            setupSelfieKeepsake()
+        }
+    }
+
+    private func setupSelfieKeepsake() {
+        let selfie = SKSpriteNode(imageNamed: "Selfie_TailorAndPrincessAna")
+        selfie.size = CGSize(width: 72, height: 72)
+        selfie.position = CGPoint(x: size.width * 0.42, y: size.height * 0.28)
+        selfie.zPosition = 3
+        addChild(selfie)
     }
 
     private func setupBackground() {

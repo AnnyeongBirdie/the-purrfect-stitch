@@ -284,14 +284,9 @@ class TailorChoiceScene: SKScene {
             view.presentScene(aurora, transition: SKTransition.crossFade(withDuration: 0.6))
             return
         }
-        // TODO: Phase 5 — Path B: present PrincessAnaScene
-        // Placeholder: Path B returns to front shop for now.
-        guard let next = FrontShopScene(fileNamed: "GameScene") else { return }
-        next.scaleMode = .resizeFill
-        next.shouldShowFinishedGarment = true
-        next.finishedGarmentImageName = garmentImageName(for: completedOrder)
-        next.completedOrder = completedOrder
-        next.suppressEntryBell = true
-        view.presentScene(next, transition: SKTransition.crossFade(withDuration: 0.6))
+        let ana = PrincessAnaScene()
+        ana.scaleMode = .resizeFill
+        ana.completedOrder = completedOrder
+        view.presentScene(ana, transition: SKTransition.crossFade(withDuration: 0.6))
     }
 }

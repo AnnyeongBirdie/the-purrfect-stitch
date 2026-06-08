@@ -367,7 +367,8 @@ class SettingsScene: SKScene {
         #if DEBUG
         if touch.tapCount >= 3 {
             Store.saveCollectedRelics([])
-            print("DEBUG: relics cleared")
+            Store.clearRelicQuestState()
+            print("DEBUG: relics + quest flags cleared")
         }
         #endif
 

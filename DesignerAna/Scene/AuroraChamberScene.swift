@@ -325,14 +325,10 @@ class AuroraChamberScene: SKScene {
 
     private func exitToNextScene() {
         guard let view = self.view else { return }
-        // TODO: Phase 5 — replace with PrincessAnaScene
-        guard let next = FrontShopScene(fileNamed: "GameScene") else { return }
-        next.scaleMode = .resizeFill
-        next.shouldShowFinishedGarment = true
-        next.finishedGarmentImageName = garmentImageName(for: completedOrder)
-        next.completedOrder = completedOrder
-        next.suppressEntryBell = true
-        view.presentScene(next, transition: SKTransition.crossFade(withDuration: 0.6))
+        let ana = PrincessAnaScene()
+        ana.scaleMode = .resizeFill
+        ana.completedOrder = completedOrder
+        view.presentScene(ana, transition: SKTransition.crossFade(withDuration: 0.6))
     }
 
     // MARK: - Touch handling
