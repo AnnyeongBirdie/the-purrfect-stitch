@@ -3,7 +3,7 @@
 //  DesignerAna
 //
 //  Phase 5 — Path A. Aurora (WizardCat) greets the tailor, poses a riddle,
-//  then teleports them to Princess Ana's room via a purple swirling halo.
+//  then transitions them to Princess Ana's room.
 //
 
 import SpriteKit
@@ -22,42 +22,41 @@ class AuroraChamberScene: SKScene {
         let text: String
     }
 
+    // 7 beats (indices 0-6). The riddle question is injected at beatIndex 4
+    // between indices 3 and 4 — see advanceBeat().
     private let beats: [Beat] = [
-        Beat(speaker: "오로라",  text: "어머나! 오랜만이구나, 작은 아이야. 잘 지냈니? ✨"),
-        Beat(speaker: "재봉사",  text: "선생님! 그동안 많이 보고 싶었어요. 드릴 말씀이 있어요."),
-        Beat(speaker: "오로라",  text: "호호, 알고 있단다. 네가 얼마나 훌륭한 재봉사가 됐는지… 선생님은 정말 자랑스럽구나. 마법 실력도 녹슬지 않았고!"),
-        Beat(speaker: "오로라",  text: "그래, 도와주마. 그런데 먼저 — 아직 머리가 잘 돌아가는지 볼까?"),
-        // index 4: praise (shown after correct riddle answer)
-        Beat(speaker: "오로라",  text: "그래! 역시 내 제자야. 똑똑하구나. 🌟"),
-        Beat(speaker: "오로라",  text: "아나 공주님께 그 보물들을 가져가렴. 공주님이 분명 알고 계실 거야."),
-        Beat(speaker: "오로라",  text: "자, 내가 마법으로 보내줄게! ✨"),
+        Beat(speaker: "마법사 오로라",  text: "어머나! 오랜만이구나, 작은 아이야. 잘 지냈니? ✨"),
+        Beat(speaker: "재봉사 다프네",  text: "선생님! 그동안 많이 보고 싶었어요. 드릴 말씀이 있어요."),
+        Beat(speaker: "마법사 오로라",  text: "호호, 알고 있단다. 네가 얼마나 훌륭한 재봉사가 됐는지… 선생님은 정말 자랑스럽구나. 마법 실력도 녹슬지 않았고!"),
+        Beat(speaker: "마법사 오로라",  text: "그래, 도와주마. 그런데 먼저 — 아직 머리가 잘 돌아가는지 볼까?"),
+        // index 4 is praise shown after the riddle
+        Beat(speaker: "마법사 오로라",  text: "그래! 역시 내 제자야. 똑똑하구나. 🌟"),
+        Beat(speaker: "마법사 오로라",  text: "아나 공주님께 그 보물들을 가져가렴. 공주님이 분명 알고 계실 거야."),
+        Beat(speaker: "마법사 오로라",  text: "자, 내가 마법으로 보내줄게! ✨"),
     ]
 
-    // beatIndex starts at 0 (shown at setup); advanceBeat() increments before dispatch.
-    // beatIndex 4 = riddle panel; riddle correct sets beatIndex to 5 = beats[4].
-    // Mapping: beatArrayIndex = beatIndex <= 3 ? beatIndex : beatIndex - 1
+    // Logical beat index. Values:
+    //   0-3  → beats[0-3]
+    //   4    → riddle question shown (custom text from RiddleBank)
+    //   4.5  → riddle choices visible (tracked by riddleChoicesVisible flag)
+    //   5-7  → beats[4-6]
+    //   8    → teleport
     private var beatIndex = 0
 
-    // MARK: - State
+    // MARK: - Riddle state
 
-    private var riddlePanelVisible = false
+    private var riddleChoicesVisible = false
     private var teleporting = false
-    private var currentRiddle: Riddle = RiddleBank.load()[0]
+    private var currentRiddle: Riddle = RiddleBank.load().randomElement() ?? RiddleBank.load()[0]
 
-    // MARK: - Node references
+    // MARK: - HUD
+
+    private var hud: NarrativeHUD!
+
+    // MARK: - Character sprites (scene dressing, separate from HUD portraits)
 
     private var auroraSprite: SKSpriteNode!
     private var tailorSprite: SKSpriteNode!
-    private var dialoguePanel: SKShapeNode!
-    private var speakerLabel: SKLabelNode!
-    private var textLabel: SKLabelNode!
-    private var tapHintLabel: SKLabelNode!
-    private var riddlePanel: SKShapeNode!
-
-    // MARK: - Layout constants
-
-    private var bubbleW: CGFloat { min(size.width * 0.72, 460) }
-    private var panelY: CGFloat { -size.height * 0.34 }
 
     // MARK: - Scene setup
 
@@ -65,9 +64,7 @@ class AuroraChamberScene: SKScene {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         setupBackdrop()
         setupCharacters()
-        setupDialogueBubble()
-        setupRiddlePanel()
-        showBeat(0)
+        setupHUD(safeBottom: view.safeAreaInsets.bottom)
     }
 
     private func setupBackdrop() {
@@ -80,164 +77,50 @@ class AuroraChamberScene: SKScene {
 
     private func setupCharacters() {
         let aurora = SKSpriteNode(imageNamed: "WizardCat")
-        aurora.size = CGSize(width: 100, height: 150)
+        if aurora.size.width > 0 { aurora.setScale(100 / aurora.size.width) }
         aurora.position = CGPoint(x: -size.width * 0.30, y: -size.height * 0.08)
         aurora.zPosition = 10
         addChild(aurora)
         auroraSprite = aurora
 
         let tailor = SKSpriteNode(imageNamed: "Tailor")
-        tailor.size = CGSize(width: 90, height: 135)
+        if tailor.size.width > 0 { tailor.setScale(90 / tailor.size.width) }
         tailor.position = CGPoint(x: size.width * 0.30, y: -size.height * 0.08)
         tailor.zPosition = 10
         addChild(tailor)
         tailorSprite = tailor
     }
 
-    // MARK: - Dialogue bubble
+    // MARK: - HUD setup
 
-    private func setupDialogueBubble() {
-        let panel = SKShapeNode(
-            rect: CGRect(x: -bubbleW / 2, y: -48, width: bubbleW, height: 96),
-            cornerRadius: 20
+    private func setupHUD(safeBottom: CGFloat) {
+        hud = NarrativeHUD()
+        hud.zPosition = 50
+        addChild(hud)
+
+        hud.configure(
+            speakers: [
+                SpeakerConfig(
+                    name: "마법사 오로라",
+                    portraitAsset: "Portrait_Aurora",
+                    slot: .left,
+                    // Aurora — mint-blue #5EC8B8
+                    nameColor: UIColor(red: 0.37, green: 0.78, blue: 0.72, alpha: 1.0)
+                ),
+                SpeakerConfig(
+                    name: "재봉사 다프네",
+                    portraitAsset: "Portrait_Daphne",
+                    slot: .right,
+                    // Tailor — warm gold #FFD54F
+                    nameColor: UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 1.0)
+                ),
+            ],
+            sceneSize: size,
+            safeBottom: safeBottom
         )
-        panel.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
-        panel.strokeColor = UIColor(red: 0.45, green: 0.25, blue: 0.10, alpha: 1.0)
-        panel.lineWidth = 2
-        panel.position = CGPoint(x: 0, y: panelY)
-        panel.zPosition = 20
-        addChild(panel)
-        dialoguePanel = panel
 
-        let speaker = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        speaker.fontSize = 12
-        speaker.fontColor = UIColor(red: 0.45, green: 0.25, blue: 0.10, alpha: 1.0)
-        speaker.horizontalAlignmentMode = .center
-        speaker.position = CGPoint(x: 0, y: panelY + 30)
-        speaker.zPosition = 21
-        addChild(speaker)
-        speakerLabel = speaker
-
-        let body = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        body.fontSize = 14
-        body.fontColor = .black
-        body.numberOfLines = 0
-        body.preferredMaxLayoutWidth = bubbleW - 48
-        body.verticalAlignmentMode = .center
-        body.horizontalAlignmentMode = .center
-        body.position = CGPoint(x: 0, y: panelY - 4)
-        body.zPosition = 21
-        addChild(body)
-        textLabel = body
-
-        let hint = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        hint.fontSize = 12
-        hint.fontColor = UIColor(red: 0.45, green: 0.25, blue: 0.10, alpha: 0.85)
-        hint.text = "▶ 탭하세요"
-        hint.horizontalAlignmentMode = .center
-        hint.position = CGPoint(x: 0, y: panelY - 64)
-        hint.zPosition = 21
-        addChild(hint)
-        tapHintLabel = hint
-    }
-
-    // MARK: - Riddle panel
-
-    private func setupRiddlePanel() {
-        let panelH: CGFloat = 180
-        let panel = SKShapeNode(
-            rect: CGRect(x: -bubbleW / 2, y: -panelH / 2, width: bubbleW, height: panelH),
-            cornerRadius: 20
-        )
-        panel.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
-        panel.strokeColor = UIColor(red: 0.45, green: 0.25, blue: 0.10, alpha: 1.0)
-        panel.lineWidth = 2
-        panel.position = CGPoint(x: 0, y: panelY)
-        panel.zPosition = 20
-        panel.isHidden = true
-        addChild(panel)
-        riddlePanel = panel
-
-        // Question label
-        let question = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        question.fontSize = 14
-        question.fontColor = .black
-        question.numberOfLines = 0
-        question.preferredMaxLayoutWidth = bubbleW - 48
-        question.horizontalAlignmentMode = .center
-        question.verticalAlignmentMode = .center
-        question.position = CGPoint(x: 0, y: panelH * 0.17)
-        question.zPosition = 21
-        question.text = currentRiddle.question
-        riddlePanel.addChild(question)
-
-        // 2×2 answer buttons
-        let btnW = bubbleW * 0.44
-        let btnH: CGFloat = 40
-        let fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
-        let positions: [CGPoint] = [
-            CGPoint(x: -bubbleW * 0.24, y: -panelH * 0.13),
-            CGPoint(x:  bubbleW * 0.24, y: -panelH * 0.13),
-            CGPoint(x: -bubbleW * 0.24, y: -panelH * 0.38),
-            CGPoint(x:  bubbleW * 0.24, y: -panelH * 0.38),
-        ]
-        for i in 0..<4 {
-            let btn = SKShapeNode(
-                rect: CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH),
-                cornerRadius: 10
-            )
-            btn.fillColor = fillColor
-            btn.strokeColor = UIColor.brown
-            btn.lineWidth = 2
-            btn.position = positions[i]
-            btn.zPosition = 21
-            btn.name = "ans_\(i)"
-
-            let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-            lbl.fontSize = 13
-            lbl.fontColor = .white
-            lbl.verticalAlignmentMode = .center
-            lbl.horizontalAlignmentMode = .center
-            lbl.text = currentRiddle.choices[i]
-            lbl.name = "ans_\(i)"
-            btn.addChild(lbl)
-
-            riddlePanel.addChild(btn)
-        }
-    }
-
-    // MARK: - Beat display
-
-    private func beatArrayIndex(for index: Int) -> Int {
-        index <= 3 ? index : index - 1
-    }
-
-    private func showBeat(_ index: Int) {
-        let arrayIdx = beatArrayIndex(for: index)
-        guard arrayIdx < beats.count else { return }
-        let beat = beats[arrayIdx]
-        speakerLabel.text = beat.speaker
-        textLabel.text = beat.text
-    }
-
-    // MARK: - Riddle panel show / hide
-
-    private func showRiddlePanel() {
-        dialoguePanel.isHidden = true
-        speakerLabel.isHidden = true
-        textLabel.isHidden = true
-        tapHintLabel.isHidden = true
-        riddlePanel.isHidden = false
-        riddlePanelVisible = true
-    }
-
-    private func hideRiddlePanel() {
-        riddlePanel.isHidden = true
-        riddlePanelVisible = false
-        dialoguePanel.isHidden = false
-        speakerLabel.isHidden = false
-        textLabel.isHidden = false
-        tapHintLabel.isHidden = false
+        hud.revealAll(activeSpeaker: "마법사 오로라")
+        hud.show(speaker: "마법사 오로라", text: beats[0].text)
     }
 
     // MARK: - Beat advancement
@@ -246,17 +129,32 @@ class AuroraChamberScene: SKScene {
         beatIndex += 1
 
         switch beatIndex {
-        case 1...3:
-            showBeat(beatIndex)
+        case 1, 2, 3:
+            // beats[0-3]
+            hud.show(speaker: beats[beatIndex].speaker, text: beats[beatIndex].text)
+
         case 4:
-            showRiddlePanel()
+            // Show riddle question as Aurora's dialogue; next tap reveals choices.
+            hud.show(speaker: "마법사 오로라", text: currentRiddle.question)
+
         case 5...7:
-            showBeat(beatIndex)
+            // beats[4-6] — offset by 1 due to injected riddle
+            let arrayIdx = beatIndex - 1
+            hud.show(speaker: beats[arrayIdx].speaker, text: beats[arrayIdx].text)
+
         case 8:
             startTeleport()
+
         default:
             break
         }
+    }
+
+    // MARK: - Riddle choice display
+
+    private func showRiddleChoices() {
+        riddleChoicesVisible = true
+        hud.showChoices(currentRiddle.choices)
     }
 
     // MARK: - Riddle answer handling
@@ -269,58 +167,26 @@ class AuroraChamberScene: SKScene {
         let chosen = currentRiddle.choices[idx]
         let isCorrect = chosen == currentRiddle.answer
 
-        // Find the tapped button node
-        let btn = riddlePanel.children.first { $0.name == name } as? SKShapeNode
-        let flashColor: UIColor = isCorrect
-            ? UIColor(red: 0.20, green: 0.75, blue: 0.35, alpha: 1.0)
-            : UIColor(red: 0.85, green: 0.25, blue: 0.20, alpha: 1.0)
-        let originalColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
-
-        btn?.run(.sequence([
-            .run { btn?.fillColor = flashColor },
-            .wait(forDuration: 0.35),
-            .run { btn?.fillColor = originalColor }
-        ]))
+        hud.flashChoiceResult(at: idx, correct: isCorrect)
 
         if isCorrect {
-            run(.sequence([
-                .wait(forDuration: 0.45),
-                .run { [weak self] in
-                    guard let self else { return }
-                    self.hideRiddlePanel()
-                    self.beatIndex = 5
-                    self.showBeat(5)
-                }
-            ]))
+            run(.wait(forDuration: 0.45)) { [weak self] in
+                guard let self else { return }
+                self.hud.hideChoices()
+                self.riddleChoicesVisible = false
+                self.beatIndex = 5
+                self.hud.show(speaker: self.beats[4].speaker, text: self.beats[4].text)
+            }
         }
     }
 
-    // MARK: - Teleport sequence
+    // MARK: - Transition to Princess Ana's room
 
     private func startTeleport() {
+        // Using a simple fade transition.
+        // TODO: design a proper transition effect that fits Aurora's mint-blue color signature.
         teleporting = true
-        SoundManager.shared.play("sfx_halo_expand.mp3")
-
-        let halo = SKShapeNode(circleOfRadius: 8)
-        halo.fillColor = UIColor(red: 0.55, green: 0.18, blue: 0.80, alpha: 0.8)
-        halo.strokeColor = .clear
-        halo.position = auroraSprite.position
-        halo.zPosition = 30
-        addChild(halo)
-
-        let targetScale = max(size.width, size.height) / 2 / 8   // fill screen: half longest dimension ÷ initial radius
-        let expand = SKAction.scale(to: targetScale, duration: 0.9)
-        expand.timingMode = .easeIn
-        let spin = SKAction.rotate(byAngle: .pi * 2, duration: 0.9)
-
-        halo.run(.sequence([
-            .group([expand, spin]),
-            .run { [weak self] in self?.exitToNextScene() }
-        ]))
-
-        let fade = SKAction.fadeAlpha(to: 0, duration: 0.5)
-        auroraSprite.run(fade)
-        tailorSprite.run(fade)
+        run(.wait(forDuration: 0.4)) { [weak self] in self?.exitToNextScene() }
     }
 
     private func exitToNextScene() {
@@ -336,15 +202,21 @@ class AuroraChamberScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !teleporting, let touch = touches.first else { return }
         let loc = touch.location(in: self)
-        let name = nodes(at: loc).compactMap { $0.name }.first
+        let nodeName = nodes(at: loc).compactMap { $0.name }.first
 
-        if riddlePanelVisible {
-            switch name {
-            case "ans_0", "ans_1", "ans_2", "ans_3":
-                handleAnswer(name!)
+        if riddleChoicesVisible {
+            switch nodeName {
+            case "choice_0", "choice_1", "choice_2", "choice_3":
+                handleAnswer(nodeName!)
             default:
                 break
             }
+            return
+        }
+
+        // beatIndex == 4: question is shown; next tap reveals choices
+        if beatIndex == 4 && !riddleChoicesVisible {
+            showRiddleChoices()
             return
         }
 

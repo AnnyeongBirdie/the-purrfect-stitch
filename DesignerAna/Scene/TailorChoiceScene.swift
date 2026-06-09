@@ -51,7 +51,8 @@ class TailorChoiceScene: SKScene {
 
     private func setupTailor() {
         let tailor = SKSpriteNode(imageNamed: "Tailor")
-        tailor.size = CGSize(width: 90, height: 135)
+        // Preserve native aspect ratio — scale to target width of 90 pt.
+        if tailor.size.width > 0 { tailor.setScale(90 / tailor.size.width) }
         tailor.position = CGPoint(x: 0, y: -size.height * 0.08)
         tailor.zPosition = 10
         addChild(tailor)
@@ -72,13 +73,15 @@ class TailorChoiceScene: SKScene {
         ]
 
         for (item, startAngle) in relics {
-            let glow = SKShapeNode(circleOfRadius: 22)
-            glow.fillColor = UIColor(red: 0.55, green: 0.18, blue: 0.80, alpha: 0.35)
+            // Silver halo — hints at the Fairy Godmother's involvement before she's revealed.
+            let glow = SKShapeNode(circleOfRadius: 30)
+            glow.fillColor = UIColor(red: 0.82, green: 0.86, blue: 0.95, alpha: 0.85)
             glow.strokeColor = .clear
             glow.zPosition = 8
 
             let sprite = SKSpriteNode(imageNamed: item.rawValue)
-            sprite.size = CGSize(width: 36, height: 36)
+            // Preserve native aspect ratio — scale to target width of 50 pt.
+            if sprite.size.width > 0 { sprite.setScale(50 / sprite.size.width) }
             sprite.zPosition = 9
 
             // Set initial positions before the action starts

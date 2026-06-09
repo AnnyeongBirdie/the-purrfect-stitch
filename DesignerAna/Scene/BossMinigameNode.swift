@@ -1149,11 +1149,15 @@ class BossMinigameNode: SKNode {
         let lowerPlatY   = floorCenterY + 9 + 49 + 8 + 9  // lower step surface + paw half
         let upperPlatY   = floorCenterY + 9 + 101 + 8 + 9 // upper step surface + paw half
         // Lower step spans x: -sceneW*0.12 ± 75; upper step spans x: sceneW*0.04 ± 75
+        // 3 floor paws equally spaced between the hero start and the lower platform.
+        let heroStartX: CGFloat = -sceneW * 0.38
+        let platStartX: CGFloat = -sceneW * 0.12  // lower platform center x
+        let floorStep = (platStartX - heroStartX) / 4
         let positions: [CGPoint] = [
-            // 3 on floor
-            CGPoint(x: -sceneW * 0.30, y: floorSurface),
-            CGPoint(x: -sceneW * 0.10, y: floorSurface),
-            CGPoint(x:  sceneW * 0.25, y: floorSurface),
+            // 3 on floor, evenly spaced from hero start to just before the lower platform
+            CGPoint(x: heroStartX + floorStep,     y: floorSurface),
+            CGPoint(x: heroStartX + floorStep * 2, y: floorSurface),
+            CGPoint(x: heroStartX + floorStep * 3, y: floorSurface),
             // 3 on lower platform
             CGPoint(x: -sceneW * 0.12 - 50, y: lowerPlatY),
             CGPoint(x: -sceneW * 0.12,       y: lowerPlatY),
@@ -1164,7 +1168,7 @@ class BossMinigameNode: SKNode {
         ]
         for pos in positions {
             let paw = SKSpriteNode(imageNamed: "CatPaw")
-            paw.size = CGSize(width: 18, height: 18)
+            if paw.size.width > 0 { paw.setScale(18 / paw.size.width) }
             paw.alpha = 0.7
             paw.position = pos
             paw.zPosition = 1
@@ -1180,12 +1184,14 @@ class BossMinigameNode: SKNode {
         guard !Store.loadCollectedRelics().contains(relic) else { return }
 
         // Upper platform: centerY = floorCenterY+9+101, top = floorCenterY+118
-        // Portrait sits on top: center = platformTop + half(32) = floorCenterY + 150
+        // Portrait hovers visibly above the two flanking paws on the upper platform.
+        // +56 gives ~30 pt clearance above the paw tops so it reads as "floating above".
         let upperPlatTop = floorCenterY + 9 + 101 + 8
-        let portraitY    = upperPlatTop + 32
+        let portraitY    = upperPlatTop + 56
 
         let sprite = SKSpriteNode(imageNamed: relic.assetName)
-        sprite.size = CGSize(width: 64, height: 64)
+        // Preserve native aspect ratio — scale to target width of 64 pt.
+        if sprite.size.width > 0 { sprite.setScale(64 / sprite.size.width) }
         sprite.position = CGPoint(x: sceneW * 0.04, y: portraitY)
         sprite.zPosition = 4
 
@@ -1216,7 +1222,11 @@ class BossMinigameNode: SKNode {
         SoundManager.shared.play("sfx_coin_earn.mp3")
 
         let pop = SKSpriteNode(imageNamed: relic.assetName)
-        pop.size = CGSize(width: 34, height: 34)
+        // Preserve native aspect ratio — scale to target width of 34 pt.
+        let popNatural = pop.size
+        if popNatural.width > 0 {
+            pop.size = CGSize(width: 34, height: 34 * popNatural.height / popNatural.width)
+        }
         pop.position = position
         pop.zPosition = 55
         addChild(pop)

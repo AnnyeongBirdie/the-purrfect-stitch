@@ -993,7 +993,8 @@ class MinigameNode: SKNode {
               !Store.loadCollectedRelics().contains(relic) else { return }
 
         let sprite = SKSpriteNode(imageNamed: relic.assetName)
-        sprite.size = CGSize(width: 44, height: 44)
+        // Preserve native aspect ratio — scale to target width of 44 pt.
+        if sprite.size.width > 0 { sprite.setScale(44 / sprite.size.width) }
         sprite.position = relicSpawnPosition(for: config.levelSeed)
         sprite.zPosition = 4
         sprite.name = "relic"
@@ -1041,7 +1042,11 @@ class MinigameNode: SKNode {
         SoundManager.shared.play("sfx_coin_earn.mp3")
 
         let pop = SKSpriteNode(imageNamed: relic.assetName)
-        pop.size = CGSize(width: 28, height: 28)
+        // Preserve native aspect ratio — scale to target width of 28 pt.
+        let popNatural = pop.size
+        if popNatural.width > 0 {
+            pop.size = CGSize(width: 28, height: 28 * popNatural.height / popNatural.width)
+        }
         pop.position = position
         pop.zPosition = 55
         addChild(pop)
@@ -1072,7 +1077,7 @@ class MinigameNode: SKNode {
     private func spawnBreadcrumbs() {
         for pos in breadcrumbPositions(for: config.levelSeed) {
             let paw = SKSpriteNode(imageNamed: "CatPaw")
-            paw.size = CGSize(width: 18, height: 18)
+            if paw.size.width > 0 { paw.setScale(18 / paw.size.width) }
             paw.alpha = 0.7
             paw.position = pos
             paw.zPosition = 1
