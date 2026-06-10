@@ -33,6 +33,11 @@ DesignerAna_handoff.md
 GAME_VOCABULARY.md
 BossMinigame_prompt.md
 RELICS.md
+RIDDLE_BANK.md
+# Prompt docs. Note the original *_prompt.md rule (below) is lowercase/singular
+# and missed capitalized/plural names like BustUpPortrait_Prompts.md, so match
+# those too.
+*_Prompts.md
 
 # Claude Code per-machine settings (absolute paths, machine-specific)
 .claude/settings.local.json
