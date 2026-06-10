@@ -39,15 +39,16 @@ class TitleScene: SKScene {
         let sign = SKSpriteNode(imageNamed: "ShopSign_Title")
         guard sign.size.width > 0 else { return }
 
-        // Scale to 80 % of scene width for title-screen presence
-        let targetW = size.width * 0.36
+        // Scale to 45 % of scene width for title-screen presence
+        let targetW = size.width * 0.45
         let scale   = targetW / sign.size.width
         sign.setScale(scale)
 
         let scaledH = sign.size.height * scale
-        // Chains (~22 % of image height) bleed off the top edge;
-        // the sign body sits in the upper third of the screen.
-        sign.position  = CGPoint(x: 0, y: size.height * 0.5 - scaledH * 0.28)
+        // Sit the sign in the upper portion of the screen. The 0.60 factor is a
+        // fraction of the sign's height — larger drops it lower; below 0.5 the
+        // chains bleed past the top edge.
+        sign.position  = CGPoint(x: 0, y: size.height * 0.5 - scaledH * 0.60)
         sign.zPosition = 2
         addChild(sign)
     }
