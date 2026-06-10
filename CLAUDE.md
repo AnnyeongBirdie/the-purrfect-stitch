@@ -47,7 +47,7 @@ Side-scenes (DressingRoomScene, RiddleScene, SettingsScene) all set `scene.suppr
 
 ### Three functional spaces + POV map
 
-The tailor shop has three functional spaces, each with a deliberate POV. The shop **front** is customer POV — the player picks a customer in settings and that customer pays for and receives orders. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `WizardAssistant_Dungeon`, `Wizard_Chamber`, and `PrincessAna_Room` scenes. All basement scenes are tailor POV.
+The tailor shop has three functional spaces, each with a deliberate POV. The shop **front** is customer POV — the player picks a customer in settings and that customer pays for and receives orders. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene`, and `DaphneBecomesTailorScene` scenes. All basement scenes are tailor POV.
 
 | Space | Scenes | POV |
 |---|---|---|
@@ -167,7 +167,7 @@ All 28 SFX are sourced and bundled in `DesignerAna/SoundEffects/`. **23 are wire
 
 `SoundManager` was refactored mid-Phase-4 from `SKAction.playSoundFileNamed` to an `AVAudioPlayer` pool with a `stop(_:)` API. This was needed because the original SKAction-based approach could not cancel in-flight audio — long cues (footstep loops, boss attack telegraphs) were bleeding into the next scene when the SKAction sequence ended but the audio file kept playing. Boss-attack telegraphs now stop on defeat / hero death / reset via `stopBossAttackSFX()` in `BossMinigameNode`.
 
-### Phase 5 — Relics Quest (partially shipped)
+### Phase 5 — Relics Quest (shipped)
 
 A meta-quest layered onto the existing dungeon loop. The tailor collects four of Princess Estelle's relics: Purple Scepter (fabric cabinet) → Paint Brushes (sewing) → Palette (buttons) → Royal Family Portrait (boss). Estelle's purple color signature drives the **in-dungeon relic glow tint** (collection sparkles and HUD arc). The **relic handoff halos** in `PrincessAnaScene` (`animateRelicHandoff`) use Daphne's warm gold (#FFD54F) — reflecting that she is the one doing the giving, not Estelle.
 
@@ -177,13 +177,15 @@ A meta-quest layered onto the existing dungeon loop. The tailor collects four of
 - In-dungeon relic spawning in `MinigameNode` (seeds 1–3) and `BossMinigameNode` (seed 4). Walk-over collection: scale pop + sparkle burst + arc animation to HUD slot. Safety net auto-pull if the chest is opened before the relic is collected.
 - `CatPaw` breadcrumb trails in all four dungeons. Each paw awards 1 마력 on contact and disappears. Seeds 1–3: 10 paws per level along the path to the relic. Boss: 8 paws scattered across the arena floor and platforms. Portrait relic bobs on the upper stepping stone from the start of the boss fight (walk-over collection, not auto-collect).
 
-**Remaining (next sessions):**
-- `TailorChoiceScene` trigger after the 4th relic is collected.
-- `AuroraChamberScene` (Option A — Aurora the wizard mentor, `WizardCat` sprite, riddle gate, swirling purple teleport).
-- `PrincessAnaScene` (final scene — relics handed to Ana, godmother reveal, curse story).
-- Back-room selfie keepsake (`Selfie_TailorAndPrincessAna` on the wall) after quest completes.
+**Shipped (later June sessions):**
+- `TailorChoiceScene` — fires once from `BackRoomScene` (`presentTailorChoiceScene()`, gated on all four relics collected): cinematic relic deduction + A/B choice, then routes onward.
+- `AuroraChamberScene` — Aurora the wizard mentor, riddle gate, fade transition to the final scene. Built on the shared `NarrativeHUD` (bust-up portraits + dialogue panel).
+- `PrincessAnaScene` — final scene: relics handed to Ana via the orbit/float handoff animation, godmother reveal, curse story. Saves the quest-complete flag (`Store.saveRelicQuestComplete()`) on the outro.
+- `DaphneBecomesTailorScene` — backstory cutscene (Aurora, Polaris, Daphne), reached from the storybook.
+- Back-room selfie keepsake (`Selfie_TailorAndPrincessAna`) appears on the wall once the quest is complete (`setupSelfieKeepsake()` in `BackRoomScene`, gated on `Store.loadRelicQuestComplete()`).
+- `NarrativeHUD` shared dialogue component (bust-up `Portrait_*` assets) used by all narrative scenes; storybook replay routing returns each replayed scene to the correct chapter/page.
 
-**Full design spec** in `RELICS.md` (gitignored — owner-local). All cross-cutting opens resolved as of June 3. NPC sprites (`WizardCat`, `GodmotherCat`) are xcassets-only — removed from the player-selectable carousel in the ProfileManager 11→9 reduction.
+**Full design spec** in `RELICS.md` (gitignored — owner-local). NPC sprites (`WizardCat`, `GodmotherCat`) are xcassets-only — removed from the player-selectable carousel in the ProfileManager 11→9 reduction.
 
 ### Currency & economy
 
