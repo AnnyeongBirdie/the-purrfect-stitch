@@ -206,7 +206,6 @@ class AuroraChamberScene: SKScene {
 
     private func startTeleport() {
         // Using a simple fade transition.
-        // TODO: design a proper transition effect that fits Aurora's mint-blue color signature.
         teleporting = true
         run(.wait(forDuration: 0.4)) { [weak self] in self?.exitToNextScene() }
     }

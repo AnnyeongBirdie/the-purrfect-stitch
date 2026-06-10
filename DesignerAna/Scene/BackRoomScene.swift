@@ -55,16 +55,10 @@ class BackRoomScene: SKScene {
     }
 
     private var tailor: SKSpriteNode!
-    private var fabricCabinet: SKShapeNode?
     private var instructionLabel: SKLabelNode!
 
     private var tailorHaloNode: SKShapeNode?
-    private var mannequinZone: SKShapeNode?
     private var activeMinigame: MinigameNode?
-
-    private var sewingStation: SKShapeNode?
-
-    private var buttonStation: SKShapeNode?
 
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
@@ -143,7 +137,6 @@ class BackRoomScene: SKScene {
         zone.name = "fabricCabinet"
         zone.zPosition = 5
 
-        self.fabricCabinet = zone
         addChild(zone)
     }
     
@@ -157,7 +150,6 @@ class BackRoomScene: SKScene {
         zone.name = "sewingStation"
         zone.zPosition = 5
 
-        self.sewingStation = zone
         addChild(zone)
     }
     
@@ -171,7 +163,6 @@ class BackRoomScene: SKScene {
         zone.name = "buttonStation"
         zone.zPosition = 5
 
-        self.buttonStation = zone
         addChild(zone)
     }
 
@@ -471,26 +462,6 @@ class BackRoomScene: SKScene {
         activeMinigame?.update(currentTime: currentTime)
         activeBossMinigame?.update(currentTime: currentTime)
 
-        // Clear all rings, then light up the currently active target if the tailor is close.
-        fabricCabinet?.strokeColor = .clear
-        sewingStation?.strokeColor = .clear
-        buttonStation?.strokeColor = .clear
-        mannequinZone?.strokeColor = .clear
-
-        let activeZone: SKShapeNode?
-        switch currentState {
-        case .waitingForCabinetTap: activeZone = fabricCabinet
-        case .waitingForSewing:     activeZone = sewingStation
-        case .waitingForButtons:    activeZone = buttonStation
-        case .waitingForMannequin:  activeZone = mannequinZone
-        default:                    activeZone = nil
-        }
-
-        if let zone = activeZone, abs(tailor.position.x - zone.position.x) < 120 {
-            zone.strokeColor = .yellow
-            zone.lineWidth = 3
-        }
-
         if let halo = tailorHaloNode {
             halo.position = CGPoint(x: tailor.position.x, y: tailor.position.y)
         }
@@ -760,7 +731,6 @@ class BackRoomScene: SKScene {
         zone.name = "mannequin"
         zone.zPosition = 5
 
-        self.mannequinZone = zone
         addChild(zone)
     }
     
