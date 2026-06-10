@@ -169,7 +169,7 @@ All 28 SFX are sourced and bundled in `DesignerAna/SoundEffects/`. **23 are wire
 
 ### Phase 5 — Relics Quest (partially shipped)
 
-A meta-quest layered onto the existing dungeon loop. The tailor collects four of Princess Estelle's relics: Purple Scepter (fabric cabinet) → Paint Brushes (sewing) → Palette (buttons) → Royal Family Portrait (boss). Estelle's purple color signature drives the relic glow tint.
+A meta-quest layered onto the existing dungeon loop. The tailor collects four of Princess Estelle's relics: Purple Scepter (fabric cabinet) → Paint Brushes (sewing) → Palette (buttons) → Royal Family Portrait (boss). Estelle's purple color signature drives the **in-dungeon relic glow tint** (collection sparkles and HUD arc). The **relic handoff halos** in `PrincessAnaScene` (`animateRelicHandoff`) use Daphne's warm gold (#FFD54F) — reflecting that she is the one doing the giving, not Estelle.
 
 **Shipped (June 4 session):**
 - `DungeonItem` enum + `Store.loadCollectedRelics()` / `saveCollectedRelics(_:)` persistence.

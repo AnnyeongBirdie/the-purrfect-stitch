@@ -209,6 +209,12 @@ class NarrativeHUD: SKNode {
         container.run(.fadeIn(withDuration: 0.4))
     }
 
+    /// Returns the portrait's position in HUD-local coordinates (== scene coordinates when HUD is at origin).
+    /// Use to anchor relic arc animations to a character's portrait rather than a full-body sprite.
+    func portraitPosition(for name: String) -> CGPoint? {
+        portraits[name]?.position
+    }
+
     /// Fade-out a speaker portrait and remove it from the revealed set.
     func hideSpeaker(named name: String) {
         revealedNames.remove(name)

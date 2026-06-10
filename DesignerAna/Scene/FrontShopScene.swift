@@ -131,10 +131,12 @@ class FrontShopScene: SKScene {
         
         dialogLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         dialogLabel.text = ""
-        dialogLabel.fontSize = 28
+        dialogLabel.fontSize = 19
         dialogLabel.fontColor = .black
         dialogLabel.horizontalAlignmentMode = .center
         dialogLabel.verticalAlignmentMode = .center
+        dialogLabel.numberOfLines = 2
+        dialogLabel.preferredMaxLayoutWidth = bubbleWidth - 24
         dialogLabel.position = CGPoint(x: 0, y: -4)
         dialogLabel.zPosition = 100
         
@@ -142,7 +144,8 @@ class FrontShopScene: SKScene {
     }
     
     private func showGreeting() {
-        dialogLabel.text = "안녕하세요! 어떤 옷을 만들어 드릴까요?"
+        let name = ProfileManager.shared.selectedDisplayName
+        dialogLabel.text = "안녕하세요, \(name)님! 어떤 옷을 만들어 드릴까요?"
         
         speechBubble.alpha = 0.0
         speechBubble.setScale(0.9)
@@ -738,9 +741,11 @@ class FrontShopScene: SKScene {
     private func fixCharacterLayout() {
         guard let shopkeeper = childNode(withName: "//shopkeeper") as? SKSpriteNode else { return }
         guard let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode else { return }
-
-        // Scale them up slightly to match resized background
-        shopkeeper.setScale(0.6)   // tweak this
+        
+        if let texture = shopkeeper.texture {
+            shopkeeper.size = texture.size()
+        }
+        shopkeeper.setScale(0.25)   // start here, adjust on device
         mannequin.setScale(0.3)    // keep your current mannequin scale
 
         let layout = Layout.frontShopCharacters(in: size)
@@ -945,7 +950,6 @@ class FrontShopScene: SKScene {
         currentState = .choosingClothing
         showGreeting()
         showClothingChoices()
-        dialogLabel.text = "안녕하세요! 어떤 옷을 만들어 드릴까요?"
     }
 
     private func transitionToSettingsScene() {

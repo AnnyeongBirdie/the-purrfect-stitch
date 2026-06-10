@@ -280,8 +280,8 @@ class MinigameNode: SKNode {
 
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
-        hero.setScale(0.15)
-        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 40)
+        hero.setScale(0.13)
+        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 70)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
@@ -559,6 +559,14 @@ class MinigameNode: SKNode {
         guard let scene = sceneRef else { return }
         let location = touch.location(in: scene)
 
+        #if DEBUG
+        if touch.tapCount >= 3, location.x > sceneW * 0.35, location.y > sceneH * 0.35 {
+            isCompleting = true
+            onCompletion(config.station)
+            return
+        }
+        #endif
+
         if jumpButton.contains(location) {
             jumpButtonTouch = touch
             setPressed(jumpButton, true)
@@ -663,8 +671,8 @@ class MinigameNode: SKNode {
 
         // The surface under the hero: the floor, or a platform she is
         // descending onto from above (one-way — she jumps up through them).
-        let footOffset: CGFloat = 31              // hero sprite half-height
-        var landingY = floorCenterY + 40           // floor: sprite stands on surface
+        let footOffset: CGFloat = 40              // hero sprite half-height — retune when Tailor sprite changes
+        var landingY = floorCenterY + 13 + footOffset  // floor visual surface (top of edge strip) + half-height
         if heroVelY <= 0 {
             let prevFeet = hero.position.y - footOffset
             for rect in platformRects where hero.position.x >= rect.minX - 10
@@ -739,7 +747,7 @@ class MinigameNode: SKNode {
         if !isDead, !isCompleting {
             for paw in children where paw.name == "breadcrumb" {
                 if abs(hero.position.x - paw.position.x) < 28,
-                   abs(hero.position.y - paw.position.y) < 30 {
+                   abs(hero.position.y - paw.position.y) < 45 {
                     let pawPos = paw.position
                     paw.removeFromParent()
                     Magic.shared.add(1)

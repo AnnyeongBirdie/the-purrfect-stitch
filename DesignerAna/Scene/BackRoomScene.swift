@@ -127,7 +127,7 @@ class BackRoomScene: SKScene {
         let tailor = SKSpriteNode(imageNamed: "Tailor")
         tailor.position = CGPoint(x: 0, y: -40)
         tailor.zPosition = 10
-        tailor.setScale(0.5)
+        tailor.setScale(0.32)
         tailor.name = "tailor"
 
         self.tailor = tailor

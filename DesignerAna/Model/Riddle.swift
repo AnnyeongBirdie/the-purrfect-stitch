@@ -98,9 +98,9 @@ enum RiddleBank {
                answer: "16"),
 
         // ── Korean trivia ─────────────────────────────────────────────────────
-        Riddle(question: "사과는 무슨 색일까요?",
-               choices: ["파랑", "노랑", "빨강", "초록"],
-               answer: "빨강"),
+        Riddle(question: "세상에서 가장 쉬운 숫자는?",
+               choices: ["3천", "6백", "19만", "77억"],
+               answer: "19만"),
 
         Riddle(question: "하늘은 무슨 색일까요?",
                choices: ["빨강", "파랑", "초록", "노랑"],

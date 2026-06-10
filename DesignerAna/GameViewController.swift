@@ -15,19 +15,11 @@ class GameViewController: UIViewController {
         super.viewDidLoad()
 
         if let view = self.view as! SKView? {
-            if Store.loadSelectedCustomer() != nil {
-                // Returning player — straight to front shop.
-                if let scene = FrontShopScene(fileNamed: "GameScene") {
-                    scene.scaleMode = .resizeFill
-                    view.presentScene(scene)
-                }
-            } else {
-                // First launch (or post-새 손님 reset) — customer picker.
-                let scene = SettingsScene(size: view.bounds.size)
-                scene.scaleMode = .resizeFill
-                scene.isFirstLaunchPicker = true
-                view.presentScene(scene)
-            }
+            // Always open at the title screen. Routing to the shop or
+            // storybook is handled inside TitleScene.
+            let title = TitleScene(size: view.bounds.size)
+            title.scaleMode = .resizeFill
+            view.presentScene(title)
 
             view.ignoresSiblingOrder = true
 

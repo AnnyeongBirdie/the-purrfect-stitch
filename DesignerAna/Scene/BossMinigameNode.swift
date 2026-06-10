@@ -237,7 +237,7 @@ class BossMinigameNode: SKNode {
     private func buildHero() {
         hero = SKSpriteNode(imageNamed: "Tailor")
         hero.setScale(0.15)
-        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 40)
+        heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 70)
         hero.position = heroStartPosition
         hero.zPosition = 3
         hero.name = "hero"
@@ -915,6 +915,17 @@ class BossMinigameNode: SKNode {
         // and node-local coords are identical — no conversion needed.
         let loc = touch.location(in: scene)
 
+        #if DEBUG
+        if touch.tapCount >= 3, loc.x > sceneW * 0.35, loc.y > sceneH * 0.35 {
+            removeAllActions()
+            boss.removeAllActions()
+            stopBossAttackSFX()
+            isCompleting = true
+            onCompletion()
+            return
+        }
+        #endif
+
         if jumpButton.contains(loc) {
             jumpButtonTouch = touch
             setPressed(jumpButton, true)
@@ -1012,13 +1023,13 @@ class BossMinigameNode: SKNode {
 
         // Surface under the hero: the floor, or a platform she is descending
         // onto from above (one-way — she jumps up through them).
-        let footOffset: CGFloat = 31
-        var landingY = floorCenterY + 40           // floor: sprite stands on surface
+        let footOffset: CGFloat = 40              // hero sprite half-height — retune when Tailor sprite changes
+        var landingY = floorCenterY + 15 + footOffset  // floor visual surface + half-height (boss arena floor sits 2pt higher than regular dungeon)
         if heroVelY <= 0 {
             let prevFeet = hero.position.y - footOffset
             for rect in platformRects where hero.position.x >= rect.minX - 10
                                           && hero.position.x <= rect.maxX + 10 {
-                let standY = rect.maxY + footOffset
+                let standY = rect.maxY + footOffset + 4  // +2 matches boss arena visual surface offset
                 if standY > landingY, prevFeet >= rect.maxY - 1 {
                     landingY = standY
                 }
@@ -1056,7 +1067,7 @@ class BossMinigameNode: SKNode {
             if dx < 79, dy < 130 {
                 if heroVelY < -20 {
                     hitBoss()                       // descending onto the boss
-                } else if !isOnGround, hero.position.y + 31 > bossAnchor.y - 40 {
+                } else if !isOnGround, hero.position.y + 40 > bossAnchor.y - 40 {
                     // Airborne and hero's head has reached the boss's lower body.
                     let pushDir: CGFloat = hero.position.x < boss.position.x ? -1 : 1
                     hero.position.x = boss.position.x + pushDir * 110
@@ -1102,7 +1113,7 @@ class BossMinigameNode: SKNode {
         if !isDead, !isCompleting {
             for paw in children where paw.name == "breadcrumb" {
                 if abs(hero.position.x - paw.position.x) < 28,
-                   abs(hero.position.y - paw.position.y) < 30 {
+                   abs(hero.position.y - paw.position.y) < 45 {
                     let pawPos = paw.position
                     paw.removeFromParent()
                     Magic.shared.add(1)

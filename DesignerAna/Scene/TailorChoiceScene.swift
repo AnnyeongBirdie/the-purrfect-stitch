@@ -3,7 +3,10 @@
 //  DesignerAna
 //
 //  Cinematic choice scene triggered once after all four relics are collected.
-//  The tailor reflects on the relic deduction and picks one of two paths.
+//  The tailor reflects on the relic deduction, then the player picks the next destination.
+//
+//  Speaker layout:
+//    left → 재봉사 다프네 (inner monologue — talking to herself)
 //
 
 import SpriteKit
@@ -11,24 +14,33 @@ import UIKit
 
 class TailorChoiceScene: SKScene {
 
-    // MARK: - Public property set by BackRoomScene before presentScene
+    // MARK: - Public properties set before presentScene
 
     var completedOrder: Order?
+    /// When true (launched from StorybookScene), each scene in the chain
+    /// returns to StorybookScene on exit instead of FrontShopScene.
+    var isReplayMode = false
+    /// Page index within the replay chapter (4) to return to. Set by StorybookScene.
+    var replayReturnPage = 0
 
-    // MARK: - Private state
-
-    private var beatIndex = 0
-    private var choiceMade = false
-    private var bubbleLabel: SKLabelNode!
-    private var tapHintLabel: SKLabelNode!
-    private var buttonANode: SKShapeNode!
-    private var buttonBNode: SKShapeNode!
+    // MARK: - Beat data
 
     private let beats: [String] = [
-        "에스텔 공주님의 보랏빛 지팡이, 그림 붓, 팔레트, 그리고 왕실 가족 초상화... 모두 던전에서 찾은 보물들이에요. 에스텔 공주님이 이 던전들을 지나가셨던 거예요! 🤍",
-        "공주님은 분명 털실 몬스터와 먼지 몬스터의 숨겨진 비밀을 풀려고 하셨을 거예요. 이 보물들은... 단서일지도 몰라요. 아나 공주님께 꼭 갖다드려야겠어요.",
-        "그런데... 먼저 어떻게 할까요? 🤔"
+        "보랏빛 지팡이, 그림 붓, 팔레트, 그리고 왕실 가족 초상화...\n모두 던전에서 찾은 보물들인데, 왕실의 물건들 같아.",
+        "혹시 없어진 에스텔 공주님과 관련있을까? 단서일지도 몰라. 꼭 갖다드려야겠어.",
+        "그런데... 왕궁은 그냥 들어갈 수 없는데...\n아나 공주님 이라면 만나주실지 몰라. 먼저 어떻게 할까? 🤔"
     ]
+
+    // MARK: - State
+
+    private var beatIndex = 0
+    private var choicesVisible = false
+    private var readyToShowChoices = false  // true after last beat; choices appear on next tap
+    private var choiceMade = false
+
+    // MARK: - HUD
+
+    private var hud: NarrativeHUD!
 
     // MARK: - Scene setup
 
@@ -37,8 +49,7 @@ class TailorChoiceScene: SKScene {
         setupBackdrop()
         setupTailor()
         setupRelicOrbit()
-        setupNarrationBubble()
-        setupChoiceButtons()
+        setupHUD(safeBottom: view.safeAreaInsets.bottom)
     }
 
     private func setupBackdrop() {
@@ -51,8 +62,8 @@ class TailorChoiceScene: SKScene {
 
     private func setupTailor() {
         let tailor = SKSpriteNode(imageNamed: "Tailor")
-        // Preserve native aspect ratio — scale to target width of 90 pt.
-        if tailor.size.width > 0 { tailor.setScale(90 / tailor.size.width) }
+        let targetHeight: CGFloat = 240
+        if tailor.size.height > 0 { tailor.setScale(targetHeight / tailor.size.height) }
         tailor.position = CGPoint(x: 0, y: -size.height * 0.08)
         tailor.zPosition = 10
         addChild(tailor)
@@ -66,38 +77,60 @@ class TailorChoiceScene: SKScene {
         let ry = size.height * 0.18
 
         let relics: [(DungeonItem, CGFloat)] = [
-            (.purpleScepter,      0),
-            (.paintBrush,         .pi / 2),
-            (.palette,            .pi),
+            (.purpleScepter,       0),
+            (.paintBrush,          .pi / 2),
+            (.palette,             .pi),
             (.royalFamilyPortrait, 3 * .pi / 2)
         ]
 
         for (item, startAngle) in relics {
-            // Silver halo — hints at the Fairy Godmother's involvement before she's revealed.
-            let glow = SKShapeNode(circleOfRadius: 30)
-            glow.fillColor = UIColor(red: 0.82, green: 0.86, blue: 0.95, alpha: 0.85)
-            glow.strokeColor = .clear
-            glow.zPosition = 8
-
-            let sprite = SKSpriteNode(imageNamed: item.rawValue)
-            // Preserve native aspect ratio — scale to target width of 50 pt.
-            if sprite.size.width > 0 { sprite.setScale(50 / sprite.size.width) }
-            sprite.zPosition = 9
-
-            // Set initial positions before the action starts
             let initPos = CGPoint(
                 x: center.x + cos(startAngle) * rx,
                 y: center.y + sin(startAngle) * ry
             )
-            glow.position = initPos
-            sprite.position = initPos
-
-            addChild(glow)
-            addChild(sprite)
-
             let orbitAction = makeOrbitAction(startAngle: startAngle, center: center, rx: rx, ry: ry)
+
+            // ── Layered gold halo (Daphne's warm gold #FFD54F) ────────────
+            // Outer soft halo
+            let outerGlow = SKShapeNode(circleOfRadius: 34)
+            outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.18)
+            outerGlow.strokeColor = .clear
+            outerGlow.zPosition   = 7
+            outerGlow.position    = initPos
+            addChild(outerGlow)
+            outerGlow.run(orbitAction)
+
+            // Mid ring with stroke edge
+            let midGlow = SKShapeNode(circleOfRadius: 24)
+            midGlow.fillColor   = UIColor(red: 1.00, green: 0.84, blue: 0.31, alpha: 0.55)
+            midGlow.strokeColor = UIColor(red: 1.00, green: 0.95, blue: 0.65, alpha: 0.80)
+            midGlow.lineWidth   = 2.5
+            midGlow.zPosition   = 8
+            midGlow.position    = initPos
+            addChild(midGlow)
+            midGlow.run(orbitAction)
+            // Breathing pulse
+            midGlow.run(.repeatForever(.sequence([
+                .fadeAlpha(to: 0.30, duration: 0.7),
+                .fadeAlpha(to: 1.00, duration: 0.7)
+            ])))
+
+            // Inner bright core
+            let innerGlow = SKShapeNode(circleOfRadius: 13)
+            innerGlow.fillColor   = UIColor(red: 1.00, green: 0.97, blue: 0.80, alpha: 0.75)
+            innerGlow.strokeColor = .clear
+            innerGlow.zPosition   = 9
+            innerGlow.position    = initPos
+            addChild(innerGlow)
+            innerGlow.run(orbitAction)
+
+            // Relic sprite — small enough that the halo ring shows around it
+            let sprite = SKSpriteNode(imageNamed: item.rawValue)
+            if sprite.size.width > 0 { sprite.setScale(26 / sprite.size.width) }
+            sprite.zPosition = 10
+            sprite.position  = initPos
+            addChild(sprite)
             sprite.run(orbitAction)
-            glow.run(orbitAction)
         }
     }
 
@@ -115,130 +148,41 @@ class TailorChoiceScene: SKScene {
         )
     }
 
-    // MARK: - Narration bubble
+    // MARK: - HUD setup
 
-    private func setupNarrationBubble() {
-        let bubbleW = min(size.width * 0.72, 460)
-        let bubbleH: CGFloat = 82
-        let bubbleY = -size.height * 0.28
+    private func setupHUD(safeBottom: CGFloat) {
+        hud = NarrativeHUD()
+        hud.zPosition = 50
+        addChild(hud)
 
-        let panel = SKShapeNode(
-            rect: CGRect(x: -bubbleW / 2, y: -bubbleH / 2, width: bubbleW, height: bubbleH),
-            cornerRadius: 20
+        hud.configure(
+            speakers: [
+                SpeakerConfig(
+                    name: "재봉사 다프네",
+                    portraitAsset: "Portrait_Daphne",
+                    slot: .left,
+                    // Tailor — warm gold #FFD54F
+                    nameColor: UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 1.0)
+                ),
+            ],
+            sceneSize: size,
+            safeBottom: safeBottom
         )
-        panel.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
-        panel.strokeColor = UIColor(red: 0.45, green: 0.25, blue: 0.10, alpha: 1.0)
-        panel.lineWidth = 2
-        panel.position = CGPoint(x: 0, y: bubbleY)
-        panel.zPosition = 20
-        addChild(panel)
 
-        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        label.fontSize = 14
-        label.fontColor = .black
-        label.numberOfLines = 0
-        label.preferredMaxLayoutWidth = bubbleW - 48
-        label.verticalAlignmentMode = .center
-        label.horizontalAlignmentMode = .center
-        label.position = CGPoint(x: 0, y: bubbleY)
-        label.zPosition = 21
-        label.text = beats[0]
-        addChild(label)
-        bubbleLabel = label
-
-        let hint = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
-        hint.fontSize = 12
-        hint.fontColor = UIColor(red: 0.45, green: 0.25, blue: 0.10, alpha: 0.85)
-        hint.text = "▶ 탭하세요"
-        hint.horizontalAlignmentMode = .center
-        hint.position = CGPoint(x: 0, y: bubbleY - bubbleH / 2 - 18)
-        hint.zPosition = 21
-        addChild(hint)
-        tapHintLabel = hint
-    }
-
-    // MARK: - Choice buttons
-
-    private func setupChoiceButtons() {
-        let buttonY = -size.height * 0.42
-        let buttonW = size.width * 0.36
-        let buttonH: CGFloat = 52
-        let fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
-
-        buttonANode = makeButton(
-            text: "옛 선생님께 조언을 구할래요 ✨",
-            name: "choiceA",
-            x: -size.width * 0.22,
-            y: buttonY,
-            width: buttonW,
-            height: buttonH,
-            fill: fillColor
-        )
-        buttonANode.alpha = 0
-        addChild(buttonANode)
-
-        buttonBNode = makeButton(
-            text: "곧장 성으로 갈래요 🏰",
-            name: "choiceB",
-            x: size.width * 0.22,
-            y: buttonY,
-            width: buttonW,
-            height: buttonH,
-            fill: fillColor
-        )
-        buttonBNode.alpha = 0
-        addChild(buttonBNode)
-    }
-
-    private func makeButton(text: String, name: String,
-                             x: CGFloat, y: CGFloat,
-                             width: CGFloat, height: CGFloat,
-                             fill: UIColor) -> SKShapeNode {
-        let btn = SKShapeNode(
-            rect: CGRect(x: -width / 2, y: -height / 2, width: width, height: height),
-            cornerRadius: 14
-        )
-        btn.fillColor = fill
-        btn.strokeColor = UIColor.brown
-        btn.lineWidth = 2
-        btn.position = CGPoint(x: x, y: y)
-        btn.zPosition = 22
-        btn.name = name
-
-        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        label.fontSize = 14
-        label.fontColor = .white
-        label.verticalAlignmentMode = .center
-        label.horizontalAlignmentMode = .center
-        label.numberOfLines = 0
-        label.preferredMaxLayoutWidth = width - 20
-        label.text = text
-        label.zPosition = 23
-        label.name = name
-        btn.addChild(label)
-
-        return btn
+        hud.revealAll(activeSpeaker: "재봉사 다프네")
+        hud.show(speaker: "재봉사 다프네", text: beats[0])
     }
 
     // MARK: - Beat advancement
 
     private func advanceBeat() {
-        guard beatIndex < 2 else { return }
+        guard beatIndex < beats.count - 1 else { return }
         beatIndex += 1
-        bubbleLabel.text = beats[beatIndex]
-
-        if beatIndex == 2 {
-            run(.sequence([
-                .wait(forDuration: 0.4),
-                .run { [weak self] in self?.revealButtons() }
-            ]))
+        hud.show(speaker: "재봉사 다프네", text: beats[beatIndex])
+        // After the last beat, flag that the NEXT tap should reveal choices.
+        if beatIndex == beats.count - 1 {
+            readyToShowChoices = true
         }
-    }
-
-    private func revealButtons() {
-        tapHintLabel.run(.fadeOut(withDuration: 0.2))
-        buttonANode.run(.fadeIn(withDuration: 0.3))
-        buttonBNode.run(.fadeIn(withDuration: 0.3))
     }
 
     // MARK: - Touch handling
@@ -248,16 +192,32 @@ class TailorChoiceScene: SKScene {
         let loc = touch.location(in: self)
         let hit = nodes(at: loc).compactMap { $0.name }.first
 
-        switch hit {
-        case "choiceA":
-            Store.saveRelicChoiceFirst("A")
-            handleChoice("A")
-        case "choiceB":
-            Store.saveRelicChoiceFirst("B")
-            handleChoice("B")
-        default:
-            advanceBeat()
+        if choicesVisible {
+            switch hit {
+            case "choice_0":
+                Store.saveRelicChoiceFirst("A")
+                handleChoice("A")
+            case "choice_1":
+                Store.saveRelicChoiceFirst("B")
+                handleChoice("B")
+            default:
+                break
+            }
+            return
         }
+
+        // Player has read the last beat — reveal choices on this tap.
+        if readyToShowChoices {
+            readyToShowChoices = false
+            choicesVisible = true
+            hud.showChoices([
+                "옛 선생님께 조언을 구할래요 ✨",
+                "곧장 성으로 갈래요 🏰"
+            ])
+            return
+        }
+
+        advanceBeat()
     }
 
     // MARK: - Choice routing
@@ -265,21 +225,24 @@ class TailorChoiceScene: SKScene {
     private func handleChoice(_ choice: String) {
         guard !choiceMade else { return }
         choiceMade = true
+        hud.hideChoices()
 
-        let tappedButton = choice == "A" ? buttonANode : buttonBNode
-        tappedButton?.run(.sequence([
-            .scale(to: 1.1, duration: 0.1),
-            .scale(to: 1.0, duration: 0.1)
-        ]))
-
-        run(.sequence([
-            .wait(forDuration: 0.5),
-            .run { [weak self] in self?.routeAfterChoice(choice) }
-        ]))
+        run(.wait(forDuration: 0.3)) { [weak self] in self?.routeAfterChoice(choice) }
     }
 
     private func routeAfterChoice(_ choice: String) {
         guard let view = self.view else { return }
+
+        if isReplayMode {
+            // Replay mode: one scene at a time — return to the exact storybook page.
+            let storybook = StorybookScene(size: size)
+            storybook.replayReturnChapter = 4
+            storybook.replayReturnPage    = replayReturnPage
+            storybook.scaleMode = .resizeFill
+            view.presentScene(storybook, transition: SKTransition.crossFade(withDuration: 0.5))
+            return
+        }
+
         if choice == "A" {
             let aurora = AuroraChamberScene()
             aurora.scaleMode = .resizeFill
