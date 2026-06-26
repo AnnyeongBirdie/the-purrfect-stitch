@@ -20,6 +20,14 @@ xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna clean
 - No CocoaPods, SPM packages, or external dependencies
 - Installed simulators on this machine: **iPhone 16e** (preferred default) and iPhone 17. iPhone 16 is *not* installed — do not target it.
 
+### Signing & bundle identity
+
+- **Bundle ID:** `com.annyeongbirdie.thepurrfectstitch` (set June 2026, renamed from the earlier `com.JustRunItLab.DesignerAna` to consolidate under the owner's **AnnyeongBirdie** branding — matching the GitHub repo `the-purrfect-stitch`, GitHub profile, and velog blog). `JustRunItLab` was an abandoned working name used nowhere else.
+- **Signing:** Automatic. As of June 2026 the project signs under the owner's **paid Apple Developer Program** team (enrolled to lift the free Personal Team's 7-day provisioning-profile expiry — dev profiles now last ~1 year). Switching teams in Xcode rewrites `DEVELOPMENT_TEAM` in `project.pbxproj`; the old Personal Team ID was `VQ4643X8XU`.
+- **No project rename.** The Xcode project, scheme, and source folder remain `DesignerAna` — only the bundle ID changed. A full rename to match the repo is deliberately deferred (high regression risk; revisit only during dedicated structural work). Expect a naming split: project `DesignerAna`, repo `the-purrfect-stitch`, bundle `com.annyeongbirdie.thepurrfectstitch`, display name 묘한 옷 공방.
+- **No Apple secrets in the repo.** Certificates/keys live in the Mac Keychain; provisioning profiles live on Apple's servers. The repo holds no credentials to rotate. Never commit `.p12`, `.cer`, `.mobileprovision`, or a secrets-bearing `ExportOptions.plist`.
+- Changing the bundle ID resets `UserDefaults` (it's namespaced by bundle ID), so test devices lose saved wardrobe/progress on the next install — expected and harmless for test builds.
+
 ## Architecture
 
 This is an iOS SpriteKit game — a Korean-language tailor-shop simulation. The player takes a clothing order in the front shop, pays a deposit, then crafts the garment in the back room and returns it to the customer.
