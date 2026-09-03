@@ -457,7 +457,23 @@ class BackRoomScene: SKScene {
             for touch in touches { boss.handleTouchEnded(touch) }
         }
     }
-    
+
+    // MARK: - Keyboard play (forwarded from GameViewController)
+
+    @discardableResult
+    func handleKeyDown(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        if let minigame = activeMinigame { return minigame.handleKeyDown(keyCode) }
+        if let boss = activeBossMinigame { return boss.handleKeyDown(keyCode) }
+        return false
+    }
+
+    @discardableResult
+    func handleKeyUp(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        if let minigame = activeMinigame { return minigame.handleKeyUp(keyCode) }
+        if let boss = activeBossMinigame { return boss.handleKeyUp(keyCode) }
+        return false
+    }
+
     override func update(_ currentTime: TimeInterval) {
         activeMinigame?.update(currentTime: currentTime)
         activeBossMinigame?.update(currentTime: currentTime)

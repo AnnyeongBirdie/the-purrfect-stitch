@@ -364,6 +364,10 @@ class PrincessAnaScene: SKScene {
         next.finishedGarmentImageName = garmentImageName(for: completedOrder)
         next.completedOrder = completedOrder
         next.suppressEntryBell = true
+        // Ana promises a customer will be waiting but doesn't say who — she's
+        // a princess, she wasn't told. Once this trophy is saved, hand off to
+        // the customer picker instead of resuming with the same customer.
+        next.triggerCustomerPickerAfterSave = true
         view.presentScene(next, transition: SKTransition.crossFade(withDuration: 0.8))
     }
 

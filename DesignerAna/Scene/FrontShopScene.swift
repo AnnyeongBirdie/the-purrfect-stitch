@@ -30,6 +30,10 @@ class FrontShopScene: SKScene {
     var suppressEntryBell = false   // set by side-scenes (Wardrobe/Riddle/Settings) on return
     var finishedGarmentImageName: String = "Mannequin_Dress_Pink"
     var completedOrder: Order?
+    // Set by PrincessAnaScene's outro: after this trophy is saved, a new
+    // customer has arrived (per Ana's "손님이 기다리고 있을 거예요" line) rather
+    // than resuming the shop with whichever customer commissioned this order.
+    var triggerCustomerPickerAfterSave = false
 
     private var saveTrophyButton: SKShapeNode?
     private var relaunchDialogNode: SKNode?
@@ -1040,9 +1044,31 @@ class FrontShopScene: SKScene {
         completedOrder = nil
 
         setNavIconsDimmed(false)   // trophy saved — navigation is safe again
+
+        if triggerCustomerPickerAfterSave {
+            triggerCustomerPickerAfterSave = false
+            transitionToCustomerHandoff()
+            return
+        }
+
         currentState = .choosingClothing
         showGreeting()
         showClothingChoices()
+    }
+
+    // A new customer has arrived (Phase 7 — Ana's "손님이 기다리고 있을 거예요"
+    // pays off here). Reuses the same locked-carousel/forced-pick UI as the
+    // first-launch picker — the wording ("손님을 골라주세요") already reads fine
+    // for either context, and its startPickerBtn path just saves the chosen
+    // customer + transitions, no destructive reset, which is exactly right
+    // here (the trophy this customer just earned was already saved above).
+    private func transitionToCustomerHandoff() {
+        guard let view = self.view else { return }
+        let scene = SettingsScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        scene.isFirstLaunchPicker = true
+        let transition = SKTransition.crossFade(withDuration: 0.5)
+        view.presentScene(scene, transition: transition)
     }
 
     private func transitionToSettingsScene() {
