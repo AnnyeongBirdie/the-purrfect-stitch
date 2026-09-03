@@ -304,8 +304,8 @@ class DressingRoomScene: SKScene {
     }
 
     private func transitionToFrontShop() {
-        guard let view = self.view,
-              let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+        guard let view = self.view else { return }
+        let scene = FrontShopScene(size: self.size)
         scene.scaleMode = .resizeFill
         scene.suppressEntryBell = true
         let transition = SKTransition.crossFade(withDuration: 0.5)

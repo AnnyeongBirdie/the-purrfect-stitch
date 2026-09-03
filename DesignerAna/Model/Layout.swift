@@ -3,12 +3,15 @@ import UIKit
 enum Layout {
 
     /// Evenly-spaced positions for the three front-shop characters.
-    /// Wardrobe on the left, shopkeeper at centre, mannequin on the right.
-    static func frontShopCharacters(in size: CGSize) -> (wardrobe: CGPoint, shopkeeper: CGPoint, mannequin: CGPoint) {
+    /// Customer NPC on the left, shopkeeper at centre, mannequin on the right.
+    /// (This slot was a never-wired-up "wardrobe" prop position — repurposed
+    /// for the Phase 6b customer NPC since it already mirrors mannequin's
+    /// spread on the opposite side, at the same ground level.)
+    static func frontShopCharacters(in size: CGSize) -> (customer: CGPoint, shopkeeper: CGPoint, mannequin: CGPoint) {
         let spread = size.width * 0.28
         let baseY  = -size.height * 0.19
         return (
-            wardrobe:   CGPoint(x: -spread,  y: baseY + size.height * 0.04),
+            customer:   CGPoint(x: -spread,  y: baseY),
             shopkeeper: CGPoint(x: 0,         y: baseY),
             mannequin:  CGPoint(x: +spread,   y: baseY)
         )

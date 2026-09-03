@@ -977,6 +977,24 @@ class StorybookScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
+        #if DEBUG
+        // Temporary dev shortcut: triple-tap the ToC's top-right corner to
+        // unlock chapter 5 (장면 다시보기) without completing the relic quest.
+        // The dungeon boss fight needs two simultaneous buttons, which the
+        // simulator can't do — this is the only way to preview that story
+        // content pre-physical-device testing. Remove once the relics quest
+        // ships and can be tested normally.
+        if touch.tapCount >= 3, currentChapterIndex == -1 {
+            let corner = CGRect(x: frame.maxX - 120, y: frame.maxY - 120, width: 120, height: 120)
+            if corner.contains(location) {
+                Store.saveRelicQuestComplete()
+                print("DEBUG: relic quest marked complete — chapter 5 unlocked")
+                showTableOfContents()
+                return
+            }
+        }
+        #endif
+
         for node in nodes(at: location) {
             guard let name = node.name else { continue }
 
@@ -1042,8 +1060,8 @@ class StorybookScene: SKScene {
     // MARK: - Scene transition ─────────────────────────────────────────────────
 
     private func transitionToFrontShop() {
-        guard let view  = self.view,
-              let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+        guard let view = self.view else { return }
+        let scene = FrontShopScene(size: self.size)
         scene.scaleMode        = .resizeFill
         scene.suppressEntryBell = true
         let transition = SKTransition.crossFade(withDuration: 0.5)

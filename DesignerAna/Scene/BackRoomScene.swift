@@ -793,9 +793,7 @@ class BackRoomScene: SKScene {
     
     private func returnToFrontShop() {
         guard let view = self.view else { return }
-        guard let scene = FrontShopScene(fileNamed: "GameScene") else {
-            return
-        }
+        let scene = FrontShopScene(size: self.size)
 
         scene.scaleMode = .resizeFill
         scene.shouldShowFinishedGarment = true
@@ -968,7 +966,7 @@ class BackRoomScene: SKScene {
 
     private func returnToFrontShopEmpty() {
         guard let view = self.view else { return }
-        guard let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+        let scene = FrontShopScene(size: self.size)
         scene.scaleMode = .resizeFill
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)

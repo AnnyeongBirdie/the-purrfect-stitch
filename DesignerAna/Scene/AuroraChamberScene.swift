@@ -100,6 +100,8 @@ class AuroraChamberScene: SKScene {
 
         let aurora = SKSpriteNode(imageNamed: "WizardCat")
         if aurora.size.height > 0 { aurora.setScale(adultHeight / aurora.size.height) }
+        aurora.xScale *= -1   // WizardCat's native art faces left; she's on the
+                              // left side here, so flip to face right toward Daphne
         aurora.position = CGPoint(x: -size.width * 0.13, y: -size.height * 0.15)
         aurora.zPosition = 5
         addChild(aurora)

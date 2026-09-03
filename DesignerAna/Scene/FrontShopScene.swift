@@ -38,7 +38,9 @@ class FrontShopScene: SKScene {
 
 
     override func didMove(to view: SKView) {
+        anchorPoint = CGPoint(x: 0.5, y: 0.5)
         safeBottom = view.safeAreaInsets.bottom
+        setupSceneNodes()
         fitBackgroundToScene()
         setupDialogueUI()
         fixCharacterLayout()
@@ -70,6 +72,10 @@ class FrontShopScene: SKScene {
 
         if let mannequin = childNode(withName: "//mannequin") as? SKSpriteNode {
             mannequin.zPosition = 20
+        }
+
+        if let customer = childNode(withName: "//customerNPC") as? SKSpriteNode {
+            customer.zPosition = 20
         }
     }
 
@@ -232,6 +238,7 @@ class FrontShopScene: SKScene {
         currentState = .choosingFabricColor
         hideClothingChoices()
         dialogLabel.text = "어떤 색 원단으로 만들까요?"
+        bounceCustomerReaction()
         showFabricColorChoices()
     
     }
@@ -296,6 +303,7 @@ class FrontShopScene: SKScene {
         currentState = .reviewingOrder
         hideFabricColorChoices()
         dialogLabel.text = "\(fabricColor.displayName) 원단으로 주문서를 준비할게요."
+        bounceCustomerReaction()
         showOrderSheet()
     }
 
@@ -618,6 +626,7 @@ class FrontShopScene: SKScene {
             hidePaymentPanel()
             hidePayButtons()
             SoundManager.shared.play("sfx_coin_pay.mp3")
+            showPaymentCoinFlourish()
             sendOrderToBackRoom()
         } else {
             currentState = .choosingClothing
@@ -685,6 +694,7 @@ class FrontShopScene: SKScene {
     
     private func showCompletionGreeting() {
         dialogLabel.text = "여기 있습니다. 맘에드시길 바래요!"
+        bounceCustomerReaction()
 
         speechBubble.alpha = 0.0
         speechBubble.setScale(0.9)
@@ -729,6 +739,32 @@ class FrontShopScene: SKScene {
         mannequin.setScale(0.3)
     }
     
+    // Formerly loaded from GameScene.sks. The three sprites below are the
+    // only nodes that scene ever contributed — everything else in this
+    // scene (dialogue UI, buttons, nav icons) is already built in code.
+    // Position/scale are applied afterward by fitBackgroundToScene() and
+    // fixCharacterLayout(), so only name + starting texture matter here.
+    private func setupSceneNodes() {
+        let background = SKSpriteNode(imageNamed: "Tailorshop_Background")
+        background.name = "background"
+        addChild(background)
+
+        let shopkeeper = SKSpriteNode(imageNamed: "Shopkeeper")
+        shopkeeper.name = "shopkeeper"
+        addChild(shopkeeper)
+
+        let mannequin = SKSpriteNode(imageNamed: "Mannequin_White")
+        mannequin.name = "mannequin"
+        addChild(mannequin)
+
+        // Phase 6b: the visible customer the shopkeeper actually talks to.
+        // Reuses the same avatar sprite SettingsScene shows during picking.
+        let customer = SKSpriteNode(imageNamed: ProfileManager.shared.selectedAssetName)
+        customer.name = "customerNPC"
+        customer.alpha = 0   // faded in by fixCharacterLayout() once positioned
+        addChild(customer)
+    }
+
     private func fitBackgroundToScene() {
         guard let background = childNode(withName: "//background") as? SKSpriteNode else {
             return
@@ -745,12 +781,69 @@ class FrontShopScene: SKScene {
         if let texture = shopkeeper.texture {
             shopkeeper.size = texture.size()
         }
-        shopkeeper.setScale(0.25)   // start here, adjust on device
+        // Matches the tailor's reference scale in BackRoomScene — Shopkeeper.png
+        // and Tailor.png are near-identical native resolution (1061x1572 vs
+        // 1060x1572), so the old 0.25 here rendered her ~22% shorter than the
+        // tailor for no compositional reason.
+        shopkeeper.setScale(0.32)
         mannequin.setScale(0.3)    // keep your current mannequin scale
 
         let layout = Layout.frontShopCharacters(in: size)
         shopkeeper.position = layout.shopkeeper
         mannequin.position = layout.mannequin
+
+        if let customer = childNode(withName: "//customerNPC") as? SKSpriteNode,
+           let customerHeight = customer.texture?.size().height, customerHeight > 0 {
+            // Can't reuse shopkeeper's 0.32 directly: Shopkeeper.png is
+            // registered in its .imageset under the 2x slot (so its *point*
+            // size is half its pixel size), while the loose ProfileAvatars
+            // PNGs have no such registration and load at full pixel size in
+            // points. Same multiplier on two different unit conventions made
+            // the customer render at ~2x the shopkeeper's height. Scale to
+            // match the shopkeeper's actual rendered height instead of
+            // guessing a second magic constant.
+            // Note: shopkeeper.size already reflects setScale() above — reading
+            // .size back after scaling a textured sprite returns the *scaled*
+            // size, not the original texture size, so this is the final
+            // rendered height with no further multiplication needed.
+            let targetHeight = shopkeeper.size.height
+            customer.setScale(targetHeight / customerHeight)
+            customer.position = layout.customer
+            customer.run(SKAction.fadeIn(withDuration: 0.25))
+        }
+    }
+
+    // MARK: - Customer NPC reactions
+    // The avatar art is a single static pose per character (no fabric-swatch-
+    // holding frame, no walk cycle), so "the customer reacted" is sold with a
+    // simple scale-pulse rather than a bespoke animation per order step.
+
+    private func bounceCustomerReaction() {
+        guard let customer = childNode(withName: "//customerNPC") else { return }
+        let up = SKAction.scale(by: 1.12, duration: 0.12)
+        up.timingMode = .easeOut
+        let down = SKAction.scale(by: 1 / 1.12, duration: 0.12)
+        down.timingMode = .easeIn
+        customer.run(SKAction.sequence([up, down]))
+    }
+
+    // Coin flourish for "hand over 냥": a small NyangCoin sprite hops from the
+    // customer to the shopkeeper on successful payment, then fades out.
+    private func showPaymentCoinFlourish() {
+        guard let customer = childNode(withName: "//customerNPC") else { return }
+        let coin = SKSpriteNode(imageNamed: "NyangCoin")
+        coin.setScale(0.12)
+        coin.position = customer.position
+        coin.zPosition = 25
+        addChild(coin)
+
+        let hop = SKAction.move(to: CGPoint(x: 0, y: customer.position.y), duration: 0.35)
+        hop.timingMode = .easeOut
+        coin.run(SKAction.sequence([
+            hop,
+            SKAction.fadeOut(withDuration: 0.15),
+            .removeFromParent()
+        ]))
     }
 
     // MARK: - Relaunch dialog (active order recovery)
