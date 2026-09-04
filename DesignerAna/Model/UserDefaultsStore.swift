@@ -19,6 +19,7 @@ enum UserDefaultsKey {
     static let relicDeductionShown  = "relics.deductionShown"
     static let relicChoiceFirst     = "relics.choiceFirst"
     static let relicQuestComplete   = "relics.questComplete"
+    static let currentTailor        = "tailor.current"
 }
 
 enum Store {
@@ -139,6 +140,15 @@ enum Store {
         defaults.removeObject(forKey: UserDefaultsKey.relicDeductionShown)
         defaults.removeObject(forKey: UserDefaultsKey.relicChoiceFirst)
         defaults.removeObject(forKey: UserDefaultsKey.relicQuestComplete)
+    }
+
+    // MARK: - Current tailor (Phase 7 — tailor-side, not touched by 새 손님)
+
+    static func loadCurrentTailor() -> String {
+        defaults.string(forKey: UserDefaultsKey.currentTailor) ?? Tailor.defaultID
+    }
+    static func saveCurrentTailor(_ id: String) {
+        defaults.set(id, forKey: UserDefaultsKey.currentTailor)
     }
 
     // MARK: - 새 손님 reset
