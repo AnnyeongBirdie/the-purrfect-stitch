@@ -27,39 +27,81 @@ enum Store {
     private static let decoder  = JSONDecoder()
     private static let encoder  = JSONEncoder()
 
+    // MARK: - Per-customer keying (Phase 7)
+    // Wallet and wardrobe are each customer's own — "the wardrobe is theirs,
+    // not the shop's" — so every key below is suffixed by whichever customer
+    // is currently selected. No call site outside this file needs to change:
+    // Wallet.balance and every Store.load/saveGarments*-family call already
+    // goes through here, so the re-keying is transparent to the rest of the
+    // codebase. Falls back to a placeholder suffix if somehow called before
+    // any customer is selected, so these never crash — just read/write an
+    // isolated, harmless slot.
+    private static func perCustomerKey(_ base: String) -> String {
+        "\(base).\(loadSelectedCustomer() ?? "_none")"
+    }
+
+    private static let perCustomerMigrationKey = "walletWardrobe.migrationPerCustomerDone"
+
+    /// One-time migration: copies the old flat (pre-Phase-7) wallet/wardrobe
+    /// values into the currently-selected customer's new per-customer slot,
+    /// so existing test progress isn't silently dropped when this ships.
+    /// Only writes into a slot that's still empty — never overwrites.
+    static func runPerCustomerMigrationIfNeeded() {
+        guard !defaults.bool(forKey: perCustomerMigrationKey) else { return }
+        defer { defaults.set(true, forKey: perCustomerMigrationKey) }
+        guard loadSelectedCustomer() != nil else { return }   // nothing to attribute the old data to
+
+        if defaults.object(forKey: perCustomerKey(UserDefaultsKey.walletBalance)) == nil,
+           let oldBalance = defaults.object(forKey: UserDefaultsKey.walletBalance) as? Int {
+            defaults.set(oldBalance, forKey: perCustomerKey(UserDefaultsKey.walletBalance))
+        }
+        if defaults.object(forKey: perCustomerKey(UserDefaultsKey.wardrobeGarments)) == nil,
+           let oldGarments = defaults.data(forKey: UserDefaultsKey.wardrobeGarments) {
+            defaults.set(oldGarments, forKey: perCustomerKey(UserDefaultsKey.wardrobeGarments))
+        }
+        if defaults.object(forKey: perCustomerKey(UserDefaultsKey.garmentCount)) == nil {
+            let oldCount = defaults.integer(forKey: UserDefaultsKey.garmentCount)
+            if oldCount > 0 { defaults.set(oldCount, forKey: perCustomerKey(UserDefaultsKey.garmentCount)) }
+        }
+        if defaults.object(forKey: perCustomerKey(UserDefaultsKey.lastSeenGarmentCount)) == nil {
+            let oldSeen = defaults.integer(forKey: UserDefaultsKey.lastSeenGarmentCount)
+            if oldSeen > 0 { defaults.set(oldSeen, forKey: perCustomerKey(UserDefaultsKey.lastSeenGarmentCount)) }
+        }
+    }
+
     // MARK: - Wallet
 
     static func loadWalletBalance() -> Int? {
-        defaults.object(forKey: UserDefaultsKey.walletBalance) as? Int
+        defaults.object(forKey: perCustomerKey(UserDefaultsKey.walletBalance)) as? Int
     }
     static func saveWalletBalance(_ balance: Int) {
-        defaults.set(balance, forKey: UserDefaultsKey.walletBalance)
+        defaults.set(balance, forKey: perCustomerKey(UserDefaultsKey.walletBalance))
     }
 
     // MARK: - Wardrobe trophies
 
     static func loadGarments() -> [FinishedGarment] {
-        guard let data = defaults.data(forKey: UserDefaultsKey.wardrobeGarments) else { return [] }
+        guard let data = defaults.data(forKey: perCustomerKey(UserDefaultsKey.wardrobeGarments)) else { return [] }
         return (try? decoder.decode([FinishedGarment].self, from: data)) ?? []
     }
     static func saveGarments(_ garments: [FinishedGarment]) {
         guard let data = try? encoder.encode(garments) else { return }
-        defaults.set(data, forKey: UserDefaultsKey.wardrobeGarments)
+        defaults.set(data, forKey: perCustomerKey(UserDefaultsKey.wardrobeGarments))
     }
 
     // MARK: - Garment count badge
 
     static func loadGarmentCount() -> Int {
-        defaults.integer(forKey: UserDefaultsKey.garmentCount)
+        defaults.integer(forKey: perCustomerKey(UserDefaultsKey.garmentCount))
     }
     static func saveGarmentCount(_ count: Int) {
-        defaults.set(count, forKey: UserDefaultsKey.garmentCount)
+        defaults.set(count, forKey: perCustomerKey(UserDefaultsKey.garmentCount))
     }
     static func loadLastSeenCount() -> Int {
-        defaults.integer(forKey: UserDefaultsKey.lastSeenGarmentCount)
+        defaults.integer(forKey: perCustomerKey(UserDefaultsKey.lastSeenGarmentCount))
     }
     static func saveLastSeenCount(_ count: Int) {
-        defaults.set(count, forKey: UserDefaultsKey.lastSeenGarmentCount)
+        defaults.set(count, forKey: perCustomerKey(UserDefaultsKey.lastSeenGarmentCount))
     }
 
     // MARK: - Active order (crash / force-quit recovery)
@@ -157,12 +199,15 @@ enum Store {
     /// and global state (storybook, profile migration flag) are preserved.
     /// Called by the 새 손님 button in Settings — UI wired in Economy refactor #2.
     static func resetCustomerSide() {
-        // Go through Wallet's setter so the in-memory singleton stays in sync
-        // (raw defaults.removeObject would let Wallet's cached balance re-save itself stale).
+        // Order matters: wallet/wardrobe are keyed by the *current* customer
+        // (perCustomerKey resolves loadSelectedCustomer() live), so these
+        // must run before clearSelectedCustomer() below, or they'd target
+        // the wrong (already-cleared) slot. This is what makes 새 손님 honor
+        // its own confirmation dialog's promise ("지금까지 모은 옷과 냥은
+        // 사라져요") under the per-customer model — without this ordering,
+        // picking the same customer again later would silently un-delete
+        // their old progress instead of actually starting them over.
         Wallet.shared.balance = 0
-
-        // Wardrobe + badge counters reload from Store each access — clearing
-        // the persisted values is sufficient.
         saveGarments([])
         saveGarmentCount(0)
         saveLastSeenCount(0)
