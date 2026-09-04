@@ -125,7 +125,7 @@ class TitleScene: SKScene {
     private func goToShop(view: SKView) {
         if Store.loadSelectedCustomer() != nil {
             // Returning player — straight to front shop.
-            guard let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+            let scene = FrontShopScene(size: size)
             scene.scaleMode = .resizeFill
             view.presentScene(scene, transition: SKTransition.crossFade(withDuration: 0.5))
         } else {

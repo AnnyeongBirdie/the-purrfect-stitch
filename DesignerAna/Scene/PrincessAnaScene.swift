@@ -248,8 +248,12 @@ class PrincessAnaScene: SKScene {
         let target = CGPoint(x: anaSprite.position.x - 30,
                              y: anaSprite.position.y + 55)
 
-        let orbitDuration: TimeInterval = 2.2
-        let revolutions:   CGFloat      = 1.6
+        // Tester feedback: the handoff felt slow across all 4 relics. Cut the
+        // loop from ~1.6 revolutions to 1, and scaled orbitDuration down by
+        // the same ratio so the circling speed reads the same as before —
+        // just one lap instead of one-and-a-half, not a slow-motion single lap.
+        let orbitDuration: TimeInterval = 1.375
+        let revolutions:   CGFloat      = 1.0
 
         let orbitAction = SKAction.customAction(withDuration: orbitDuration) { node, elapsed in
             let angle = (elapsed / CGFloat(orbitDuration)) * .pi * 2 * revolutions
@@ -354,12 +358,16 @@ class PrincessAnaScene: SKScene {
         }
 
         Store.saveRelicQuestComplete()
-        guard let next = FrontShopScene(fileNamed: "GameScene") else { return }
+        let next = FrontShopScene(size: self.size)
         next.scaleMode = .resizeFill
         next.shouldShowFinishedGarment = true
         next.finishedGarmentImageName = garmentImageName(for: completedOrder)
         next.completedOrder = completedOrder
         next.suppressEntryBell = true
+        // Ana promises a customer will be waiting but doesn't say who — she's
+        // a princess, she wasn't told. Once this trophy is saved, hand off to
+        // the customer picker instead of resuming with the same customer.
+        next.triggerCustomerPickerAfterSave = true
         view.presentScene(next, transition: SKTransition.crossFade(withDuration: 0.8))
     }
 

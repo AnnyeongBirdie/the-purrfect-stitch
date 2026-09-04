@@ -26,6 +26,10 @@ class MinigameNode: SKNode {
     private var chestNode: SKSpriteNode?
     private var instructionLabel: SKLabelNode!
     private var jumpButton: SKShapeNode!
+    // 150+ 마력 ability — nil (no button at all) if not yet unlocked when
+    // this dungeon run started; checked once at setup, not live, matching
+    // how other Magic-point gates in this codebase check at scene boundaries.
+    private var magicLightButton: SKShapeNode?
     private var leftArrowButton: SKShapeNode!
     private var rightArrowButton: SKShapeNode!
 
@@ -45,6 +49,14 @@ class MinigameNode: SKNode {
     private var leftButtonTouch: UITouch?
     private var rightButtonTouch: UITouch?
     private var jumpButtonTouch: UITouch?
+    private var magicLightButtonTouch: UITouch?
+    // Guards against stacking duplicate halos if the button is mashed
+    // before the first cast's light lands (same fix as BossMinigameNode).
+    private var castingMagicLight = false
+    // Keyboard play (dev/testing convenience) — held state, since keys have
+    // no UITouch to track the way the on-screen buttons do.
+    private var leftKeyDown = false
+    private var rightKeyDown = false
     private var lastUpdateTime: TimeInterval = 0
 
     // Haptic generators — created once, reused on every button press
@@ -125,6 +137,7 @@ class MinigameNode: SKNode {
         startDynamicBehaviors()
         buildDirectionalButtons()
         buildJumpButton()
+        buildMagicLightButton()
         buildInstructionLabel()
         animateEntrance()
         spawnRelicIfNeeded()
@@ -529,6 +542,30 @@ class MinigameNode: SKNode {
         addChild(btn)
     }
 
+    private func buildMagicLightButton() {
+        guard Magic.shared.points >= 150 else { return }
+
+        let btn = SKShapeNode(circleOfRadius: 30)
+        // Sits just above the jump button, same D-pad cluster on the right.
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.38 + 88)
+        btn.fillColor = buttonRestingFill
+        btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
+        btn.lineWidth = 2
+        btn.zPosition = 5
+        btn.name = "magicLightBtn"
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text = "✨"
+        label.fontSize = 22
+        label.verticalAlignmentMode = .center
+        label.position = .zero
+        label.name = "magicLightBtn"
+        btn.addChild(label)
+
+        magicLightButton = btn
+        addChild(btn)
+    }
+
     private func setPressed(_ button: SKShapeNode?, _ pressed: Bool) {
         button?.fillColor = pressed ? buttonPressedFill : buttonRestingFill
     }
@@ -575,6 +612,16 @@ class MinigameNode: SKNode {
             return
         }
 
+        if let magicLightButton, magicLightButton.contains(location) {
+            magicLightButtonTouch = touch
+            setPressed(magicLightButton, true)
+            hapticMedium.impactOccurred()
+            if !monsterDefeated, !castingMagicLight, let monster = monster {
+                castMagicLight(at: monster)
+            }
+            return
+        }
+
         if leftArrowButton.contains(location) {
             leftButtonTouch = touch
             setPressed(leftArrowButton, true)
@@ -617,12 +664,75 @@ class MinigameNode: SKNode {
         } else if touch === jumpButtonTouch {
             jumpButtonTouch = nil
             setPressed(jumpButton, false)
+        } else if touch === magicLightButtonTouch {
+            magicLightButtonTouch = nil
+            setPressed(magicLightButton, false)
+        }
+    }
+
+    // MARK: - Keyboard play (dev/testing convenience)
+    // Arrows/A-D to move, Space/Up to jump, L to cast the magic light —
+    // routes into the exact same functions the on-screen buttons use.
+
+    @discardableResult
+    func handleKeyDown(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        switch keyCode {
+        case .keyboardLeftArrow, .keyboardA:
+            leftKeyDown = true
+            setPressed(leftArrowButton, true)
+            updateMoveDirection()
+            return true
+        case .keyboardRightArrow, .keyboardD:
+            rightKeyDown = true
+            setPressed(rightArrowButton, true)
+            updateMoveDirection()
+            return true
+        case .keyboardSpacebar, .keyboardUpArrow:
+            setPressed(jumpButton, true)
+            hapticMedium.impactOccurred()
+            tryJump()
+            return true
+        case .keyboardL:
+            if let magicLightButton {
+                setPressed(magicLightButton, true)
+                hapticMedium.impactOccurred()
+                if !monsterDefeated, !castingMagicLight, let monster = monster {
+                    castMagicLight(at: monster)
+                }
+            }
+            return true
+        default:
+            return false
+        }
+    }
+
+    @discardableResult
+    func handleKeyUp(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        switch keyCode {
+        case .keyboardLeftArrow, .keyboardA:
+            leftKeyDown = false
+            setPressed(leftArrowButton, false)
+            updateMoveDirection()
+            return true
+        case .keyboardRightArrow, .keyboardD:
+            rightKeyDown = false
+            setPressed(rightArrowButton, false)
+            updateMoveDirection()
+            return true
+        case .keyboardSpacebar, .keyboardUpArrow:
+            setPressed(jumpButton, false)
+            return true
+        case .keyboardL:
+            magicLightButton.map { setPressed($0, false) }
+            return true
+        default:
+            return false
         }
     }
 
     private func updateMoveDirection() {
-        let goLeft = leftButtonTouch != nil
-        let goRight = rightButtonTouch != nil
+        let goLeft = leftButtonTouch != nil || leftKeyDown
+        let goRight = rightButtonTouch != nil || rightKeyDown
         if goLeft && !goRight {
             moveDirection = -1
             hero.xScale = abs(hero.xScale)
@@ -802,9 +912,14 @@ class MinigameNode: SKNode {
         leftButtonTouch = nil
         rightButtonTouch = nil
         jumpButtonTouch = nil
+        magicLightButtonTouch = nil
+        castingMagicLight = false
+        leftKeyDown = false
+        rightKeyDown = false
         setPressed(leftArrowButton, false)
         setPressed(rightArrowButton, false)
         setPressed(jumpButton, false)
+        setPressed(magicLightButton, false)
         heroVelY = 0
 
         let deathLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
@@ -842,10 +957,82 @@ class MinigameNode: SKNode {
     }
 
     // Lore note (PrincessAnaScene): monsters fall asleep, not killed — they respawn on re-entry by design.
-    private func defeatMonster() {
+    // MARK: - Magic light (150+ 마력 ability)
+    // Tester-loved visual from PrincessAnaScene's relic handoff (warm-gold
+    // layered glow) reused here as Daphne's ranged spell. Owner feedback:
+    // an instant kill on contact read as "a bullet," not a spell — so this
+    // mirrors the boss's halo-then-fade instead of an immediate defeat.
+
+    private func makeMagicLightNode() -> SKNode {
+        // Bigger + softer than the first pass — small and fast read as a
+        // bullet; this should read as a drifting energy orb instead.
+        let container = SKNode()
+        let outerGlow = SKShapeNode(circleOfRadius: 32)
+        outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.28)
+        outerGlow.strokeColor = .clear
+        container.addChild(outerGlow)
+
+        let innerGlow = SKShapeNode(circleOfRadius: 16)
+        innerGlow.fillColor   = UIColor(red: 1.00, green: 0.97, blue: 0.80, alpha: 0.90)
+        innerGlow.strokeColor = .clear
+        container.addChild(innerGlow)
+        return container
+    }
+
+    // Same layered-glow halo as the boss's sleep effect, just scaled down
+    // to fit a much smaller dust monster (60x90 vs. the boss's 130x195).
+    private func makeSleepHalo(outerRadius: CGFloat, midRadius: CGFloat) -> SKNode {
+        let halo = SKNode()
+        halo.zPosition = 4
+
+        let outerGlow = SKShapeNode(circleOfRadius: outerRadius)
+        outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.16)
+        outerGlow.strokeColor = .clear
+        halo.addChild(outerGlow)
+
+        let midGlow = SKShapeNode(circleOfRadius: midRadius)
+        midGlow.fillColor   = UIColor(red: 1.00, green: 0.84, blue: 0.31, alpha: 0.30)
+        midGlow.strokeColor = UIColor(red: 1.00, green: 0.95, blue: 0.65, alpha: 0.65)
+        midGlow.lineWidth   = 2.5
+        halo.addChild(midGlow)
+
+        midGlow.run(.repeatForever(.sequence([
+            .fadeAlpha(to: 0.35, duration: 0.7),
+            .fadeAlpha(to: 1.00, duration: 0.7)
+        ])))
+        return halo
+    }
+
+    private func castMagicLight(at monster: SKSpriteNode) {
+        castingMagicLight = true
+        let light = makeMagicLightNode()
+        light.position = CGPoint(x: hero.position.x, y: hero.position.y + 10)
+        light.zPosition = 4
+        addChild(light)
+
+        let travel = SKAction.move(to: monster.position, duration: 0.55)
+        travel.timingMode = .easeInEaseOut
+        light.run(.sequence([travel, .removeFromParent()])) { [weak self] in
+            self?.castingMagicLight = false
+            self?.applySleepHalo(to: monster)
+        }
+    }
+
+    private func applySleepHalo(to monster: SKSpriteNode) {
+        guard !monsterDefeated else { return }
+        SoundManager.shared.play("sfx_station_unlock.mp3")
+        monster.addChild(makeSleepHalo(outerRadius: 45, midRadius: 32))
+
+        run(.sequence([
+            .wait(forDuration: 0.5),
+            .run { [weak self] in self?.defeatMonster(viaMagic: true) }
+        ]))
+    }
+
+    private func defeatMonster(viaMagic: Bool = false) {
         guard !monsterDefeated else { return }
         monsterDefeated = true
-        SoundManager.shared.play("sfx_monster_stomp.mp3")
+        SoundManager.shared.play(viaMagic ? "sfx_halo_expand.mp3" : "sfx_monster_stomp.mp3")
         removeAction(forKey: "spawnButtons")
         monster?.removeAction(forKey: "lungePattern")
         // Sweep already-airborne falling buttons so they can't kill the hero
@@ -853,12 +1040,13 @@ class MinigameNode: SKNode {
         children.filter { $0.name == "fallingButton" }.forEach { $0.removeFromParent() }
         instructionLabel.text = "해냈어요! 보물 상자를 찾아봐요!"
 
-        let pop = SKAction.sequence([
-            .scale(to: 1.4, duration: 0.1),
-            .fadeOut(withDuration: 0.2),
-            .removeFromParent()
-        ])
-        monster?.run(pop) { [weak self] in
+        // Magic defeat fades slowly (sells "put to sleep"); stomp/tap keeps
+        // its snappier scale-pop — the halo is a child of the monster, so
+        // it fades and gets removed right along with it either way.
+        let removal: SKAction = viaMagic
+            ? .sequence([.fadeOut(withDuration: 0.6), .removeFromParent()])
+            : .sequence([.scale(to: 1.4, duration: 0.1), .fadeOut(withDuration: 0.2), .removeFromParent()])
+        monster?.run(removal) { [weak self] in
             self?.monster = nil
             self?.spawnChest()
         }

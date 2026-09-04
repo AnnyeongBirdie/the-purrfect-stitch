@@ -457,7 +457,23 @@ class BackRoomScene: SKScene {
             for touch in touches { boss.handleTouchEnded(touch) }
         }
     }
-    
+
+    // MARK: - Keyboard play (forwarded from GameViewController)
+
+    @discardableResult
+    func handleKeyDown(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        if let minigame = activeMinigame { return minigame.handleKeyDown(keyCode) }
+        if let boss = activeBossMinigame { return boss.handleKeyDown(keyCode) }
+        return false
+    }
+
+    @discardableResult
+    func handleKeyUp(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        if let minigame = activeMinigame { return minigame.handleKeyUp(keyCode) }
+        if let boss = activeBossMinigame { return boss.handleKeyUp(keyCode) }
+        return false
+    }
+
     override func update(_ currentTime: TimeInterval) {
         activeMinigame?.update(currentTime: currentTime)
         activeBossMinigame?.update(currentTime: currentTime)
@@ -793,9 +809,7 @@ class BackRoomScene: SKScene {
     
     private func returnToFrontShop() {
         guard let view = self.view else { return }
-        guard let scene = FrontShopScene(fileNamed: "GameScene") else {
-            return
-        }
+        let scene = FrontShopScene(size: self.size)
 
         scene.scaleMode = .resizeFill
         scene.shouldShowFinishedGarment = true
@@ -968,7 +982,7 @@ class BackRoomScene: SKScene {
 
     private func returnToFrontShopEmpty() {
         guard let view = self.view else { return }
-        guard let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+        let scene = FrontShopScene(size: self.size)
         scene.scaleMode = .resizeFill
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)

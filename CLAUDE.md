@@ -36,32 +36,45 @@ This is an iOS SpriteKit game — a Korean-language tailor-shop simulation. The 
 
 ```
 GameViewController
-  └─ FrontShopScene (loaded from GameScene.sks)
-       │  ⚙ nav  → crossFade → SettingsScene  → crossFade → FrontShopScene
-       │  💰 nav  → crossFade → RiddleScene    → crossFade → FrontShopScene
-       │  👗 nav  → crossFade → DressingRoomScene → crossFade → FrontShopScene
-       │  pays deposit → fade transition
-       └─ BackRoomScene (built programmatically)
-            │  dress placed on mannequin → crossFade transition
-            └─ FrontShopScene (reloaded from GameScene.sks)
-                 with shouldShowFinishedGarment = true
+  └─ TitleScene
+       └─ FrontShopScene (built programmatically — see Phase 6a)
+            │  ⚙ nav  → crossFade → SettingsScene    → crossFade → FrontShopScene
+            │  💰 nav  → crossFade → RiddleScene      → crossFade → FrontShopScene
+            │  👗 nav  → crossFade → DressingRoomScene → crossFade → FrontShopScene
+            │  📖 nav  → crossFade → StorybookScene    → crossFade → FrontShopScene
+            │  pays deposit → fade transition
+            └─ BackRoomScene (built programmatically)
+                 │  dress placed on mannequin → crossFade transition
+                 │
+                 │  (normal completion)
+                 ├─ FrontShopScene (reloaded)
+                 │       with shouldShowFinishedGarment = true
+                 │
+                 └─ (4th relic collected — Phase 5, fires once)
+                     TailorChoiceScene → AuroraChamberScene → PrincessAnaScene
+                       └─ FrontShopScene, shouldShowFinishedGarment = true
+                            + triggerCustomerPickerAfterSave = true
+                            └─ (trophy saved) → SettingsScene (customer-picker
+                               mode, isFirstLaunchPicker = true) → FrontShopScene
+                               (new customer)
 ```
 
 Scene-to-scene communication is a plain property set on the destination before `presentScene()`. There is no shared coordinator or persistent storage across launches.
 
-`GameViewController` checks `Store.loadSelectedCustomer()` at launch: if `nil` (first launch or post-새 손님 reset), it presents `SettingsScene` in `isFirstLaunchPicker = true` mode; otherwise it loads `FrontShopScene` directly.
+`GameViewController` always opens `TitleScene`; that scene checks `Store.loadSelectedCustomer()` and routes to `SettingsScene` in `isFirstLaunchPicker = true` mode if `nil` (first launch or post-새 손님 reset), otherwise straight to `FrontShopScene`.
 
-Side-scenes (DressingRoomScene, RiddleScene, SettingsScene) all set `scene.suppressEntryBell = true` before presenting FrontShopScene on return, so the shop bell only plays on genuine entries (app launch, back-room completion, first-launch picker start), not on return from navigation.
+Side-scenes (DressingRoomScene, RiddleScene, SettingsScene, StorybookScene) all set `scene.suppressEntryBell = true` before presenting FrontShopScene on return, so the shop bell only plays on genuine entries (app launch, back-room completion, first-launch picker start), not on return from navigation.
 
 ### Three functional spaces + POV map
 
-The tailor shop has three functional spaces, each with a deliberate POV. The shop **front** is customer POV — the player picks a customer in settings and that customer pays for and receives orders. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene`, and `DaphneBecomesTailorScene` scenes. All basement scenes are tailor POV.
+The tailor shop has three functional spaces, each with a deliberate POV. The shop **front**'s ordering flow (`FrontShopScene`) is third-person customer POV as of Phase 6b — the player picks a customer avatar in settings, and that avatar is rendered on screen as a visible NPC the shopkeeper (Polaris) actually talks to; the player's taps still drive the NPC's choices, but the player watches rather than being addressed directly as the customer. This was a deliberately scoped flip: `SettingsScene`, `RiddleScene`, and `DressingRoomScene` were explicitly left alone (see Phase 6b) — they're meta/utility screens (avatar picker, riddle minigame, wardrobe browser), not narrative "customer talks to shopkeeper" moments, so they don't carry a customer-POV framing at all. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene`, and `DaphneBecomesTailorScene` scenes. All basement scenes are tailor POV.
 
 | Space | Scenes | POV |
 |---|---|---|
-| Shop front | `FrontShopScene`, `SettingsScene`, `RiddleScene`, `DressingRoomScene` | Customer (player) |
+| Shop front — ordering flow | `FrontShopScene` | Customer NPC, third-person (player watches, still drives the taps) |
+| Shop front — utility screens | `SettingsScene`, `RiddleScene`, `DressingRoomScene`, `StorybookScene` | Not narrative POV — meta/utility UI, unaffected by 6b |
 | Back room | `BackRoomScene` (HUD column top-to-bottom: 💰 냥, then 그만할래 quit button, then 🐾 마력 at the bottom — do not place anything between 💰 and 그만할래, or between 그만할래 and 🐾) | Tailor |
-| Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene` | Tailor |
+| Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene`, `DaphneBecomesTailorScene` | Tailor |
 
 ### Back room HUD layout convention
 
@@ -74,6 +87,8 @@ The back room HUD is split by ownership: **tailor-side elements anchor to the to
 | Center | 그만할래 quit button | `size.width * 0.36` x, between the two counters |
 
 New back-room UI that belongs to the tailor (dungeon progress, quest state, keepsakes) goes top-left. New UI that belongs to the customer's order goes top-right. Do not add elements between 💰 and 그만할래, or between 그만할래 and 🐾 on the right column.
+
+**Planned revision (Phase 7, not yet built):** this loose-elements layout is slated to become two translucent grouped panels — a Tailor Status HUD (top-left: wraps 🐾/relic-or-clue HUD + a new ✨ level-up indicator + the current tailor's name) and a Customer Status HUD (top-right: wraps 💰 + customer name + ordered garment type/color) — with 그만할래 moved out to its own independent placement. The top-left/top-right ownership split described above is exactly what motivates the two-panel grouping, so the convention itself doesn't change, just how tightly the elements within each side are visually bound together.
 
 ### State machines
 
@@ -121,27 +136,44 @@ Jump feel is controlled by three constants at the top of each minigame file: `ju
 
 ### Model layer
 
-`Model/` has seven files; scene-specific state still lives inside each scene class.
+`Model/` has fourteen files; scene-specific state still lives inside each scene class.
 
 | Type | Key fields |
 |---|---|
 | `Order` (struct) | `clothingType: ClothingType`, `depositAmount: Int`, `fabricColor: FabricColor` |
 | `ClothingType` / `FabricColor` (enums) | `String`-raw, `Codable`, `CaseIterable`; live in `Order.swift`. Korean raw values, kept identical to the old `String` model so `Codable` persistence stays byte-compatible. Helpers: `displayName`, `assetFragment` / `assetSuffix`, and `FabricColor.palette`. |
 | `FrontShopState` (enum) | seven cases, drives UI in FrontShopScene. `ShopInput` + `FrontShopState.accepts(_:)` — a single exhaustive `switch self` — gate which buttons each state accepts. |
-| `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. |
-| `Wallet` (singleton) | `balance: Int` — **customer-side** 냥. 0 on a fresh install and on every 새 손님 reset. Persisted via `Store.loadWalletBalance` / `saveWalletBalance`. |
-| `Magic` (singleton) | `points: Int` — **tailor-side** 마력 (cat wizarding XP, 🐾). Monotonically grows via `add(_:)`. Persists across 새 손님; tied to the tailor's wizard-apprentice growth arc and v2 expansion. |
+| `MinigameStation` family | `MinigameStation` enum (4 cases) + `MinigameConfig` struct + helper enums (`EnemyKind`, `DefeatMechanism`, `MonsterBehavior`, `HazardKind`). Drives stations 1–3; the boss does not flow through `MinigameConfig`. Daphne-specific (platformer) — Phase 7 plans a parallel puzzle-minigame config family for Ana, not yet built. |
+| `Wallet` (singleton) | `balance: Int` — **customer-side** 냥. 0 on a fresh install and on every 새 손님 reset. Persisted via `Store.loadWalletBalance` / `saveWalletBalance`. Currently one flat global balance, not per-customer — Phase 7 plans to re-key this per customer identity (see Currency & economy below), not yet built. |
+| `Magic` (singleton) | `points: Int` — **tailor-side** 마력 (cat wizarding XP, 🐾), specifically Daphne's wizard-taught magic. Monotonically grows via `add(_:)`. Persists across 새 손님; tied to the tailor's wizard-apprentice growth arc. Phase 7's Tailor Identity system plans a separate fairy-taught currency for Ana with her own name/thresholds — not a generalization of this type, a distinct one — not yet built. |
 | `ActiveOrder` (struct, Codable) | Crash-recovery snapshot: `clothingType`, `fabricColor`, `depositAmount`, `backRoomStateName`, `savedAt`. Saved on every `BackRoomState` transition; cleared on completion or quit. Uses Swift's synthesized `Decodable` which silently ignores unknown keys — old saves with the removed `earnedMinigameRewards` field decode cleanly. |
-| `DungeonItem` (enum) | `String`-raw, `Codable`, `CaseIterable`. Four cases: `purpleScepter`, `paintBrush`, `palette`, `royalFamilyPortrait`. Each maps to a dungeon seed via `dungeonSeed`. Used by `Store.loadCollectedRelics()` / `saveCollectedRelics(_:)`. |
+| `DungeonItem` (enum) | `String`-raw, `Codable`, `CaseIterable`. Four cases: `purpleScepter`, `paintBrush`, `palette`, `royalFamilyPortrait`. Each maps to a dungeon seed via `dungeonSeed`. Used by `Store.loadCollectedRelics()` / `saveCollectedRelics(_:)`. Daphne-specific ("relics"); Ana's era reuses this exact same 4-slot mechanic renamed to "clues" (Phase 7, not yet built) rather than a new collection system. |
 | `Riddle` (struct, Codable) | `question`, `choices[4]`, `answer`, `reward` (default 15냥). `RiddleBank.load()` tries `Documents/riddles.json` first (parent-editable), falls back to 15 hardcoded defaults. |
 | `SoundManager` (singleton) | `isMuted: Bool` (UserDefaults), `play(_ filename: String)`, `stop(_ filename: String)`, `stopAll()`. Backed by an `AVAudioPlayer` pool keyed by filename — multiple concurrent plays of the same cue are pooled, and `stop(_:)` cancels every in-flight copy. All SFX route through this — silent no-op when muted; `toggleMute()` also calls `stopAll()`. |
-| `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 9 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. `GodmotherCat` and `WizardCat` removed in v2 migration — NPC-only assets now. |
+| `ProfileManager` (singleton) | `selectedIndex: Int` (UserDefaults), 9 cat avatars in `avatars` array with asset name + Korean display name. `advance()` / `retreat()` cycle selection. `GodmotherCat` and `WizardCat` removed in v2 migration — NPC-only assets now. This is the customer roster; there is no equivalent "tailor roster" type yet — Phase 7's Tailor Identity system is the planned analog for Daphne/Ana (and eventually the rest of the royal family), not yet built. |
+| `FinishedGarment` (struct, Codable) | A saved wardrobe trophy: clothing type, fabric color, completion date. `Store.loadGarments()` / `saveGarments(_:)`. |
+| `GarmentNaming` (enum, namespace) | Maps `(ClothingType, FabricColor)` → the `Mannequin_{ClothingType}_{FabricColor}` asset name shown on the mannequin and in the wardrobe. |
+| `Layout` (enum, namespace) | Positioning math shared across scenes — e.g. `frontShopCharacters(in:)` computes the customer/shopkeeper/mannequin composition in `FrontShopScene`. |
+| `UserDefaultsStore` (`Store`, enum namespace) | Every load/save function and `UserDefaultsKey` string constant in one place — the single seam all persistence flows through. (One inaccuracy in its own header comment: `ProfileManager` and `SoundManager` actually read/write `UserDefaults.standard` directly rather than through here — no key collision, just worth knowing before assuming this file is exhaustive.) |
 
 `currentOrder: Order?` is an instance var on `FrontShopScene`. Currency state: `Wallet.shared.balance` (customer 냥) and `Magic.shared.points` (tailor 마력) — both singletons, read directly from any scene, no property handoff needed.
 
 ### Known gaps / in-progress state
 
-- `FrontShopScene` uses `GameScene.sks` for its node layout (background, shopkeeper, mannequin). `BackRoomScene` builds everything in code. A conversion to fully programmatic was considered alongside the layout fixes following the wardrobe + persistence ship at commit `2be2344`, but deferred — the regression risk wasn't worth the consistency win while that work was still settling. Revisit when another structural change is already on the table.
+- **📋 `GAME_VOCABULARY.md` needs a refresh — instructions for whichever session does it.** This file is gitignored/local-only (owner-local reference, never tracked in git — confirmed via `.gitignore` and git history), so it's invisible to any session running in a worktree (like this one) and can only be edited from the owner's main checkout, likely in a Cowork session per the owner's plan. Things confirmed or changed in the 2026-09-03 session that likely need reflecting there:
+  - The shopkeeper has a real name, **Polaris** (폴라레스) — established in `DaphneBecomesTailorScene`, where she's explicitly Aurora's *younger* sister (she calls Aurora "언니"; Aurora calls her "나의 동생").
+  - `SecondPrincessCat` = Ana (confirmed, `PrincessAnaScene.swift:124`); `FirstPrincessCat` is presumed to be Estelle (not yet confirmed by the owner, currently only used as a storybook illustration) and is slated for a Phase 7 visual reveal.
+  - Estelle's fate (Phase 7, planned): fell through a portal, Alice-in-Wonderland style, into modern-day Korea — specifically Gwanghwamun Square (광화문광장). If the vocabulary doc tracks world/setting concepts, this introduces "modern-day Korea" as a place the story can reach, which is a significant departure from the fairy-tale kingdom setting. As of 2026-09-04 this is no longer a live scene tease but a storybook epilogue, unlocked once Ana solves her detective mystery.
+  - **2026-09-04 additions, all still design-stage (not built) — same caveat as below, don't backfill vocabulary entries until the code lands, but the lore itself is confirmed by the owner:**
+    - Polaris is characterized as a sharp, deliberate deal-maker — established via the drafted Daphne/Aurora/Polaris/Ana handoff scene, worth keeping consistent wherever she negotiates.
+    - Daphne's magic is wizard-taught (under Aurora); Ana's is fairy-taught (under her godmother Flora) — explicitly two different magic traditions with two different teachers, not one system reskinned. Ana's currency/terminology not yet named by the owner.
+    - World lore: the number of dungeons is canonically **unknown** — stated explicitly as intentional headroom for infinite future expansion, not an oversight. The four physical stations (fabric/sewing/buttons/mannequin) are the current shop's set, not necessarily a hard ceiling.
+    - **All four royal family members may eventually become tailors** (King and Queen confirmed as future possibilities, alongside Daphne and Ana already in motion) — each tailor's minigame style is tied to their characterization (action vs. thought-driven, established so far), not assigned arbitrarily.
+  - Whatever ends up documented for Phase 7's planned mechanics (Daphne's 150-마력 stomp→magic-sleep interaction — **now shipped** as the ✨ magic-light ability, so this one's actually ready to document, not a placeholder) once the rest actually get built — they don't exist yet, so don't backfill vocabulary entries for those until the code lands.
+  - General pass: confirm the doc's monster/mechanic descriptions still match current code (this session found and fixed unrelated staleness in CLAUDE.md itself — e.g. `Order`'s fields were still described as `String` months after they became enums, and the Scene Flow diagram still described the pre-Phase-6a `.sks` loading a full session after that shipped — so drift of this kind is plausible here too).
+- **⚠️ Remove all `#if DEBUG` triple-tap dev shortcuts before shipping.** All are `#if DEBUG`-gated (won't build into a release/TestFlight archive) but are flagged here as a deliberate pre-ship checklist item since they mutate real persisted state, not just a view-only cheat. Four exist, all triple-tap-in-a-corner: `SettingsScene.swift:381` (top of `touchesBegan` — triple-tap anywhere clears collected relics + relic-quest state, for re-testing the Phase 5 quest from scratch), `MinigameNode.swift:562` and `BossMinigameNode.swift:918` (triple-tap the upper-right of the dungeon arena — instantly completes the current station/boss, added because the boss fight's two-button mechanic can't be tested on the Simulator, which has no simultaneous multi-touch), and `StorybookScene.swift:987` (triple-tap the ToC's top-right corner — marks the relic quest complete via `Store.saveRelicQuestComplete()` to unlock chapter 5 "장면 다시 보기" for story-content preview without playing the dungeons). Search `tapCount >= 3` to find all of them.
+- **Finished-garment trophy sprites are placeholders.** The 9 `Mannequin_{ClothingType}_{FabricColor}` images (`GarmentNaming.swift:25`) shown on the mannequin at `showingFinishedGarment` and stored in the wardrobe are stand-ins, not final art — the intended final garment-on-mannequin sprites were meant to be generated via a ChatGPT image-gen subscription that ran out before that work happened. Revisit once that subscription (or another art source) is available again; until then, treat these 9 assets as temporary.
+- *(Resolved — Phase 6a)* `FrontShopScene` used to load its node layout from `GameScene.sks` (background, shopkeeper, mannequin); it's now built in code like every other scene, via `setupSceneNodes()` in `FrontShopScene.swift`, and the `.sks` file is deleted. All 8 `FrontShopScene(fileNamed: "GameScene")` call sites now use `FrontShopScene(size:)` instead. One gotcha hit during the conversion: `FrontShopScene` never set `anchorPoint = (0.5, 0.5)` itself — the `.sks` file supplied that implicitly — so the fresh `SKScene(size:)` default of `(0,0)` silently shifted every center-based coordinate (`x: 0` for the shopkeeper, `frame.midX`/`midY`, etc.) toward the bottom-left until the anchor point was set explicitly at the top of `didMove(to:)`, matching every other programmatic scene in the codebase.
 - *(Resolved)* `Order.clothingType` / `Order.fabricColor` are now the `ClothingType` / `FabricColor` enums, and `FrontShopScene`'s `if currentState == .case` guards now route through the exhaustive `FrontShopState.accepts(_:)` switch — restoring compile-time exhaustiveness. The stringly-typed switches in `GarmentNaming`, `BackRoomScene` (halo shades), and `DressingRoomScene` were converted to the enums in the same pass.
 
 ## Roadmap
@@ -156,20 +188,20 @@ The NPC shopkeeper guides the player through three ordering steps in sequence:
 2. Pick fabric color (pink, blue, yellow)
 3. Pay deposit
 
-`Order` carries `clothingType: String`, `fabricColor: String`, and `depositAmount: Int`. The back room uses `clothingType` and `fabricColor` to produce the correct finished garment and to theme all four minigames.
+`Order` carries `clothingType: String`, `fabricColor: String`, and `depositAmount: Int` *(stale — since retyped to the `ClothingType`/`FabricColor` enums; see Model layer above)*. The back room uses `clothingType` and `fabricColor` to produce the correct finished garment and to theme all four minigames.
 
 - **Phase 2a — Fabric color (shipped):** Front shop asks for fabric color after clothing pick (`choosingFabricColor` state). `Order` carries `fabricColor: String`, forwarded to `BackRoomScene` via the `order` property. Used for minigame theming, halo color, and the finished-garment image name.
 - **Phase 2b — Clothing type (shipped):** Front shop asks for clothing type, `Order` carries it, back room produces the matching garment.
 - **Phase 2c — Button type (cancelled):** Dropped — button type choice doesn't add meaningful player agency at this stage of the game.
 
-### Phase 3 — Station minigames
+### Phase 3 — Station minigames (shipped)
 Each station (fabric cabinet, sewing station, button station, mannequin) gates progress with a Super Mario–style platformer minigame. The player navigates a small dungeon, defeats a monster, and reaches a treasure chest containing the needed item (fabric, thread, buttons, finished dress) before that station unlocks.
 
 **Shipped:** fabric cabinet (station 1, tutorial — stationary monster, no hazards), sewing station (station 2 — pacing monster, scissor-blade hazards to jump over), button station (station 3 — pacing monster on the right side of the arena, falling-button hazards from the ceiling), mannequin station (station 4 — boss fight via `BossMinigameNode`; three telegraphed attacks, 3 HP, boss-on-chest reveal). All station-specific behavior for stations 1–3 lives in `MinigameConfig` (level seed, `MonsterBehavior`, `HazardKind`, theming); shared mechanics live in `MinigameNode`. The mannequin boss uses a sibling `BossMinigameNode` with its own bespoke attack loop.
 
 ### Phase 4 — Audio pass
 
-Effectively shipped — a full sound pass across every scene, and the **v1 release gate**.
+Effectively complete — a full sound pass across every scene. *(Correction: this used to call itself "the v1 release gate," which was wrong — nothing has shipped. See "App Store ship gate" after Phase 7 below for what shipping actually requires and what the current alpha-testing status really is.)*
 
 All 28 SFX are sourced and bundled in `DesignerAna/SoundEffects/`. **23 are wired in code**; the remaining 5 sit on disk for revival — 2 retired (`sfx_wardrobe_sparkle`, `sfx_wardrobe_open` — the dress nav icon now uses the standard `sfx_button_tap` and the firefly badge was removed), and 3 un-wired pending review (`sfx_dungeon_fanfare`, `sfx_land`, `sfx_tailor_walk` — each felt repetitive or unnecessary in owner playtests). Per-SFX status, source filenames, and re-wire hints all live in `SOUND_INVENTORY.md` (git-tracked, at the repo root).
 
@@ -195,18 +227,100 @@ A meta-quest layered onto the existing dungeon loop. The tailor collects four of
 
 **Full design spec** in `RELICS.md` (gitignored — owner-local). NPC sprites (`WizardCat`, `GodmotherCat`) are xcassets-only — removed from the player-selectable carousel in the ProfileManager 11→9 reduction.
 
+### Phase 6 — Front-shop structural refactor (shipped)
+
+Two structural changes to `FrontShopScene`, tackled together since both touch the same scene.
+
+**6a — SKS → programmatic layout (shipped).** `FrontShopScene` used to load its node layout from `GameScene.sks`; it now builds it in code via `setupSceneNodes()`, matching every other scene. See the "Known gaps" entry above for the anchor-point gotcha hit during the conversion.
+
+**6b — Front-shop POV flip (shopkeeper ↔ customer, third person) — shipped.** Before this phase, the shopkeeper addressed the player directly, as if the player *is* the customer — no customer character was ever rendered on screen; `ProfileManager.shared.selectedDisplayName` only ever appeared as text in the greeting (`FrontShopScene.swift`), never as a sprite. Now the player watches a visible NPC customer interact with the shopkeeper, the same POV relationship the tailor already has with Princess Ana / the fairy godmother in the Phase 5 narrative scenes.
+
+Design decisions settled for this pass — do not re-litigate without owner sign-off, both alternatives below were explicitly considered and rejected:
+- **Interaction model stays input-driven, not a cutscene.** A no-input "full cutscene" version (NPC order randomized, no player taps at all during the ordering flow) was proposed and rejected as too large a departure from the existing loop. `FrontShopState`, `ShopInput`, and the exhaustive `accepts(_:)` switch (`FrontShopState.swift:44`) are unchanged. The player still taps to choose clothing type, fabric color, and pay the deposit — those taps now drive a visible on-screen NPC customer (reuse the `ProfileManager.shared.selectedAssetName` avatar sprite, the same one picked in `SettingsScene`) who visibly performs the action, while the shopkeeper's dialogue addresses that NPC instead of the camera/player.
+- **Scope is FrontShopScene's ordering flow only.** Extending the customer-NPC treatment to `RiddleScene` (and further to `SettingsScene` + `DressingRoomScene`) was considered and rejected — those three stay exactly as they are (shopkeeper riddle minigame, avatar/reset menu, wardrobe browser). Only `greeting → choosingClothing → choosingFabricColor → reviewingOrder → awaitingPayment → sendingOrder → showingFinishedGarment` gets the customer-NPC treatment.
+- Order generation (still player-chosen, not randomized) and the `showingFinishedGarment` trophy-claim tap are unaffected — nothing about *who decides* changes, only *who the shopkeeper is visibly talking to*.
+- **Kept the speech-bubble dialogue UI; did not adopt `NarrativeHUD`.** Reusing the Phase 5 narrative component (bust-up portraits + dialogue panel) for visual consistency with Ana/the godmother scenes was considered and rejected on two concrete grounds: (1) `NarrativeHUD`'s portraits only exist for the Phase 5 cast (`Portrait_Ana`, `Portrait_Aurora`, `Portrait_Daphne`, `Portrait_Flora`, `Portrait_Polaris`) — there's no bust-up art for the shopkeeper or any of the 9 `ProfileManager` avatars, so reuse would mean producing 10 new portrait assets, not just reusing code; (2) `NarrativeHUD` is shaped for sequential dialogue lines plus an occasional short multiple-choice fork (`showChoices`), not the front shop's per-state spatial buttons (clothing rack row, fabric swatches, a whole order-review sheet, a payment panel) — forcing that flow through NarrativeHUD would be a bigger rewrite than the POV change calls for. The POV consistency the flip is after is conceptual (player watches two characters interact), not a literal shared UI component.
+- **Dialogue audit turned out to be a non-issue.** None of `FrontShopScene`'s existing lines (`showGreeting`, `handleChoice`, `handleFabricColorChoice`, `handleConfirmOrder`, `handleCancelOrder`, `handlePayment`, `showCompletionGreeting`) use an explicit second-person pronoun (no "당신"/"너") — Korean politeness endings drop the subject, so lines like "안녕하세요, {name}님! 어떤 옷을 만들어 드릴까요?" already read correctly whether the shopkeeper is addressing the camera or an on-screen NPC. No text rewrites were needed; the POV change is purely about *rendering* the customer, not rewording dialogue.
+
+**Shipped (implementation):**
+- Customer NPC sprite (`ProfileManager.shared.selectedAssetName`, named `"customerNPC"`) added in `setupSceneNodes()`, positioned in `fixCharacterLayout()` via a repurposed slot in `Layout.frontShopCharacters` — the tuple used to return an unused `wardrobe: CGPoint` (documented as "wardrobe on the left" but never actually consumed anywhere); renamed to `customer` and aligned to the same `baseY` as shopkeeper/mannequin instead of its old y-offset. Final composition: customer (left) — shopkeeper (centre) — mannequin (right), mirroring mannequin's spread on the opposite side.
+- Fades in (`SKAction.fadeIn`) on every load rather than only on a fresh greeting, so the entrance reads consistently across all 8 entry paths (finished-garment return, relaunch dialog, etc.) without branching per case.
+- Reaction cue: `bounceCustomerReaction()` (a small scale-pulse) plays on clothing choice, fabric choice, and the completion greeting. `showPaymentCoinFlourish()` hops a small `NyangCoin` sprite from customer to shopkeeper on successful payment, then fades it out — reuses an existing asset (previously only used as a storybook illustration), no new art needed. "Walk to rack" and "hold up fabric swatch" from the original open list were dropped — the avatar art is a single static pose per character with no such frames, and animating a walk/prop-hold convincingly wasn't worth the added complexity for what a scale-pulse already sells adequately.
+- **Shopkeeper's scale corrected 0.25 → 0.32** (matches the tailor's reference scale in `BackRoomScene`) in the same pass, per the owner's flagged mismatch during 6a QA — folded in here since the customer NPC's arrival required recomputing this composition anyway.
+
+**Two scale gotchas hit while wiring up the customer sprite** — both are `FrontShopScene.swift` / `fixCharacterLayout()` specifics worth knowing before touching character scale in this scene again:
+1. `Shopkeeper.imageset`/`Tailor.imageset` register their PNG under the **2x** slot in `Contents.json`, so `texture.size()` returns *half* the pixel dimensions in points. The loose `ProfileAvatars/*.png` files (customer avatars) have no such registration and load at full pixel size in points (1x). Applying the same scale multiplier to both is not the same apparent size — the customer rendered at ~2x the intended height until this was caught.
+2. `SKSpriteNode.size`, once `.setScale()` has been called, reads back as the *already-scaled* size, not the original texture size — so computing a second sprite's scale as `referenceSprite.size.height * referenceSprite.yScale` double-applies the scale. Correct target height is just `referenceSprite.size.height` alone. Caught via a temporary debug print comparing `shopkeeper.size`/`yScale` against the computed customer scale — the customer was rendering at ~1/3 the intended height before this fix.
+
+Interactive QA passed (owner tap-through, full flow to trophy claim) — bounce/coin-flourish cues confirmed firing correctly end-to-end.
+
+### Phase 7 — Daphne's arc conclusion & Ana's introduction (planned / in design)
+
+Continues the Phase 5 relics-quest storyline. **Not yet built** — captured here so the direction survives a session boundary. **Revised 2026-09-04** — the owner rescripted the back half of this phase via artifact comments on the "One Gate, Six Endings" flowchart; what follows supersedes the original separate-scenes plan below. The original six-way naming and the collision it was solving are kept here as context since the *rule* it produced is still load-bearing.
+
+**Ending sequencing (locked, 2026-09-03; content revised 2026-09-04).** Two systems compete for the same moment — a dungeon order finishing and the player returning to the shop: the relics quest (Ending 1, shipped) and Daphne's Magic-point thresholds. The locked rule: **the Magic ≥ 300 chain may only fire once `Store.loadRelicQuestComplete() == true`.** If `Magic.points` crosses 300 before the relics quest resolves, it just stays dormant, rechecked on every subsequent order completion — same mechanism already planned for "wait until no order is in progress," just with one more condition. This isn't only a UI-collision fix: it's a narrative-causality requirement, since everything past this gate assumes Daphne has already found and delivered all of Estelle's relics before her own "graduation" arc begins. The 150-마력 ability unlock stays independent of this whole gate — it's a passive unlock with no scene, checked on every dungeon load, nothing competes with it for screen time.
+
+**150 마력 — Daphne levels up.** Her dungeon-minigame defeat interaction changes from a stomp jump to a magic-based "put to sleep" action — pays off the Fairy Godmother's existing lore in `PrincessAnaScene` (beat 12) that defeating a monster only puts it to sleep, doesn't harm it. **Shipped** as the ✨ magic-light ability (`MinigameNode`/`BossMinigameNode`). Still open (artifact comment, 2026-09-04): an **in-dungeon "level up" VFX moment** the instant the threshold crosses, referencing a sample in an owner-local `_RefereneSamples` folder not visible from a worktree — needs the owner to describe or paste the reference before this can be built.
+
+**300 마력 — the handoff scene (rescripted 2026-09-04, replaces the old separate Wizard's-Chamber/Farewell/Ana-visits beats).** One merged narrative scene, reusing `DaphneBecomesTailorScene`'s exact format (the same one watchable in storybook chapter 4, "묘한 옷공방과 던전") — three speakers: Daphne, Aurora, Polaris. Still fires only once an in-progress order is completed and saved, same as originally planned. Drafted beats, for review before locking:
+1. Aurora acknowledges Daphne has leveled up well.
+2. Polaris thanks Daphne for her good customer service.
+3. Daphne asks if she can return to her original position (apprentice under Aurora).
+4. Aurora agrees and teleports herself and Daphne out of Polaris's shop.
+5. Polaris bids them farewell, then wonders to herself what to do about the now-untended, monster-infested dungeon.
+6. Princess Ana visits.
+7. Polaris greets her with surprise, asking if she's really here to place an order herself rather than send a servant.
+8. Ana explains she's here about her young friend Daphne, and about her own missing sister, Princess Estelle.
+9. Polaris explains Daphne returned to her wizarding studies, leaving the shop without a tailor who can handle the dungeon.
+10. Ana offers her own magical ability — taught by her fairy godmother Flora — in exchange for full access to the dungeon to search for Estelle.
+11. Polaris agrees, reading it as a good business deal. (Polaris is characterized as a sharp deal-maker generally — keep this trait consistent wherever she negotiates.)
+
+End of scene triggers the existing customer-picker handoff (`FrontShopScene.triggerCustomerPickerAfterSave`). Once the new customer places an order and the player proceeds to the back room, **Ana is there as the working tailor** — not a story beat layered on top of Daphne still being the protagonist (as originally planned), but an actual protagonist swap for her era. Exact scene-transition mechanics (how `BackRoomScene` picks Ana over Daphne) depend on the new Tailor Identity system below.
+
+**Tailor Identity system (new model-layer concept, designed 2026-09-04 — not yet built).** Nothing currently tracks "who the current tailor is" the way `ProfileManager`/`customer.selected` tracks the current customer; this is required by everything above and below. Shape agreed:
+- A roster type (mirrors `ProfileManager.avatars`), starting with `daphne` and `ana`. **The owner confirmed all four royal family members may eventually become tailors** (King and Queen too, per world lore that the number of dungeons is canonically unknown — this game is built to keep expanding), so the roster must stay extensible, not hardcoded to two.
+- Each tailor entry carries: display name, sprite asset, their own magic-point currency, and their own minigame style.
+- **Minigame style is keyed to the tailor's characterization, not a global setting.** Daphne is action-driven → the existing Mario-style platformers (`MinigameNode`/`BossMinigameNode`), unchanged. Ana is thoughts-driven → puzzle games (sudoku, spot-the-difference, crossword, etc. — new node types, not yet built). Confirmed explicitly **not retroactive**: Daphne's four stations stay platformers; only Ana's dungeon runs use puzzles.
+- **Physical structure stays completely fixed regardless of which tailor is active** — same four station locations (fabric cabinet, sewing station, button station, mannequin), same firefly unlock effect, same dungeon-entrance flow in `BackRoomScene`. Only which minigame class launches at each station changes. Deliberate choice for the 8-year-old audience: change content and mechanics, never the spatial/navigational conventions they've already learned.
+- **Clue collection (Ana's era) reuses the relic-collection mechanic exactly** — same 4-slot HUD row, same collection animation (scale pop + sparkle burst + arc to slot), same sounds, same safety-net auto-pull. Only the icon/name changes (relics → clues); not a new mechanic. This directly answered the "is the dungeon count now unbounded" question raised by the lore detail above — it isn't a blocker, since the collection UI stays a fixed 4 slots per era regardless of how many dungeons might exist someday.
+- **Magic currencies are per-tailor, not shared.** Daphne's is wizard-taught magic (🐾 마력, `Magic.shared` — unchanged, still hers specifically, not generalized). Ana's magic is fairy-taught (from godmother Flora) and needs **its own separate currency/name and its own level-up thresholds** — explicitly not reusing 마력's numbers or Korean terminology. Not yet named or numbered; owner to decide, not to be invented here.
+- Sprite asset for Ana-as-tailor not yet chosen — `SecondPrincessCat` is already used for her in `PrincessAnaScene` at a specific tuned scale; reusing it in `BackRoomScene` needs the same scale-matching care documented in Phase 6b's gotchas above. King/Queen sprites already exist (`KingCat.imageset`, `QueenCat.imageset`, currently storybook-illustration-only) if that roster entry is ever built out.
+
+**Status HUD redesign (artifact comment, 2026-09-04 — not yet built).** Restructures `BackRoomScene`'s HUD into two translucent grouped panels instead of loose individual elements, directly motivated by needing to represent *whichever* tailor/customer is currently active:
+- **Tailor Status HUD** (top-left, translucent so the back room stays visible underneath): wraps the magic-point HUD and the relic/clue HUD into one panel; adds a new **level-up indicator** in the same visual style but with ✨ instead of 🐾, positioned between the two — flashes a few times the first time it appears (i.e., the first time `Magic.points` crosses 150) to draw attention; displays the current tailor's name.
+- **Customer Status HUD** (top-right, same panel style): wraps the wallet HUD; displays the current customer's name and the ordered garment's type + color.
+- 그만할래 is explicitly called out as independent of both HUDs and needs its own placement, not nested inside either panel.
+- Owner flagged a fallback if either panel reads as too crowded after testing: collapse it into a dropdown-style menu instead of an always-open panel.
+
+**Estelle reveal (reframed 2026-09-04 — was a live in-scene tease, now a storybook epilogue).** Still: Estelle fell through a portal, Alice-in-Wonderland style, into modern-day Korea, specifically Gwanghwamun Square (광화문광장), likely using the currently-unused `FirstPrincessCat` asset. What changed: this is no longer a scene that plays automatically — it becomes **an epilogue watchable in the storybook**, unlocked once Ana successfully solves her mystery as a detective (exact completion condition — how many clue-dungeons, which ones — not yet speced, depends on the Tailor Identity / puzzle-dungeon work above landing first).
+
+**Explicitly out of scope for this phase:** a side-quest arc for Daphne as Aurora's redeemed apprentice, post-departure, and building out King/Queen as playable tailors — both are confirmed future lore, not this phase's scope.
+
+### App Store ship gate
+
+**Current status is alpha testing, not a ship.** The owner has an Apple Developer Program account and sideloads builds directly onto testers' physical devices (see "Signing & bundle identity" above — that's specifically why the paid team was worth enrolling in: dev provisioning profiles last ~1 year instead of expiring every 7 days, so testers don't need a re-sideload every week). Testers play; the owner watches. Nothing has been submitted to the App Store. Phase 4 used to mislabel itself "the v1 release gate" — that was stale/wrong and has been corrected above.
+
+**The actual gate for an App Store submission, as an educational app, is all three of:**
+1. Phase 7's Daphne level-up ships (150 마력 — the stomp → magic-sleep mechanic). **Shipped** as the ✨ magic-light ability.
+2. Phase 7's Ana quest begins (the shop handoff scene, Ana becomes the working tailor).
+3. A JSON-file educational-content feature is in place — likely realized by the existing `RiddleBank.load()` / parent-editable `Documents/riddles.json` mechanism (see Model layer above), though that connection hasn't been explicitly confirmed by the owner yet and shouldn't be treated as satisfying this criterion without checking.
+
+**Revised 2026-09-04:** item 2 used to bundle in "with the Princess Estelle teaser (FirstPrincessCat)" — that's no longer accurate. The 2026-09-04 rescript decoupled Estelle's reveal from the handoff scene entirely: it's now a storybook epilogue unlocked once Ana solves her mystery as a detective, which depends on the whole puzzle-dungeon system (Tailor Identity, puzzle minigames, clue collection) landing first — a substantially bigger lift than the original wording implied. Worth the owner explicitly deciding whether item 2 for ship purposes means just the handoff scene, or the full Estelle epilogue — as written now it's the former, which is a real scope reduction from the original intent and shouldn't be assumed without confirming.
+
+Until all three are true, treat every build as pre-ship alpha, regardless of how polished any individual scene is.
+
 ### Currency & economy
 
 Two separate currencies with distinct economic shapes:
 
-- **Customer's 냥 (`Wallet.shared.balance`)** — circular economy. Starts at 0냥 on a fresh install or 새 손님 reset. Depleted by front-shop deposits; replenished by dungeon chest refunds (크만할래 path) and shopkeeper riddle rewards. The wardrobe is the stamp-collection win condition. A brand-new customer starts broke and earns their way in.
-- **Tailor's 마력 (`Magic.shared.points`, 🐾)** — expansive economy. Monotonically grows from dungeon chest rewards (10 / 20 / 30 / 50 마력 at cabinet / sewing / buttons / boss). Never decreases: 그만할래 refunds the customer's full deposit to `Wallet` but `Magic` is untouched (it's monotonic — no rollback needed). Tied to the tailor's wizard-apprentice growth arc and v2 Aurora mentorship dialogue.
+- **Customer's 냥 (`Wallet.shared.balance`)** — circular economy. Starts at 0냥 on a fresh install or 새 손님 reset. Depleted by front-shop deposits; replenished by dungeon chest refunds (크만할래 path) and shopkeeper riddle rewards. The wardrobe is the stamp-collection win condition. A brand-new customer starts broke and earns their way in. **Exception:** the customer handoff after the relics quest (`FrontShopScene.triggerCustomerPickerAfterSave`, set by `PrincessAnaScene`) does *not* reset wallet/wardrobe — the just-finished order's trophy is saved first, then the picker lets the player choose the next customer without wiping what was just earned. This is a deliberate judgment call (wiping immediately after a save would feel like a bug), not a full 새 손님 reset — worth revisiting if it reads as inconsistent with the "new customer starts broke" rule.
+- **Tailor's 마력 (`Magic.shared.points`, 🐾)** — expansive economy, specifically Daphne's wizard-taught magic. Monotonically grows from dungeon chest rewards (10 / 20 / 30 / 50 마력 at cabinet / sewing / buttons / boss). Never decreases: 그만할래 refunds the customer's full deposit to `Wallet` but `Magic` is untouched (it's monotonic — no rollback needed). Tied to the tailor's wizard-apprentice growth arc and Aurora mentorship dialogue. **Not shared with Ana** — Phase 7's Tailor Identity system gives her a separate fairy-taught currency with her own name and thresholds, not yet built.
 
 **그만할래 quit dialog** (back room): single confirm + cancel. Customer gets a full deposit refund (`Wallet.shared.balance += depositAmount`); 마력 earned during the session stays in `Magic.shared.points`.
 
 **새 손님 reset** (button in SettingsScene): calls `Store.resetCustomerSide()`, which zeroes `Wallet`, empties the wardrobe, clears badge counters, clears the active order, and clears the `customer.selected` sticky flag. Tailor-side state — `Magic.shared.points`, future relics, dungeon progress, and the global storybook — is untouched. After reset, the app re-routes to the first-launch customer picker.
 
-**Persistence schema:** flat `UserDefaults` keys; no per-customer namespacing. Only one customer is "alive" at a time, identified by `customer.selected` (holds the avatar asset-name string, e.g. `"ChefCat"`). The shopkeeper riddle still credits `Wallet.shared.balance` — it's shopkeeper-driven, customer-side.
+**Persistence schema:** flat `UserDefaults` keys; no per-customer namespacing. Only one customer is "alive" at a time, identified by `customer.selected` (holds the avatar asset-name string, e.g. `"ChefCat"`). The shopkeeper riddle still credits `Wallet.shared.balance` — it's shopkeeper-driven, customer-side. **Planned change (Phase 7, not yet built):** re-key both `Wallet.balance` and the wardrobe by customer identity (e.g. `wallet.balance.<customerAssetName>`) so each avatar persona keeps their own separate economy and trophy case — confirmed direction as of 2026-09-04 ("the wardrobe is theirs, not the shop's"), assessed as a contained change given `Wallet`'s small read/write surface and this file's existing clean seam. Side effect once built: a *returning* customer (picked again after being away) would keep their old balance/wardrobe rather than starting broke — a real feature (recurring customers with persistent progress), not just an implementation detail.
 
 **Minigame rewards (shipped):** 10 / 20 / 30 / 50 마력 awarded on chest open at cabinet / sewing / buttons / boss — credited directly to `Magic.shared.add()` in `MinigameNode` and `BossMinigameNode`.
 
@@ -217,6 +331,9 @@ Captured here so they're not lost; not planned for current phases.
 - **Adaptive difficulty easing for station minigames.** Track death count per minigame attempt and reduce hazard density after N deaths (fewer chasms, slower monsters, longer safe gaps in button rain) so kids don't get stuck. Auto-reset to default difficulty on success. The 냥 reward should not scale down with eased difficulty — the easing exists to keep play sessions positive, not to discourage skill development.
 
 - **Guardian reframe for the mannequin level (visual seed already in place).** The boss-on-chest reveal animation that plays on boss defeat in `BossMinigameNode` was deliberately planted as a seed for a future "guardian" iteration of the same level: replace the fight with a puzzle where the player lures a giant dust monster off the chest into a trap, rather than damaging it. Educational angle — observation and planning over reflexes. The visual continuity (boss-on-chest at defeat) makes the reframe feel like a deepening of the same level rather than a contradiction.
+
+- **Per-customer wallet and wardrobe (not yet built).** Currently `Wallet.shared.balance` and the wardrobe are flat/global — one "current customer" slot, no namespacing (see Persistence schema above). Considered in a 2026-09-03 session: re-key both by customer identity (e.g. `wallet.balance.<customerAssetName>`) so each of the 9 avatar personas has their own separate economy and trophy case, rather than a new customer inheriting whatever the previous one earned. Owner confirmed the wardrobe should follow the same per-customer model as the wallet ("the wardrobe is theirs, not the shop's") — both move together, not just the wallet. Assessed as a contained change: `Wallet`'s read/write surface is small (`FrontShopScene` payment, `BackRoomScene`'s 그만할래 refund, `RiddleScene`'s reward), and `Store.swift` already isolates all persistence behind clean load/save functions. Side effect worth knowing: this makes 새 손님 mostly redundant for a *returning* customer — a previously-used persona picked again later would keep their own old balance/wardrobe rather than starting broke, which is a meaningfully different feature (recurring customers with persistent progress) than exists today. Not yet scoped or implemented.
+- **Parent-facing riddle editor, without a login gate.** `RiddleBank.load()` already supports a parent-editable `Documents/riddles.json` override (falls back to 15 hardcoded defaults) — this is the mechanism named in the "App Store ship gate" section above as the likely JSON educational-content feature. What's still unsolved: parents currently have no interface to actually create/edit that file. The owner deliberately wants to avoid an account/login system — for a kids' educational app, that opens data-retention and privacy-law questions (COPPA-adjacent) they'd rather not take on. Needs a no-login delivery mechanism: candidates floated include a share-sheet/Files-app import flow, an iCloud Drive drop folder, or an in-app editable list UI with no account at all. Not scoped or decided — flagged here so the constraint (no login) and the goal (parent-editable riddles) aren't lost before this gets designed properly.
 
 ## Closing handoff procedure
 

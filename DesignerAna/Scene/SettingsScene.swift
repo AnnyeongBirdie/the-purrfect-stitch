@@ -175,12 +175,20 @@ class SettingsScene: SKScene {
         // ── ◀  name  ▶ carousel row ──────────────────────────────────────────
         let carouselY: CGFloat = hh - 163
 
+        // Locked outside first-launch/새 손님 picking — testers' first instinct
+        // was to tap these to "change the customer," but that silently drifts
+        // ProfileManager's selected avatar away from the saved customer.selected
+        // identity without the 새 손님 reset warning. Dimmed + inert until the
+        // owner confirms 새 손님, which re-presents this scene with
+        // isFirstLaunchPicker = true.
         let leftArrow = makeArrowButton(symbol: "◀", name: "avatarLeft",
                                         x: -hw + 28, y: carouselY)
+        leftArrow.alpha = isFirstLaunchPicker ? 1.0 : 0.35
         panelNode.addChild(leftArrow)
 
         let rightArrow = makeArrowButton(symbol: "▶", name: "avatarRight",
                                          x: hw - 28, y: carouselY)
+        rightArrow.alpha = isFirstLaunchPicker ? 1.0 : 0.35
         panelNode.addChild(rightArrow)
 
         let nameLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
@@ -252,6 +260,12 @@ class SettingsScene: SKScene {
             newLbl.zPosition               = 2
             newBtn.addChild(newLbl)
             panelNode.addChild(newBtn)
+
+            // Draws the eye here instead of the (now-locked) carousel above.
+            newBtn.run(.repeatForever(.sequence([
+                .fadeAlpha(to: 0.55, duration: 0.55),
+                .fadeAlpha(to: 1.0,  duration: 0.55)
+            ])), withKey: "pulse")
         }
     }
 
@@ -389,12 +403,14 @@ class SettingsScene: SKScene {
                 return
 
             case "avatarLeft":
+                guard isFirstLaunchPicker else { return }
                 SoundManager.shared.play("sfx_button_tap.mp3")
                 ProfileManager.shared.retreat()
                 refreshAvatar()
                 return
 
             case "avatarRight":
+                guard isFirstLaunchPicker else { return }
                 SoundManager.shared.play("sfx_button_tap.mp3")
                 ProfileManager.shared.advance()
                 refreshAvatar()
@@ -476,8 +492,8 @@ class SettingsScene: SKScene {
     // MARK: - Navigation
 
     private func transitionToFrontShop() {
-        guard let view = self.view,
-              let scene = FrontShopScene(fileNamed: "GameScene") else { return }
+        guard let view = self.view else { return }
+        let scene = FrontShopScene(size: self.size)
         scene.scaleMode         = .resizeFill
         // First-launch picker is a genuine entry — let the shop bell ring.
         scene.suppressEntryBell = !isFirstLaunchPicker

@@ -31,11 +31,25 @@ class BossMinigameNode: SKNode {
     private var boss: SKSpriteNode!
     private var bossAura: SKShapeNode!     // state-feedback halo behind the boss
     private var sleepIndicatorNode: SKNode?    // 💤 sleep indicator shown during the vulnerability window
+
+    // Magic sleep (150+ 마력 ability) — distinct from the 💤 telegraph
+    // window above: a warm-gold halo (same visual as PrincessAnaScene's
+    // relic handoff) that bypasses the normal 3-hit cycle entirely.
+    private var bossAsleep = false
+    private var castingMagicLight = false
+    // Keyboard play (dev/testing convenience) — held state, since keys have
+    // no UITouch to track the way the on-screen buttons do.
+    private var leftKeyDown = false
+    private var rightKeyDown = false
+    private var magicSleepHaloNode: SKNode?
     private var platformRects: [CGRect] = []   // climb-up ledges (kinematic landing)
     private var hpDots: [SKShapeNode] = []
     private var chestNode: SKSpriteNode?
     private var instructionLabel: SKLabelNode!
     private var jumpButton: SKShapeNode!
+    // 150+ 마력 ability — nil (no button at all) if not yet unlocked when
+    // this dungeon run started; checked once at setup, not live.
+    private var magicLightButton: SKShapeNode?
     private var leftArrowButton: SKShapeNode!
     private var rightArrowButton: SKShapeNode!
     private var adds: [SKSpriteNode] = []
@@ -47,6 +61,7 @@ class BossMinigameNode: SKNode {
     private var leftButtonTouch: UITouch?
     private var rightButtonTouch: UITouch?
     private var jumpButtonTouch: UITouch?
+    private var magicLightButtonTouch: UITouch?
     private var lastUpdateTime: TimeInterval = 0
     private var heroStartPosition: CGPoint = .zero
 
@@ -142,6 +157,7 @@ class BossMinigameNode: SKNode {
         spawnPortrait()
         buildDirectionalButtons()
         buildJumpButton()
+        buildMagicLightButton()
         buildInstructionLabel()
         animateEntrance()
 
@@ -395,6 +411,28 @@ class BossMinigameNode: SKNode {
         addChild(btn)
     }
 
+    private func buildMagicLightButton() {
+        guard Magic.shared.points >= 150 else { return }
+
+        let btn = SKShapeNode(circleOfRadius: 30)
+        // Sits just above the jump button, same D-pad cluster on the right.
+        btn.position = CGPoint(x: sceneW * 0.36, y: -sceneH * 0.38 + 88)
+        btn.fillColor = buttonRestingFill
+        btn.strokeColor = UIColor.white.withAlphaComponent(0.7)
+        btn.lineWidth = 2
+        btn.zPosition = 5
+        btn.name = "magicLightBtn"
+        let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        lbl.text = "✨"
+        lbl.fontSize = 22
+        lbl.verticalAlignmentMode = .center
+        lbl.position = .zero
+        lbl.name = "magicLightBtn"
+        btn.addChild(lbl)
+        magicLightButton = btn
+        addChild(btn)
+    }
+
     private func setPressed(_ button: SKShapeNode?, _ pressed: Bool) {
         button?.fillColor = pressed ? buttonPressedFill : buttonRestingFill
     }
@@ -412,7 +450,7 @@ class BossMinigameNode: SKNode {
     // MARK: - Attack loop
 
     private func runAttackLoop() {
-        guard !bossDefeated, !isDead, !isCompleting, !attackRunning else { return }
+        guard !bossDefeated, !isDead, !isCompleting, !attackRunning, !bossAsleep else { return }
         attackRunning = true
         let attack = pickAttack()
         lastAttack = attack
@@ -463,7 +501,10 @@ class BossMinigameNode: SKNode {
         SoundManager.shared.play("sfx_boss_telegraph_slam.mp3")
 
         run(.wait(forDuration: 2.0)) { [weak self] in
-            guard let self, !self.bossDefeated else { pad.removeFromParent(); return }
+            // bossAsleep: the player cast the sleep spell during this telegraph —
+            // fizzle the slam instead of letting an already-scheduled attack land
+            // during what the game is telling the player is now a safe window.
+            guard let self, !self.bossDefeated, !self.bossAsleep else { pad.removeFromParent(); return }
             pad.removeAllActions()
             pad.fillColor = UIColor.red.withAlphaComponent(0.95)
 
@@ -482,7 +523,8 @@ class BossMinigameNode: SKNode {
                 }
                 pad.removeFromParent()
                 self.openVulnerabilityWindow(duration: 3.0) { [weak self] in
-                    self?.boss.run(.move(to: self!.bossAnchor, duration: 0.4)) {
+                    guard let self else { return }
+                    self.boss.run(.move(to: self.bossAnchor, duration: 0.4)) { [weak self] in
                         self?.scheduleNextAttack()
                     }
                 }
@@ -501,7 +543,9 @@ class BossMinigameNode: SKNode {
         SoundManager.shared.play("sfx_boss_telegraph_sweep.mp3")
 
         run(.wait(forDuration: 2.0)) { [weak self] in
-            guard let self, !self.bossDefeated else { return }
+            // bossAsleep: fizzle the sweep the same way the slam fizzles —
+            // see the comment in executeSlamAttack().
+            guard let self, !self.bossDefeated, !self.bossAsleep else { return }
             self.hideAura()   // telegraph over — the sweep launches
 
             let floorTop = self.floorCenterY + 9
@@ -666,10 +710,106 @@ class BossMinigameNode: SKNode {
         }
     }
 
+    // MARK: - Magic light (150+ 마력 ability)
+    // Tester-loved visual from PrincessAnaScene's relic handoff (warm-gold
+    // layered glow), reused as Daphne's ranged spell against the boss. Unlike
+    // the mini dungeons' instant-kill version, the boss needs a two-step:
+    // the light travels in, then a persistent halo settles on the boss and
+    // hitBoss() (below) treats it as a guaranteed one-hit finish while it's up.
+
+    private func makeMagicLightNode() -> SKNode {
+        // Bigger + softer than the first pass — small and fast read as a
+        // bullet; this should read as a drifting energy orb instead.
+        let container = SKNode()
+        let outerGlow = SKShapeNode(circleOfRadius: 32)
+        outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.28)
+        outerGlow.strokeColor = .clear
+        container.addChild(outerGlow)
+
+        let innerGlow = SKShapeNode(circleOfRadius: 16)
+        innerGlow.fillColor   = UIColor(red: 1.00, green: 0.97, blue: 0.80, alpha: 0.90)
+        innerGlow.strokeColor = .clear
+        container.addChild(innerGlow)
+        return container
+    }
+
+    private func castMagicLightAtBoss() {
+        castingMagicLight = true
+        let light = makeMagicLightNode()
+        light.position = CGPoint(x: hero.position.x, y: hero.position.y + 10)
+        light.zPosition = 4
+        addChild(light)
+
+        let travel = SKAction.move(to: boss.position, duration: 0.6)
+        travel.timingMode = .easeInEaseOut
+        light.run(.sequence([travel, .removeFromParent()])) { [weak self] in
+            self?.castingMagicLight = false
+            self?.applySleepHalo()
+        }
+    }
+
+    private func applySleepHalo() {
+        guard !bossDefeated else { return }
+        bossAsleep = true
+        instructionLabel.text = "지금이에요! 보스를 밟아보세요!"
+
+        // Cancel whatever attack is currently in flight — the telegraph
+        // guards above stop a *new* one from landing, but this clears one
+        // already mid-execution when the cast completes late in a 2s
+        // telegraph, so the "safe now" halo can't lie to the player.
+        removeAllActions()
+        boss.removeAllActions()
+        boss.removeAction(forKey: "summonPulse")
+        boss.alpha = 1.0
+        stopBossAttackSFX()
+        hideAura()
+        let addSnapshot = adds
+        adds.removeAll()
+        addSnapshot.forEach { $0.removeFromParent() }
+        children.filter { $0.name == "sweepProjectile" || $0.name == "slamPad" }
+                .forEach { $0.removeFromParent() }
+
+        let halo = SKNode()
+        halo.zPosition = 4
+
+        let outerGlow = SKShapeNode(circleOfRadius: 100)
+        outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.16)
+        outerGlow.strokeColor = .clear
+        halo.addChild(outerGlow)
+
+        let midGlow = SKShapeNode(circleOfRadius: 75)
+        midGlow.fillColor   = UIColor(red: 1.00, green: 0.84, blue: 0.31, alpha: 0.30)
+        midGlow.strokeColor = UIColor(red: 1.00, green: 0.95, blue: 0.65, alpha: 0.65)
+        midGlow.lineWidth   = 2.5
+        halo.addChild(midGlow)
+
+        midGlow.run(.repeatForever(.sequence([
+            .fadeAlpha(to: 0.35, duration: 0.7),
+            .fadeAlpha(to: 1.00, duration: 0.7)
+        ])))
+
+        boss.addChild(halo)   // rides along automatically if the boss moves
+        magicSleepHaloNode = halo
+    }
+
     // MARK: - Boss damage
 
     private func hitBoss() {
         guard !bossDefeated else { return }
+
+        if bossAsleep {
+            // Magic sleep bypasses the normal telegraph gate — one hit ends it.
+            magicSleepHaloNode?.removeFromParent()
+            magicSleepHaloNode = nil
+            bossAsleep = false
+            bossHP = 0
+            SoundManager.shared.play("sfx_boss_hit.mp3")
+            updateHPDots()
+            spawnSparkles(at: boss.position, color: .white)
+            defeatBoss()
+            return
+        }
+
         guard isVulnerable, !isInvulnerable else {
             // Shield flash + clank when hit outside the vulnerability window.
             flashAura(.white)
@@ -844,9 +984,13 @@ class BossMinigameNode: SKNode {
         leftButtonTouch = nil
         rightButtonTouch = nil
         jumpButtonTouch = nil
+        magicLightButtonTouch = nil
+        leftKeyDown = false
+        rightKeyDown = false
         setPressed(leftArrowButton, false)
         setPressed(rightArrowButton, false)
         setPressed(jumpButton, false)
+        setPressed(magicLightButton, false)
         heroVelY = 0
 
         let msg = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
@@ -893,6 +1037,10 @@ class BossMinigameNode: SKNode {
         boss.setScale(1.0)
         hideAura()
         hideSleepIndicator()
+        magicSleepHaloNode?.removeFromParent()
+        magicSleepHaloNode = nil
+        bossAsleep = false
+        castingMagicLight = false
         bossHP = 3
         isVulnerable = false
         isInvulnerable = false
@@ -931,6 +1079,15 @@ class BossMinigameNode: SKNode {
             setPressed(jumpButton, true)
             hapticMedium.impactOccurred()
             tryJump()
+            return
+        }
+        if let magicLightButton, magicLightButton.contains(loc) {
+            magicLightButtonTouch = touch
+            setPressed(magicLightButton, true)
+            hapticMedium.impactOccurred()
+            if !bossDefeated, !bossAsleep, !castingMagicLight {
+                castMagicLightAtBoss()
+            }
             return
         }
         if leftArrowButton.contains(loc) {
@@ -979,11 +1136,74 @@ class BossMinigameNode: SKNode {
         } else if touch === jumpButtonTouch {
             jumpButtonTouch = nil
             setPressed(jumpButton, false)
+        } else if touch === magicLightButtonTouch {
+            magicLightButtonTouch = nil
+            setPressed(magicLightButton, false)
+        }
+    }
+
+    // MARK: - Keyboard play (dev/testing convenience)
+    // Arrows/A-D to move, Space/Up to jump, L to cast the magic light —
+    // routes into the exact same functions the on-screen buttons use.
+
+    @discardableResult
+    func handleKeyDown(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        switch keyCode {
+        case .keyboardLeftArrow, .keyboardA:
+            leftKeyDown = true
+            setPressed(leftArrowButton, true)
+            updateMoveDirection()
+            return true
+        case .keyboardRightArrow, .keyboardD:
+            rightKeyDown = true
+            setPressed(rightArrowButton, true)
+            updateMoveDirection()
+            return true
+        case .keyboardSpacebar, .keyboardUpArrow:
+            setPressed(jumpButton, true)
+            hapticMedium.impactOccurred()
+            tryJump()
+            return true
+        case .keyboardL:
+            if let magicLightButton {
+                setPressed(magicLightButton, true)
+                hapticMedium.impactOccurred()
+                if !bossDefeated, !bossAsleep, !castingMagicLight {
+                    castMagicLightAtBoss()
+                }
+            }
+            return true
+        default:
+            return false
+        }
+    }
+
+    @discardableResult
+    func handleKeyUp(_ keyCode: UIKeyboardHIDUsage) -> Bool {
+        switch keyCode {
+        case .keyboardLeftArrow, .keyboardA:
+            leftKeyDown = false
+            setPressed(leftArrowButton, false)
+            updateMoveDirection()
+            return true
+        case .keyboardRightArrow, .keyboardD:
+            rightKeyDown = false
+            setPressed(rightArrowButton, false)
+            updateMoveDirection()
+            return true
+        case .keyboardSpacebar, .keyboardUpArrow:
+            setPressed(jumpButton, false)
+            return true
+        case .keyboardL:
+            magicLightButton.map { setPressed($0, false) }
+            return true
+        default:
+            return false
         }
     }
 
     private func updateMoveDirection() {
-        let l = leftButtonTouch != nil, r = rightButtonTouch != nil
+        let l = leftButtonTouch != nil || leftKeyDown, r = rightButtonTouch != nil || rightKeyDown
         if l && !r      { moveDirection = -1; hero.xScale =  abs(hero.xScale) }
         else if r && !l { moveDirection =  1; hero.xScale = -abs(hero.xScale) }
         else            { moveDirection =  0 }
@@ -1099,7 +1319,7 @@ class BossMinigameNode: SKNode {
         // Sweep-projectile contact — checked here by hand. The kinematic hero
         // does not reliably trip the physics contact delegate, so the sweep
         // (a physics-body hazard) is tested for overlap directly.
-        if !isDead, !isCompleting {
+        if !isDead, !isCompleting, !bossAsleep {
             for proj in children where proj.name == "sweepProjectile" {
                 if abs(hero.position.x - proj.position.x) < 42,
                    abs(hero.position.y - proj.position.y) < 30 {
