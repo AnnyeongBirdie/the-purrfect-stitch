@@ -49,3 +49,8 @@ RIDDLE_BANK.md
 # the build. Leading slash anchors to repo root so DesignerAna/SoundEffects/
 # is NOT ignored. Back up _RawAssets/ separately — git does not version it.
 /_RawAssets/
+
+# Reference material for the owner's own use while designing a feature
+# (tutorial screenshots, video stills, etc.) — not a shipped asset, same
+# rationale as _RawAssets/ above. Back up separately if it matters.
+/_ReferenceSamples/

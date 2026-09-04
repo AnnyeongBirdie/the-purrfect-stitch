@@ -118,14 +118,28 @@ class BackRoomScene: SKScene {
     }
 
     private func setupTailor() {
-        let tailor = SKSpriteNode(imageNamed: "Tailor")
+        let identity = Tailor.identity(for: Store.loadCurrentTailor())
+        let tailor = SKSpriteNode(imageNamed: identity.spriteAssetName)
         tailor.position = CGPoint(x: 0, y: -40)
         tailor.zPosition = 10
-        tailor.setScale(0.32)
         tailor.name = "tailor"
+        applyTailorReferenceScale(to: tailor)
 
         self.tailor = tailor
         addChild(tailor)
+    }
+
+    // Every tailor sprite renders at the same apparent height as Daphne's
+    // original Tailor.png @ 0.32 scale, regardless of the new asset's own
+    // pixel size or asset-catalog scale-slot registration (2x vs 1x) — same
+    // gotcha and fix as the Phase 6b customer-NPC scale bug (see CLAUDE.md).
+    private func applyTailorReferenceScale(to sprite: SKSpriteNode) {
+        let referenceHeight = SKTexture(imageNamed: "Tailor").size().height * 0.32
+        if let height = sprite.texture?.size().height, height > 0 {
+            sprite.setScale(referenceHeight / height)
+        } else {
+            sprite.setScale(0.32)
+        }
     }
 
     private func setupFabricCabinetZone() {
@@ -395,6 +409,25 @@ class BackRoomScene: SKScene {
 
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
+
+        #if DEBUG
+        // Temporary dev shortcut: triple-tap the bottom-right corner to cycle
+        // the current tailor, so Ana's BackRoomScene presence can be tested
+        // before the real Daphne/Aurora/Polaris/Ana handoff scene exists.
+        // Bottom-right is clear of the HUD (tailor HUD top-left, customer HUD
+        // top-right, quit button center). Remove before shipping — see
+        // CLAUDE.md's "Known gaps" debug-shortcut checklist.
+        if touch.tapCount >= 3, location.x > size.width * 0.30, location.y < -size.height * 0.30 {
+            let ids = Tailor.all.map { $0.id }
+            let currentIndex = ids.firstIndex(of: Store.loadCurrentTailor()) ?? 0
+            let nextID = ids[(currentIndex + 1) % ids.count]
+            Store.saveCurrentTailor(nextID)
+            tailor.removeFromParent()
+            setupTailor()
+            print("DEBUG: switched current tailor to \(nextID)")
+            return
+        }
+        #endif
 
         // Exit dialog intercepts all taps when visible
         if exitDialogNode != nil {
