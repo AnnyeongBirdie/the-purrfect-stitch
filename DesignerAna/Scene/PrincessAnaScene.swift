@@ -126,7 +126,9 @@ class PrincessAnaScene: SKScene {
 
         let ana = SKSpriteNode(imageNamed: "SecondPrincessCat")
         if ana.size.height > 0 { ana.setScale(adultHeight / ana.size.height) }
-        ana.position = CGPoint(x: size.width * 0.22, y: -size.height * 0.15)
+        // Same y as Flora (enterGodmother(), below) — Ana's old -0.15 let her
+        // feet clip the bottom edge; -0.08 matches where Flora stands.
+        ana.position = CGPoint(x: size.width * 0.22, y: -size.height * 0.08)
         ana.zPosition = 5
         addChild(ana)
         anaSprite = ana

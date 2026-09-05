@@ -8,7 +8,12 @@ enum Layout {
     /// for the Phase 6b customer NPC since it already mirrors mannequin's
     /// spread on the opposite side, at the same ground level.)
     static func frontShopCharacters(in size: CGSize) -> (customer: CGPoint, shopkeeper: CGPoint, mannequin: CGPoint) {
-        let spread = size.width * 0.28
+        // Pulled in from 0.28 — some avatars (e.g. a sword-holding Knight)
+        // widen the customer's bounding box enough to overlap the nav icon
+        // strip at -0.38*width on narrower screens. Tightening the spread
+        // buys clearance at every screen size without touching the nav
+        // icons themselves.
+        let spread = size.width * 0.20
         let baseY  = -size.height * 0.19
         return (
             customer:   CGPoint(x: -spread,  y: baseY),

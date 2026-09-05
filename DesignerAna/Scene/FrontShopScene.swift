@@ -790,7 +790,7 @@ class FrontShopScene: SKScene {
         // 1060x1572), so the old 0.25 here rendered her ~22% shorter than the
         // tailor for no compositional reason.
         shopkeeper.setScale(0.32)
-        mannequin.setScale(0.3)    // keep your current mannequin scale
+        mannequin.setScale(0.3 * 0.85)   // pulled in 15% — foot was clipping out of frame
 
         let layout = Layout.frontShopCharacters(in: size)
         shopkeeper.position = layout.shopkeeper
@@ -905,7 +905,8 @@ class FrontShopScene: SKScene {
             text: "🏆 이어서 만들래 → 지갑 \(currentBalance)냥",
             name: "relaunchContinue",
             position: CGPoint(x: 0, y: 35 * s),
-            width: 300
+            width: 300,
+            height: 50 * s
         )
         btnA.fillColor = UIColor(red: 0.85, green: 0.62, blue: 0.30, alpha: 1.0)
         panel.addChild(btnA)
@@ -915,7 +916,8 @@ class FrontShopScene: SKScene {
             text: "보증금 환불 → 지갑 \(refundedBalance)냥",
             name: "relaunchRefund",
             position: CGPoint(x: 0, y: -45 * s),
-            width: 300
+            width: 300,
+            height: 50 * s
         )
         panel.addChild(btnB)
 
@@ -925,14 +927,21 @@ class FrontShopScene: SKScene {
             text: "트로피 없이 챙기기 → 지갑 \(currentBalance)냥",
             name: "relaunchCashOut",
             position: CGPoint(x: 0, y: -120 * s),
-            width: 300
+            width: 300,
+            height: 50 * s
         )
         panel.addChild(btnC)
     }
 
+    // height defaults to 50 so any other future call site keeps today's
+    // fixed size; the relaunch dialog above passes 50*s explicitly since its
+    // button positions already scale by s — leaving height fixed while
+    // positions scale is what let button C's bottom edge overflow the panel
+    // on shorter (landscape iPhone) panel heights.
     private func makeFrontShopDialogButton(text: String, name: String,
-                                           position: CGPoint, width: CGFloat) -> SKShapeNode {
-        let button = SKShapeNode(rectOf: CGSize(width: width, height: 50), cornerRadius: 14)
+                                           position: CGPoint, width: CGFloat,
+                                           height: CGFloat = 50) -> SKShapeNode {
+        let button = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: 14)
         button.fillColor = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
         button.strokeColor = UIColor.brown
         button.lineWidth = 2
@@ -1045,6 +1054,24 @@ class FrontShopScene: SKScene {
 
         setNavIconsDimmed(false)   // trophy saved — navigation is safe again
 
+        // Phase 7 — the 300-마력 Daphne→Ana handoff. Checked here, right
+        // after the garment is saved, deliberately not in BackRoomScene —
+        // firing before the save would let the handoff dialogue conclude
+        // with Ana established as tailor and THEN show the trophy, reading
+        // as if Ana finished a dress she never touched. May only fire once
+        // the relics quest has resolved; otherwise stays dormant, rechecked
+        // on every trophy save (see CLAUDE.md's "Ending sequencing").
+        let readyForTailorHandoff = Magic.shared.points >= 300
+            && Store.loadRelicQuestComplete()
+            && !Store.loadTailorHandoffShown()
+            && Store.loadCurrentTailor() == Tailor.defaultID
+
+        if readyForTailorHandoff {
+            Store.saveTailorHandoffShown()
+            presentTailorHandoffScene()
+            return
+        }
+
         if triggerCustomerPickerAfterSave {
             triggerCustomerPickerAfterSave = false
             transitionToCustomerHandoff()
@@ -1054,6 +1081,14 @@ class FrontShopScene: SKScene {
         currentState = .choosingClothing
         showGreeting()
         showClothingChoices()
+    }
+
+    private func presentTailorHandoffScene() {
+        guard let view = self.view else { return }
+        let scene = TailorHandoffScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
     }
 
     // A new customer has arrived (Phase 7 — Ana's "손님이 기다리고 있을 거예요"

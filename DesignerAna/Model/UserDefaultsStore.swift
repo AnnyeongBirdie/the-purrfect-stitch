@@ -20,6 +20,8 @@ enum UserDefaultsKey {
     static let relicChoiceFirst     = "relics.choiceFirst"
     static let relicQuestComplete   = "relics.questComplete"
     static let currentTailor        = "tailor.current"
+    static let tailorHandoffShown   = "tailor.handoffShown"
+    static let storybookOpened      = "storybook.opened"
 }
 
 enum Store {
@@ -191,6 +193,25 @@ enum Store {
     }
     static func saveCurrentTailor(_ id: String) {
         defaults.set(id, forKey: UserDefaultsKey.currentTailor)
+    }
+
+    /// Gates the 300-마력 Daphne→Ana handoff scene so it fires only once,
+    /// mirroring relicDeductionShown's one-shot pattern.
+    static func loadTailorHandoffShown() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.tailorHandoffShown)
+    }
+    static func saveTailorHandoffShown() {
+        defaults.set(true, forKey: UserDefaultsKey.tailorHandoffShown)
+    }
+
+    /// Gates TitleScene's "바로 시작하기" — locked until the player has opened
+    /// the storybook at least once, so a first-time player meets the world
+    /// and cast (including the veiled "???" character) before jumping into play.
+    static func loadHasOpenedStorybook() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.storybookOpened)
+    }
+    static func saveHasOpenedStorybook() {
+        defaults.set(true, forKey: UserDefaultsKey.storybookOpened)
     }
 
     // MARK: - 새 손님 reset

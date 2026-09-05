@@ -3,7 +3,12 @@
 //  DesignerAna
 //
 //  Reusable dialogue HUD for all narrative scenes. Handles:
-//    • Bust-up speaker portraits (left, right, centerElevated slots)
+//    • Bust-up speaker portraits — only two slots, left and right. A third
+//      (or later) speaker never gets a centered portrait of their own; they
+//      share an existing slot with another character, swapped in and out
+//      via hideSpeaker/revealSpeaker as the active exchange changes. This
+//      was a deliberate call — a bust covering the center of the scene read
+//      badly — so don't reintroduce a centered slot for a future scene.
 //    • Dark translucent dialogue panel with scrolling text
 //    • Pulsing ▶ advance indicator
 //    • In-place choice panel (transforms the dialogue panel)
@@ -47,7 +52,6 @@ class NarrativeHUD: SKNode {
     enum PortraitSlot {
         case left
         case right
-        case centerElevated   // third character; floats above and between left/right
     }
 
     // MARK: - Private state
@@ -124,10 +128,8 @@ class NarrativeHUD: SKNode {
         let cX = halfW - portraitSize.width / 2 - 20
         portraitCenterX = cX
 
-        slotPositions[.left]           = CGPoint(x: -cX, y: cY)
-        slotPositions[.right]          = CGPoint(x:  cX, y: cY)
-        // centerElevated floats above the left/right baseline (used for Godmother).
-        slotPositions[.centerElevated] = CGPoint(x: 0,   y: cY + portraitSize.height * 0.65)
+        slotPositions[.left]  = CGPoint(x: -cX, y: cY)
+        slotPositions[.right] = CGPoint(x:  cX, y: cY)
     }
 
     private func buildPanel() {

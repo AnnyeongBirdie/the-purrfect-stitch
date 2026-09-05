@@ -64,22 +64,29 @@ class TitleScene: SKScene {
             position: CGPoint(x: 0, y: centerY + buttonH / 2 + gap / 2)
         ))
 
+        // Locked until the storybook has been opened at least once — a
+        // first-time player should meet the world and cast (including the
+        // veiled "???" mystery character) before jumping straight into play.
+        let storybookOpened = Store.loadHasOpenedStorybook()
         addChild(makeButton(
-            text: "✂️  바로 시작하기",
-            name: "shopBtn",
-            position: CGPoint(x: 0, y: centerY - buttonH / 2 - gap / 2)
+            text: storybookOpened ? "✂️  바로 시작하기" : "🔒  바로 시작하기",
+            name: storybookOpened ? "shopBtn" : "lockedShopBtn",
+            position: CGPoint(x: 0, y: centerY - buttonH / 2 - gap / 2),
+            locked: !storybookOpened
         ))
     }
 
     // Matches the FrontShopScene customer choice button style exactly.
     private func makeButton(text: String, name: String,
-                             position: CGPoint) -> SKShapeNode {
+                             position: CGPoint, locked: Bool = false) -> SKShapeNode {
         let buttonW: CGFloat = min(size.width * 0.62, 280)
         let buttonH: CGFloat = 58
 
         let btn = SKShapeNode(rectOf: CGSize(width: buttonW, height: buttonH),
                               cornerRadius: 18)
-        btn.fillColor   = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
+        btn.fillColor   = locked
+            ? UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 0.35)
+            : UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
         btn.strokeColor = UIColor.brown
         btn.lineWidth   = 3
         btn.position    = position
@@ -89,7 +96,7 @@ class TitleScene: SKScene {
         let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         label.text                  = text
         label.fontSize              = 22
-        label.fontColor             = .white
+        label.fontColor             = locked ? UIColor(white: 1, alpha: 0.50) : .white
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
         label.position              = .zero
@@ -108,6 +115,7 @@ class TitleScene: SKScene {
 
         switch name {
         case "introBtn":
+            Store.saveHasOpenedStorybook()
             let storybook = StorybookScene(size: size)
             storybook.scaleMode = .resizeFill
             view.presentScene(storybook, transition: SKTransition.crossFade(withDuration: 0.5))

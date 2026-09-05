@@ -12,6 +12,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 enum TailorMinigameCategory {
     case platformer   // Daphne — MinigameNode / BossMinigameNode, unchanged
@@ -34,6 +35,7 @@ struct TailorIdentity {
     let id: String                 // stable persisted identifier, e.g. "daphne"
     let displayName: String        // Korean name, shown in the tailor HUD
     let spriteAssetName: String    // BackRoomScene sprite
+    let renderedHeight: CGFloat     // target on-screen height in BackRoomScene, in points
     let minigameCategory: TailorMinigameCategory
 
     /// Puzzle genre per regular station. Empty for platformer tailors.
@@ -46,11 +48,21 @@ struct TailorIdentity {
 enum Tailor {
     static let defaultID = "daphne"
 
+    // Ana's on-screen height already reads correctly against the back
+    // room's furniture, so it's kept as the shared reference point. Daphne
+    // renders shorter than that (chibi, younger-looking proportions) rather
+    // than the two matching — the old shared scale (0.32 of Daphne's own
+    // texture, applied to every tailor alike) had this backwards. Height in
+    // points, not a scale factor, since each sprite has its own pixel size
+    // and asset-catalog scale-slot registration (see applyTailorScale).
+    private static let anaReferenceHeight: CGFloat = 251.52
+
     static let all: [TailorIdentity] = [
         TailorIdentity(
             id: "daphne",
             displayName: "다프네",
             spriteAssetName: "Tailor",
+            renderedHeight: anaReferenceHeight * 0.70,
             minigameCategory: .platformer,
             puzzleGenres: [:],
             bossPuzzleGenre: nil
@@ -59,6 +71,7 @@ enum Tailor {
             id: "ana",
             displayName: "아나 공주",
             spriteAssetName: "SecondPrincessCat",
+            renderedHeight: anaReferenceHeight,
             minigameCategory: .puzzle,
             puzzleGenres: [
                 .fabricCabinet: .sudoku,
