@@ -7,10 +7,13 @@
 //  "새로운 재봉사 고용" button. Always returns to StorybookScene on exit.
 //
 //  Background:  Tailorshop_Background (front shop)
-//  Speakers:
-//    left           → 마법사 오로라  (Aurora / WizardCat)
-//    right          → 가게 주인 폴라레스  (Polaris / Shopkeeper)
-//    centerElevated → 재봉사 다프네  (Daphne — hidden until beat 10)
+//  Speakers (NarrativeHUD only has two portrait slots — left/right; a third
+//  speaker always shares an existing slot with another character instead of
+//  getting a centered portrait of her own):
+//    left  → 마법사 오로라  (Aurora / WizardCat)
+//    right → 가게 주인 폴라레스  (Polaris / Shopkeeper) and 재봉사 다프네
+//            (Daphne — hidden until beat 10) share this slot, swapped via
+//            hideSpeaker/revealSpeaker
 //
 //  Scene flow:
 //    1. Aurora teleports in with a purple magic entrance (automatic on load).

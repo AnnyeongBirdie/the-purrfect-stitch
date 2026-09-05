@@ -123,20 +123,19 @@ class BackRoomScene: SKScene {
         tailor.position = CGPoint(x: 0, y: -40)
         tailor.zPosition = 10
         tailor.name = "tailor"
-        applyTailorReferenceScale(to: tailor)
+        applyTailorScale(to: tailor, targetHeight: identity.renderedHeight)
 
         self.tailor = tailor
         addChild(tailor)
     }
 
-    // Every tailor sprite renders at the same apparent height as Daphne's
-    // original Tailor.png @ 0.32 scale, regardless of the new asset's own
+    // Each tailor renders at their own intended on-screen height
+    // (TailorIdentity.renderedHeight), independent of the sprite's own
     // pixel size or asset-catalog scale-slot registration (2x vs 1x) — same
     // gotcha and fix as the Phase 6b customer-NPC scale bug (see CLAUDE.md).
-    private func applyTailorReferenceScale(to sprite: SKSpriteNode) {
-        let referenceHeight = SKTexture(imageNamed: "Tailor").size().height * 0.32
+    private func applyTailorScale(to sprite: SKSpriteNode, targetHeight: CGFloat) {
         if let height = sprite.texture?.size().height, height > 0 {
-            sprite.setScale(referenceHeight / height)
+            sprite.setScale(targetHeight / height)
         } else {
             sprite.setScale(0.32)
         }
@@ -720,12 +719,18 @@ class BackRoomScene: SKScene {
         // Phase 5 — TailorChoiceScene fires once when all four relics have been
         // collected and the deduction scene hasn't been shown yet.
         let allRelicsCollected = Store.loadCollectedRelics().count == DungeonItem.allCases.count
+
         if allRelicsCollected && !Store.loadRelicDeductionShown() {
             Store.saveRelicDeductionShown()
             presentTailorChoiceScene()
         } else {
             placeDressOnMannequin()
         }
+        // Note: the 300-마력 tailor handoff (TailorHandoffScene) is gated in
+        // FrontShopScene.handleSaveTrophy() instead, deliberately AFTER the
+        // garment is saved to the wardrobe — not here — so the sequence
+        // reads as "Daphne's order is saved, then she leaves" rather than
+        // implying Ana finished a dress she never touched.
     }
 
     private func presentTailorChoiceScene() {

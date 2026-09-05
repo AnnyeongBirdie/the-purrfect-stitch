@@ -431,8 +431,11 @@ class StorybookScene: SKScene {
                             "먼지 몬스터의 비밀을 알고 있을지도 몰라요... 💫",
                         illustrationScale: 0.45
                     ),
-                    // Rose — the royal household's rescue snail
-                    Page(
+                    // Rose — the royal household's rescue snail. Locked behind
+                    // a mystery placeholder until the relics quest completes
+                    // and Flora reveals the curse in PrincessAnaScene — her
+                    // real bio here would spoil that reveal early.
+                    Store.loadRelicQuestComplete() ? Page(
                         illustrationAsset: "SnailPet_Rose",
                         illustrationEmoji: nil,
                         pageTitle: "로즈",
@@ -446,6 +449,13 @@ class StorybookScene: SKScene {
                             "로즈의 자리가 있었답니다.\n\n" +
                             "그런데 어느 날 갑자기 로즈가 사라졌어요. " +
                             "지금 로즈는 어디에 있는 걸까요? 🔍"
+                    ) : Page(
+                        illustrationAsset: nil,
+                        illustrationEmoji: "❓",
+                        pageTitle: "???",
+                        pageBody:
+                            "아직 밝혀지지 않은 등장인물이에요.\n\n" +
+                            "이야기를 계속 진행하다 보면 언젠가 알게 될 거예요... 🔍"
                     )
                 ]
             )
@@ -639,6 +649,16 @@ class StorybookScene: SKScene {
             sprite.position  = CGPoint(x: leftCX, y: 0)
             sprite.zPosition = 3
             content.addChild(sprite)
+
+            // Rose (the small snail in the foreground) is a spoiler for the
+            // curse Flora reveals in PrincessAnaScene — cover her with a "?"
+            // badge on this full family portrait until the relics quest
+            // completes. Added as a child of `sprite` so it inherits its
+            // scale/position; the fractional offsets below are an estimate
+            // of where Rose sits in RoyalFamilyPortrait.png, not pixel-exact.
+            if assetName == "RoyalFamilyPortrait", !Store.loadRelicQuestComplete() {
+                addRoseSpoilerCover(to: sprite)
+            }
 
             // Portrait badge overlaid at the lower-right corner of the illustration.
             if let portraitAsset = page.replayPortraitAsset {
@@ -870,6 +890,40 @@ class StorybookScene: SKScene {
         ring.position    = position
         ring.zPosition   = 6
         node.addChild(ring)
+    }
+
+    // MARK: - Rose spoiler cover ───────────────────────────────────────────────
+
+    /// Covers Rose (the small snail sitting front-and-center in
+    /// RoyalFamilyPortrait.png) with a "?" badge. Added as a child of the
+    /// illustration sprite so it inherits its scale/position automatically —
+    /// the fractional coordinates below are estimated from the source art
+    /// (Rose sits at roughly 62% across, 71% down the full portrait), not
+    /// pixel-measured, so nudge them if the badge doesn't sit right over her.
+    private func addRoseSpoilerCover(to sprite: SKSpriteNode) {
+        guard let nativeSize = sprite.texture?.size(), nativeSize.width > 0 else { return }
+
+        let coverPos = CGPoint(
+            x: (0.62 - 0.5) * nativeSize.width,
+            y: (0.5 - 0.71) * nativeSize.height
+        )
+        let radius = nativeSize.width * 0.16
+
+        let cover = SKShapeNode(circleOfRadius: radius)
+        cover.fillColor   = parchment
+        cover.strokeColor = brownMid
+        cover.lineWidth   = radius * 0.06
+        cover.position    = coverPos
+        cover.zPosition   = 1
+        sprite.addChild(cover)
+
+        let mark = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        mark.text                    = "❓"
+        mark.fontSize                = radius * 1.1
+        mark.horizontalAlignmentMode = .center
+        mark.verticalAlignmentMode   = .center
+        mark.zPosition               = 1
+        cover.addChild(mark)
     }
 
     // MARK: - Replay button ───────────────────────────────────────────────────
