@@ -27,8 +27,9 @@ class MinigameNode: SKNode {
     private var instructionLabel: SKLabelNode!
     private var jumpButton: SKShapeNode!
     // 150+ 마력 ability — nil (no button at all) if not yet unlocked when
-    // this dungeon run started; checked once at setup, not live, matching
-    // how other Magic-point gates in this codebase check at scene boundaries.
+    // this dungeon run started. Also checked live: Magic.shared.add(_:)
+    // reports the exact call that crosses 150, so the ability can unlock
+    // mid-run (see playLevelUpVFX) instead of waiting for the next dungeon.
     private var magicLightButton: SKShapeNode?
     private var leftArrowButton: SKShapeNode!
     private var rightArrowButton: SKShapeNode!
@@ -542,7 +543,11 @@ class MinigameNode: SKNode {
         addChild(btn)
     }
 
-    private func buildMagicLightButton() {
+    // animated: true when this is called mid-run right after crossing 150
+    // (see playLevelUpVFX) — pops the button in with a little overshoot so
+    // its appearance reads as tied to that moment, rather than a plain
+    // static button players would only notice going into the next dungeon.
+    private func buildMagicLightButton(animated: Bool = false) {
         guard Magic.shared.points >= 150 else { return }
 
         let btn = SKShapeNode(circleOfRadius: 30)
@@ -564,6 +569,14 @@ class MinigameNode: SKNode {
 
         magicLightButton = btn
         addChild(btn)
+
+        if animated {
+            btn.setScale(0.01)
+            btn.run(.sequence([
+                .scale(to: 1.15, duration: 0.22),
+                .scale(to: 1.0, duration: 0.12)
+            ]))
+        }
     }
 
     private func setPressed(_ button: SKShapeNode?, _ pressed: Bool) {
@@ -600,6 +613,18 @@ class MinigameNode: SKNode {
         if touch.tapCount >= 3, location.x > sceneW * 0.35, location.y > sceneH * 0.35 {
             isCompleting = true
             onCompletion(config.station)
+            return
+        }
+        // Triple-tap the upper-left of the dungeon arena — adds 50 마력
+        // through the real Magic.add(_:) path (not a bypass), so the
+        // 150/300 level-up VFX fires exactly like a genuine reward would.
+        // Added for testing the level-up VFX without grinding or reinstalling.
+        if touch.tapCount >= 3, location.x < -sceneW * 0.35, location.y > sceneH * 0.35 {
+            if Magic.shared.add(50) {
+                playLevelUpVFX(at: hero.position)
+                buildMagicLightButton(animated: true)
+            }
+            print("DEBUG: +50 마력 (now \(Magic.shared.points))")
             return
         }
         #endif
@@ -860,7 +885,10 @@ class MinigameNode: SKNode {
                    abs(hero.position.y - paw.position.y) < 45 {
                     let pawPos = paw.position
                     paw.removeFromParent()
-                    Magic.shared.add(1)
+                    if Magic.shared.add(1) {
+                        playLevelUpVFX(at: hero.position)
+                        buildMagicLightButton(animated: true)
+                    }
                     // +1마력 pop-up
                     let pop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
                     pop.text = "+1마력"
@@ -1161,7 +1189,10 @@ class MinigameNode: SKNode {
         reward.run(.sequence([rise, .fadeOut(withDuration: 0.3), .removeFromParent()]))
 
         // 마력 reward awarded and displayed
-        Magic.shared.add(config.completionReward)
+        if Magic.shared.add(config.completionReward) {
+            playLevelUpVFX(at: hero.position)
+            buildMagicLightButton(animated: true)
+        }
         let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         coinPop.text = "+\(config.completionReward)마력"
         coinPop.fontSize = 28
@@ -1333,6 +1364,95 @@ class MinigameNode: SKNode {
                 let y = x > platformLeftEdge ? platformSurface : floorSurface
                 return CGPoint(x: x, y: y)
             }
+        }
+    }
+
+    // MARK: - Level-up VFX (150 마력 threshold — see Magic.add(_:))
+
+    // Daphne's wizard magic is always gold, independent of config.accentColor
+    // (which themes this dungeon's fabric/relic, an unrelated color system).
+    private let levelUpGold = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 1.0)
+
+    // hero.position is her sprite's center (default SpriteKit anchor), not
+    // her feet. 22 (half her physics body's height) landed at her knees per
+    // owner feedback on device — bumped further down; still an estimate,
+    // since the hero sprite has no documented transparent-padding value the
+    // way Monster/Boss/BossAdd do.
+    private let heroFootOffset: CGFloat = 42
+
+    private func playLevelUpVFX(at heroPosition: CGPoint) {
+        let position = CGPoint(x: heroPosition.x, y: heroPosition.y - heroFootOffset)
+        let riseDuration: TimeInterval = 0.4
+        let holdDuration: TimeInterval = 0.5
+
+        // Pillar — a straight beam (reverted from a fanned cone: with a real
+        // character standing in it, the cone's wide top read oddly against
+        // her silhouette — owner feedback after the first on-device pass).
+        // Scaled up from zero height so it grows in place. Widened again
+        // (18→26 half-width) so it fully covers Daphne's skirt width.
+        let halfW: CGFloat = 26
+        let finalHeight: CGFloat = 140
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: -halfW, y: 0))
+        path.addLine(to: CGPoint(x: halfW, y: 0))
+        path.addLine(to: CGPoint(x: halfW, y: finalHeight))
+        path.addLine(to: CGPoint(x: -halfW, y: finalHeight))
+        path.closeSubpath()
+
+        let pillar = SKShapeNode(path: path)
+        pillar.fillColor = levelUpGold.withAlphaComponent(0.55)
+        pillar.strokeColor = .clear
+        pillar.position = position
+        pillar.zPosition = 4
+        pillar.yScale = 0.01
+        addChild(pillar)
+        let growPillar = SKAction.scaleY(to: 1.0, duration: riseDuration)
+        growPillar.timingMode = .easeOut
+        pillar.run(.sequence([
+            growPillar,
+            .wait(forDuration: holdDuration),
+            .fadeOut(withDuration: 0.4),
+            .removeFromParent()
+        ]))
+
+        // Ground ring — grows in sync with the pillar's rise (same duration),
+        // not just a static ring that fades. Widened further relative to the
+        // pillar's own thickness (not just matching it 1:1) per owner request.
+        let ring = SKShapeNode(ellipseOf: CGSize(width: 120, height: 30))
+        ring.fillColor = levelUpGold.withAlphaComponent(0.5)
+        ring.strokeColor = .clear
+        ring.position = position
+        ring.zPosition = 4
+        ring.setScale(0.05)
+        addChild(ring)
+        let growRing = SKAction.scale(to: 1.0, duration: riseDuration)
+        growRing.timingMode = .easeOut
+        ring.run(.sequence([
+            growRing,
+            .wait(forDuration: holdDuration),
+            .fadeOut(withDuration: 0.4),
+            .removeFromParent()
+        ]))
+
+        // Rising sparks — spawn area and rise distance widened to match the
+        // bigger pillar.
+        for _ in 0..<8 {
+            let spark = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...4))
+            spark.fillColor = levelUpGold
+            spark.strokeColor = .clear
+            spark.position = CGPoint(x: position.x + CGFloat.random(in: -20...20),
+                                     y: position.y + CGFloat.random(in: -6...6))
+            spark.zPosition = 5
+            addChild(spark)
+            let rise = CGFloat.random(in: 75...115)
+            let duration = TimeInterval.random(in: 0.7...1.1)
+            spark.run(.sequence([
+                .group([
+                    .moveBy(x: 0, y: rise, duration: duration),
+                    .fadeOut(withDuration: duration)
+                ]),
+                .removeFromParent()
+            ]))
         }
     }
 
