@@ -22,6 +22,7 @@ enum UserDefaultsKey {
     static let currentTailor        = "tailor.current"
     static let tailorHandoffShown   = "tailor.handoffShown"
     static let storybookOpened      = "storybook.opened"
+    static let levelUpBadgeFlashed  = "magic.levelUpBadgeFlashed"
 }
 
 enum Store {
@@ -212,6 +213,18 @@ enum Store {
     }
     static func saveHasOpenedStorybook() {
         defaults.set(true, forKey: UserDefaultsKey.storybookOpened)
+    }
+
+    /// Gates the Tailor Status HUD's ✨ level-up badge's attention-getting
+    /// flash — it should flash a few times only the first time it appears
+    /// (the first BackRoomScene load after Magic.points crosses 150), then
+    /// just sit there statically on every load after, mirroring
+    /// tailorHandoffShown's one-shot pattern.
+    static func loadLevelUpBadgeFlashed() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.levelUpBadgeFlashed)
+    }
+    static func saveLevelUpBadgeFlashed() {
+        defaults.set(true, forKey: UserDefaultsKey.levelUpBadgeFlashed)
     }
 
     // MARK: - 새 손님 reset

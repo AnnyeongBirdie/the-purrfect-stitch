@@ -86,4 +86,12 @@ enum Tailor {
         all.first(where: { $0.id == id })
             ?? all.first(where: { $0.id == defaultID })!
     }
+
+    /// Scale factor (1.0 for Ana, 0.70 for Daphne) for any on-screen effect
+    /// sized around the tailor sprite — e.g. BackRoomScene's tailor halo,
+    /// which was tuned against Ana's reference height and visibly stuck out
+    /// past Daphne's shorter silhouette until it was scaled down to match.
+    static func haloScale(for identity: TailorIdentity) -> CGFloat {
+        identity.renderedHeight / anaReferenceHeight
+    }
 }

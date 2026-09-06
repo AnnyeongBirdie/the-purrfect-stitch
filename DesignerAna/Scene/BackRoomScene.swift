@@ -55,6 +55,7 @@ class BackRoomScene: SKScene {
     }
 
     private var tailor: SKSpriteNode!
+    private var tailorIdentity: TailorIdentity!
     private var instructionLabel: SKLabelNode!
 
     private var tailorHaloNode: SKShapeNode?
@@ -63,6 +64,13 @@ class BackRoomScene: SKScene {
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
     private var magicLabel: SKLabelNode?
+    // Tailor/Customer Status HUD panels (Phase 7 redesign, shipped 2026-09-06).
+    // The bubbles themselves are kept as properties (not just their labels)
+    // so the panel backgrounds and the ✨ badge can be positioned relative
+    // to their actual frames instead of re-deriving the same layout math twice.
+    private var magicBubbleNode: SKShapeNode?
+    private var walletBubbleNode: SKShapeNode?
+    private var levelUpBadgeNode: SKShapeNode?
     private var instructionShadowLabel: SKLabelNode!
 
     // (earnedMinigameRewards removed — Economy refactor #2; dungeons now credit Magic directly)
@@ -92,13 +100,18 @@ class BackRoomScene: SKScene {
         setupHUDCounters()
         setupRelicHUD()
         updateRelicHUD()
+        setupStatusPanels()
         setupStationFireflies()
         setupQuitButton()
         applyResumeStateIfNeeded()
         saveActiveOrderSnapshot()
-        if Store.loadRelicQuestComplete() {
-            setupSelfieKeepsake()
-        }
+        // setupSelfieKeepsake() disabled 2026-09-06 — owner decided this wall
+        // is the wrong wall. The selfie should follow Daphne and hang wherever
+        // she resumes her wizard-magic training (the not-yet-built scene tied
+        // to her potion-cooking side quest, per CLAUDE.md's "explicitly out of
+        // scope for this phase" note), not stay behind in Polaris's shop once
+        // Ana becomes the working tailor. Function kept below, unwired, as a
+        // reference for whichever scene ends up hanging it.
     }
 
     private func setupSelfieKeepsake() {
@@ -126,7 +139,17 @@ class BackRoomScene: SKScene {
         applyTailorScale(to: tailor, targetHeight: identity.renderedHeight)
 
         self.tailor = tailor
+        self.tailorIdentity = identity
         addChild(tailor)
+    }
+
+    // Halo pill, tuned by eye against Ana's reference height/silhouette.
+    // Scaled down by Tailor.haloScale for shorter tailors (Daphne, 0.70)
+    // so it reads as "glowing from within" rather than sticking out past a
+    // narrower body — owner feedback after seeing it on-device with Daphne.
+    private var haloBaseSize: CGSize {
+        let scale = Tailor.haloScale(for: tailorIdentity)
+        return CGSize(width: 70 * scale, height: 200 * scale)
     }
 
     // Each tailor renders at their own intended on-screen height
@@ -297,8 +320,27 @@ class BackRoomScene: SKScene {
         }
     }
 
+    // Two lines (name + counter) — constrained above the relic row, which
+    // sits at a fixed Y shared with MinigameNode/BossMinigameNode's relic-
+    // fly-to-slot targets (see relicRowTopInset below). 62pt leaves a clean
+    // gap without overlapping the relic row.
+    private let tailorBubbleSize = CGSize(width: 160, height: 62)
+    // Three lines (name + counter + garment) — nothing fixed sits below this
+    // one, so it's free to be as tall as it needs for a comfortable fit.
+    private let customerBubbleSize = CGSize(width: 170, height: 84)
+
+    // Combined "how far below the top-left bubble's bottom edge the relic
+    // row starts" offset — was 8(topInset)+36(old 1-line bubble)+6(gap)=50
+    // before the Status HUD redesign; the tailor bubble is now taller
+    // (62pt) so this grew to keep a positive gap instead of overlapping it
+    // (a bug found via on-device screenshot: the old 50 put the relic row
+    // 14pt *inside* the taller bubble's bottom edge). Mirrored exactly in
+    // MinigameNode.swift/BossMinigameNode.swift's relic-fly-to-slot target
+    // math — if this changes again, update those two files' `slotY` too.
+    private let relicRowTopInset: CGFloat = 8 + 62 + 10
+
     private func setupHUDCounters() {
-        let bubbleStyle: (SKShapeNode, CGPoint) -> Void = { bubble, center in
+        let bubbleStyle: (SKShapeNode, CGPoint, CGSize) -> Void = { bubble, center, bubbleSize in
             bubble.fillColor = UIColor(red: 0.98, green: 0.95, blue: 0.85, alpha: 0.93)
             bubble.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
             bubble.lineWidth = 2
@@ -307,9 +349,23 @@ class BackRoomScene: SKScene {
             self.addChild(bubble)
         }
 
-        let walletCenter = CGPoint(x: size.width * 0.36, y: size.height * 0.44)
-        let walletBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
-        bubbleStyle(walletBubble, walletCenter)
+        // Customer Status HUD (top-right): customer name, 💰 counter, ordered
+        // garment. Top edge unchanged from the old single-line wallet bubble.
+        let walletCenter = CGPoint(x: size.width * 0.36,
+                                   y: size.height * 0.44 + 18 - customerBubbleSize.height / 2)
+        let walletBubble = SKShapeNode(rectOf: customerBubbleSize, cornerRadius: 20)
+        bubbleStyle(walletBubble, walletCenter, customerBubbleSize)
+        walletBubbleNode = walletBubble
+
+        let custNameLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        custNameLbl.text = ProfileManager.shared.selectedDisplayName
+        custNameLbl.fontSize = 13
+        custNameLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
+        custNameLbl.horizontalAlignmentMode = .center
+        custNameLbl.verticalAlignmentMode = .center
+        custNameLbl.position = CGPoint(x: 0, y: 26)
+        custNameLbl.zPosition = 1
+        walletBubble.addChild(custNameLbl)
 
         let walletLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         walletLbl.text = "💰 \(Wallet.shared.balance)냥"
@@ -317,17 +373,41 @@ class BackRoomScene: SKScene {
         walletLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
         walletLbl.horizontalAlignmentMode = .center
         walletLbl.verticalAlignmentMode = .center
-        walletLbl.position = .zero
+        walletLbl.position = CGPoint(x: 0, y: 0)
         walletLbl.zPosition = 1
         walletBubble.addChild(walletLbl)
         walletLabel = walletLbl
 
-        // Magic bubble: top-left corner, left-aligned with relic row (leftPad=24, bubbleHalf=69),
-        // sitting 8 pt below the top edge.
-        let magicCenter = CGPoint(x: -size.width / 2 + 24 + 69,
-                                  y:  size.height / 2 - 8 - 18)
-        let magicBubble = SKShapeNode(rectOf: CGSize(width: 138, height: 36), cornerRadius: 18)
-        bubbleStyle(magicBubble, magicCenter)
+        if let order {
+            let garmentLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+            garmentLbl.text = "\(order.fabricColor.displayName) \(order.clothingType.displayName)"
+            garmentLbl.fontSize = 12
+            garmentLbl.fontColor = UIColor(red: 0.45, green: 0.30, blue: 0.10, alpha: 1.0)
+            garmentLbl.horizontalAlignmentMode = .center
+            garmentLbl.verticalAlignmentMode = .center
+            garmentLbl.position = CGPoint(x: 0, y: -26)
+            garmentLbl.zPosition = 1
+            walletBubble.addChild(garmentLbl)
+        }
+
+        // Tailor Status HUD (top-left): tailor name, 🐾 counter, relic row
+        // (relic row is built separately by setupRelicHUD(), at a fixed Y
+        // that accounts for this bubble's height via relicRowTopInset).
+        let magicCenter = CGPoint(x: -size.width / 2 + 24 + tailorBubbleSize.width / 2,
+                                  y:  size.height / 2 - 8 - tailorBubbleSize.height / 2)
+        let magicBubble = SKShapeNode(rectOf: tailorBubbleSize, cornerRadius: 20)
+        bubbleStyle(magicBubble, magicCenter, tailorBubbleSize)
+        magicBubbleNode = magicBubble
+
+        let tailorNameLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        tailorNameLbl.text = tailorIdentity.displayName
+        tailorNameLbl.fontSize = 13
+        tailorNameLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
+        tailorNameLbl.horizontalAlignmentMode = .center
+        tailorNameLbl.verticalAlignmentMode = .center
+        tailorNameLbl.position = CGPoint(x: 0, y: 16)
+        tailorNameLbl.zPosition = 1
+        magicBubble.addChild(tailorNameLbl)
 
         let magicLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         magicLbl.text = "🐾 \(Magic.shared.points)마력"
@@ -335,24 +415,71 @@ class BackRoomScene: SKScene {
         magicLbl.fontColor = UIColor(red: 0.30, green: 0.14, blue: 0.00, alpha: 1.0)
         magicLbl.horizontalAlignmentMode = .center
         magicLbl.verticalAlignmentMode = .center
-        magicLbl.position = .zero
+        magicLbl.position = CGPoint(x: 0, y: -10)
         magicLbl.zPosition = 1
         magicBubble.addChild(magicLbl)
         magicLabel = magicLbl
+
+        updateLevelUpBadge()
     }
 
     private func updateHUDCounters() {
         walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
         magicLabel?.text  = "🐾 \(Magic.shared.points)마력"
+        updateLevelUpBadge()
+    }
+
+    // ✨ level-up badge — sits beside the 🐾 bubble rather than literally
+    // "between" it and the relic row below (CLAUDE.md's original phrasing):
+    // there isn't a clean way to fit a third row there without pushing the
+    // relic row further down, which the three-file relicRowTopInset sync
+    // above already has to account for once as it is. Built once Magic.points
+    // crosses 150 — including mid-run, matching the same live-unlock pattern
+    // as the in-dungeon ✨ ability button — and flashes a few times only the
+    // very first time it appears (Store.loadLevelUpBadgeFlashed()), then
+    // just sits there statically on every later appearance.
+    private func updateLevelUpBadge() {
+        guard levelUpBadgeNode == nil, Magic.shared.points >= 150, let magicBubbleNode else { return }
+
+        let badge = SKShapeNode(circleOfRadius: 15)
+        badge.fillColor = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 0.95)
+        badge.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+        badge.lineWidth = 2
+        badge.position = CGPoint(x: magicBubbleNode.position.x + tailorBubbleSize.width / 2 + 8 + 15,
+                                 y: magicBubbleNode.position.y - 10)
+        badge.zPosition = 20
+        addChild(badge)
+
+        let star = SKLabelNode(text: "✨")
+        star.fontSize = 16
+        star.horizontalAlignmentMode = .center
+        star.verticalAlignmentMode = .center
+        badge.addChild(star)
+
+        levelUpBadgeNode = badge
+
+        if !Store.loadLevelUpBadgeFlashed() {
+            Store.saveLevelUpBadgeFlashed()
+            badge.setScale(0.3)
+            let popIn = SKAction.sequence([
+                .scale(to: 1.3, duration: 0.18),
+                .scale(to: 1.0, duration: 0.10)
+            ])
+            let flash = SKAction.sequence([
+                .scale(to: 1.25, duration: 0.18),
+                .scale(to: 1.0, duration: 0.18)
+            ])
+            badge.run(.sequence([popIn, .repeat(flash, count: 3)]))
+        }
     }
 
     private func setupRelicHUD() {
         let slotSize: CGFloat = 28
         let spacing:  CGFloat = 6
         let leftPad:  CGFloat = 24   // left inset (matches magic bubble's left edge)
-        // Relic row sits directly below the magic bubble (36 tall, 8 pt top inset, 6 pt gap).
+        // Relic row sits directly below the tailor bubble — see relicRowTopInset.
         let slotX0 = -size.width  / 2 + leftPad + slotSize / 2
-        let slotY  =  size.height / 2 - 8 - 36 - 6 - slotSize / 2
+        let slotY  =  size.height / 2 - relicRowTopInset - slotSize / 2
         relicSlots.forEach { $0.removeFromParent() }
         relicSlots = []
 
@@ -393,6 +520,64 @@ class BackRoomScene: SKScene {
             } else if !shouldBeFilled, alreadyFilled {
                 slot.removeAllChildren()
             }
+        }
+    }
+
+    // Translucent grouped-panel backgrounds behind the tailor/customer HUD
+    // clusters (Phase 7 Status HUD redesign). Drawn once, at a lower
+    // zPosition than everything they sit behind — the bubbles/relic
+    // slots/badge keep their own already-tested absolute positions (see
+    // setupHUDCounters/setupRelicHUD/updateLevelUpBadge), this just adds a
+    // background sized to bound whatever's already there, computed from
+    // their actual node frames rather than re-deriving the layout math.
+    private func setupStatusPanels() {
+        let panelFill   = UIColor.white.withAlphaComponent(0.10)
+        let panelStroke = UIColor.white.withAlphaComponent(0.20)
+        let pad: CGFloat = 14
+
+        if let magicBubbleNode {
+            var minX = magicBubbleNode.position.x - tailorBubbleSize.width / 2
+            var maxX = magicBubbleNode.position.x + tailorBubbleSize.width / 2
+            var minY = magicBubbleNode.position.y - tailorBubbleSize.height / 2
+            var maxY = magicBubbleNode.position.y + tailorBubbleSize.height / 2
+
+            // Reserve the ✨ badge's space unconditionally, not just when it
+            // already exists: Magic.points can cross 150 mid-run (the same
+            // live-unlock moment the in-dungeon ✨ ability button handles),
+            // and this panel is only drawn once at scene setup — if the
+            // badge weren't accounted for up front, it would render outside
+            // the panel's already-fixed right edge whenever it pops in later
+            // instead of at setup.
+            let reservedBadgeX = magicBubbleNode.position.x + tailorBubbleSize.width / 2 + 8 + 15
+            maxX = max(maxX, reservedBadgeX + 15)
+            for slot in relicSlots {
+                minX = min(minX, slot.position.x - 14)
+                maxX = max(maxX, slot.position.x + 14)
+                minY = min(minY, slot.position.y - 14)
+                maxY = max(maxY, slot.position.y + 14)
+            }
+
+            let panel = SKShapeNode(rectOf: CGSize(width: maxX - minX + pad * 2,
+                                                    height: maxY - minY + pad * 2),
+                                    cornerRadius: 20)
+            panel.fillColor = panelFill
+            panel.strokeColor = panelStroke
+            panel.lineWidth = 1.5
+            panel.position = CGPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
+            panel.zPosition = 15
+            addChild(panel)
+        }
+
+        if let walletBubbleNode {
+            let panel = SKShapeNode(rectOf: CGSize(width: customerBubbleSize.width + pad * 2,
+                                                    height: customerBubbleSize.height + pad * 2),
+                                    cornerRadius: 20)
+            panel.fillColor = panelFill
+            panel.strokeColor = panelStroke
+            panel.lineWidth = 1.5
+            panel.position = walletBubbleNode.position
+            panel.zPosition = 15
+            addChild(panel)
         }
     }
 
@@ -791,11 +976,13 @@ class BackRoomScene: SKScene {
     private func showTailorHalo(color: UIColor) {
         tailorHaloNode?.removeFromParent()
 
-        let halo = SKShapeNode(rectOf: CGSize(width: 70, height: 200), cornerRadius: 35)
+        let haloSize = haloBaseSize
+        let scale = Tailor.haloScale(for: tailorIdentity)
+        let halo = SKShapeNode(rectOf: haloSize, cornerRadius: haloSize.width / 2)
         halo.fillColor = color.withAlphaComponent(0.45)
         halo.strokeColor = color.withAlphaComponent(0.85)
-        halo.lineWidth = 3
-        halo.glowWidth = 24
+        halo.lineWidth = 3 * scale
+        halo.glowWidth = 24 * scale
         halo.position = CGPoint(x: tailor.position.x, y: tailor.position.y)
         halo.zPosition = 8
         halo.name = "tailorHalo"
@@ -833,7 +1020,10 @@ class BackRoomScene: SKScene {
         halo.removeAllActions()
         halo.alpha = 1.0
 
-        let targetScale = max(size.width, size.height) * 2.0 / 70.0
+        // Divide by the halo's actual current width (varies per tailor via
+        // Tailor.haloScale), not a hardcoded 70 — that assumed Ana's halo
+        // size and under-expanded Daphne's smaller halo.
+        let targetScale = max(size.width, size.height) * 2.0 / haloBaseSize.width
         let expand = SKAction.scale(to: targetScale, duration: 0.85)
         expand.timingMode = .easeIn
 
@@ -912,10 +1102,15 @@ class BackRoomScene: SKScene {
     // MARK: - Quit button
 
     private func setupQuitButton() {
+        // Independent placement (Status HUD redesign) — no longer nested
+        // under the customer panel now that the wallet bubble grew to fit
+        // the customer name + garment line; sits centered between the two
+        // panels instead. NOT at the same height as instructionLabel (0, 150)
+        // — an earlier pass put it there and the two collided on-device.
         let button = SKShapeNode(rectOf: CGSize(width: 108, height: 40), cornerRadius: 12)
         button.fillColor = UIColor(red: 0.55, green: 0.20, blue: 0.15, alpha: 0.88)
         button.strokeColor = .clear
-        button.position = CGPoint(x: size.width * 0.36, y: size.height * 0.44 - 55)
+        button.position = CGPoint(x: 0, y: 100)
         button.zPosition = 20
         button.name = "quitButton"
         addChild(button)
