@@ -63,7 +63,9 @@ class PrincessAnaScene: SKScene {
         Beat(speaker: "요정 대모 플로라",   text: "그렇단다. 에스텔은 용감한 아이였어. 이 보물들은 그 증거지요."),
         // 17 — shown after Godmother exits
         Beat(speaker: "아나 공주",   text: "꼬마 재봉사님, 정말 감사해요. 언니의 물건들을 찾아주셔서요. 🤍"),
-        // 18 — outro triggers on tap
+        // 18 — souvenir selfie-gift handoff fires (Ana → Daphne, fairy magic)
+        Beat(speaker: "아나 공주",   text: "아 참, 이거 받으세요! 우리 둘이 함께 찍은 사진이에요. 제 마법으로 보내드릴게요! ✨"),
+        // 19 — outro triggers on tap
         Beat(speaker: "아나 공주",   text: "이제 저도 모험을 할 때가 된거 같아요. 도움이 필요하면 제가 나중에 가게로 찾아 갈게요!\n어서 가게로 돌아가세요. 기다리는 손님이 있을 거예요. "),
     ]
 
@@ -82,6 +84,8 @@ class PrincessAnaScene: SKScene {
     private var outroStarted = false
     /// Tracks in-flight relic animations; taps are blocked while this is > 0.
     private var activeRelicAnimations = 0
+    /// Blocks taps while the souvenir selfie-gift animation is in flight.
+    private var selfieGiftInFlight = false
 
     // MARK: - HUD
 
@@ -181,24 +185,35 @@ class PrincessAnaScene: SKScene {
         beatIndex += 1
         guard beatIndex < beats.count else { return }
 
-        hud.show(speaker: beats[beatIndex].speaker, text: beats[beatIndex].text)
-
+        // Beats 2/4/6/8/18 are a character reacting to an item that's still
+        // mid-flight — showing that line at tap-time (when the item launches)
+        // read as recognizing it before it arrived. Owner feedback after a
+        // full playthrough: "off by one beat." Fixed by deferring hud.show()
+        // for these specific beats until the animation's completion callback
+        // fires (right as the item reaches its target), instead of showing
+        // it unconditionally here. Every other beat is unaffected.
         switch beatIndex {
-        case 2: animateRelicHandoff(.purpleScepter)
-        case 4: animateRelicHandoff(.paintBrush)
-        case 6: animateRelicHandoff(.palette)
-        case 8: animateRelicHandoff(.royalFamilyPortrait)
+        case 2: animateRelicHandoff(.purpleScepter) { [weak self] in self?.showCurrentBeat() }
+        case 4: animateRelicHandoff(.paintBrush)    { [weak self] in self?.showCurrentBeat() }
+        case 6: animateRelicHandoff(.palette)       { [weak self] in self?.showCurrentBeat() }
+        case 8: animateRelicHandoff(.royalFamilyPortrait) { [weak self] in self?.showCurrentBeat() }
         case 9:
             // Player needs to read Ana's summons first; entrance fires on the next tap.
             readyForGodmother = true
+            showCurrentBeat()
+        case 18: animateSelfieGift { [weak self] in self?.showCurrentBeat() }
         default:
-            break
+            showCurrentBeat()
         }
+    }
+
+    private func showCurrentBeat() {
+        hud.show(speaker: beats[beatIndex].speaker, text: beats[beatIndex].text)
     }
 
     // MARK: - Relic handoff animation
 
-    private func animateRelicHandoff(_ item: DungeonItem) {
+    private func animateRelicHandoff(_ item: DungeonItem, onArrival: @escaping () -> Void) {
         activeRelicAnimations += 1
 
         // ── Phase 1: orbit around Daphne's hands/chest ────────────────────
@@ -269,9 +284,124 @@ class PrincessAnaScene: SKScene {
         container.run(.sequence([
             orbitAction,
             floatMove,
+            // Arrival — Ana's recognition line fires here, not at launch.
+            .run { onArrival() },
             .wait(forDuration: 0.25),
             .fadeOut(withDuration: 0.25),
             .run { [weak self] in self?.activeRelicAnimations -= 1 },
+            .removeFromParent()
+        ]))
+    }
+
+    // MARK: - Selfie-gift animation (Ana → Daphne, fairy magic)
+
+    // Ana's own fairy-magic effect for the souvenir handoff — a distinct
+    // visual language from animateRelicHandoff's gold (Daphne's wizard
+    // magic, orbit-then-float, matching MAGIC.md's yellow=wizard rule) and
+    // from spawnSparkles' silver (Flora the godmother's, radial one-shot
+    // burst). Ana's color is her established emerald green (#4CB87A — the
+    // same nameColor used for her in this scene's NarrativeHUD config
+    // above), and the moving light leaves a continuously-spawned trailing
+    // comet tail behind it (Tinker Bell-style) rather than a static halo or
+    // a burst — reads as a different kind of magic, not just a recolor.
+    private func animateSelfieGift(onArrival: @escaping () -> Void) {
+        selfieGiftInFlight = true
+        let anaGreen = UIColor(red: 0.30, green: 0.72, blue: 0.48, alpha: 1.0)
+        // Brighter, lighter mint used only for the trail particles — plain
+        // anaGreen read as "barely visible" on device (owner feedback after
+        // a full playthrough); a lighter, more saturated highlight plus a
+        // white stroke gives each spark contrast against the backdrop,
+        // matching the fix already proven for the level-up VFX's sparks.
+        let trailColor = UIColor(red: 0.55, green: 0.95, blue: 0.75, alpha: 1.0)
+
+        // ── Phase 1: a quick gathering flourish near Ana ───────────────────
+        let orbitCenter = CGPoint(x: anaSprite.position.x - 30, y: anaSprite.position.y + 55)
+        let rx: CGFloat = 40
+        let ry: CGFloat = 22
+
+        let container = SKNode()
+        container.position = CGPoint(x: orbitCenter.x + rx, y: orbitCenter.y)
+        container.zPosition = 15  // above sprites (5), below HUD (50)
+        addChild(container)
+
+        let outerGlow = SKShapeNode(circleOfRadius: 30)
+        outerGlow.fillColor   = anaGreen.withAlphaComponent(0.18)
+        outerGlow.strokeColor = .clear
+        container.addChild(outerGlow)
+
+        let midGlow = SKShapeNode(circleOfRadius: 20)
+        midGlow.fillColor   = anaGreen.withAlphaComponent(0.55)
+        midGlow.strokeColor = UIColor(red: 0.75, green: 0.95, blue: 0.85, alpha: 0.80)
+        midGlow.lineWidth   = 2.5
+        container.addChild(midGlow)
+
+        let innerGlow = SKShapeNode(circleOfRadius: 11)
+        innerGlow.fillColor   = UIColor(red: 0.85, green: 1.00, blue: 0.92, alpha: 0.80)
+        innerGlow.strokeColor = .clear
+        container.addChild(innerGlow)
+
+        midGlow.run(.repeatForever(.sequence([
+            .fadeAlpha(to: 0.30, duration: 0.5),
+            .fadeAlpha(to: 1.00, duration: 0.5)
+        ])))
+
+        // ── The keepsake itself — reuses the existing Selfie asset, no new
+        // art needed (same one BackRoomScene used to hang on the wall) ─────
+        let selfieSprite = SKSpriteNode(imageNamed: "Selfie_TailorAndPrincessAna")
+        if selfieSprite.size.width > 0 { selfieSprite.setScale(38 / selfieSprite.size.width) }
+        selfieSprite.zPosition = 2
+        container.addChild(selfieSprite)
+
+        // ── Phase 2: float to Daphne, trailing a comet tail the whole way ──
+        let target = CGPoint(x: tailorSprite.position.x, y: tailorSprite.position.y + 55)
+
+        let orbitDuration: TimeInterval = 0.8
+        let orbitAction = SKAction.customAction(withDuration: orbitDuration) { node, elapsed in
+            let angle = (elapsed / CGFloat(orbitDuration)) * .pi * 2
+            node.position = CGPoint(x: orbitCenter.x + cos(angle) * rx,
+                                    y: orbitCenter.y + sin(angle) * ry)
+        }
+
+        let floatDuration: TimeInterval = 1.1
+        let floatMove = SKAction.move(to: target, duration: floatDuration)
+        floatMove.timingMode = .easeInEaseOut
+
+        // Each trail particle spawns at the container's live position and
+        // just fades/shrinks in place — a trailing streak behind the light,
+        // not a radial burst (that look is reserved for spawnSparkles() /
+        // animateRelicHandoff's language elsewhere in this scene). Bigger,
+        // brighter, longer-lived, and spawned more often than the first pass
+        // — that version was confirmed "barely visible" on-device.
+        let spawnTrailParticle = SKAction.run { [weak self, weak container] in
+            guard let self, let container else { return }
+            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 5...9))
+            particle.fillColor = trailColor
+            particle.strokeColor = UIColor.white.withAlphaComponent(0.7)
+            particle.lineWidth = 1
+            particle.position = container.position
+            particle.zPosition = 14
+            self.addChild(particle)
+            particle.run(.sequence([
+                .group([
+                    .fadeOut(withDuration: 0.6),
+                    .scale(to: 0.15, duration: 0.6)
+                ]),
+                .removeFromParent()
+            ]))
+        }
+        let tickInterval: TimeInterval = 0.025
+        let trail = SKAction.repeat(.sequence([spawnTrailParticle, .wait(forDuration: tickInterval)]),
+                                    count: Int(floatDuration / tickInterval))
+
+        container.run(.sequence([
+            orbitAction,
+            .group([floatMove, trail]),
+            // Arrival — Ana's "here, take this" line fires here, not at
+            // launch (same off-by-one-beat fix as animateRelicHandoff).
+            .run { onArrival() },
+            .wait(forDuration: 0.3),
+            .fadeOut(withDuration: 0.3),
+            .run { [weak self] in self?.selfieGiftInFlight = false },
             .removeFromParent()
         ]))
     }
@@ -387,9 +517,9 @@ class PrincessAnaScene: SKScene {
             return
         }
 
-        // Block during animated transitions and while relics are in flight.
+        // Block during animated transitions and while relics/selfie are in flight.
         if waitingForGodmother || waitingForGodmotherExit { return }
-        if activeRelicAnimations > 0 { return }
+        if activeRelicAnimations > 0 || selfieGiftInFlight { return }
 
         // Beat 16: Godmother exit on first tap.
         if beatIndex == 16 && !godmotherExited {
@@ -397,8 +527,8 @@ class PrincessAnaScene: SKScene {
             return
         }
 
-        // Beat 18: outro.
-        if beatIndex == 18 {
+        // Beat 19: outro.
+        if beatIndex == 19 {
             startOutro()
             return
         }
