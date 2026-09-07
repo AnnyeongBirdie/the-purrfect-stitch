@@ -6,19 +6,60 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		18C02AB60E8ED682F3974597 /* MagicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E62AD67A7E1782F99B8D8B7 /* MagicTests.swift */; };
+		8D280D52964333AB1A43EC65 /* AuroraChamberSceneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3454E5AA2F01CC8157658159 /* AuroraChamberSceneTests.swift */; };
+		94FDC8DC5EF03B25CD8DB285 /* StoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59F4302178E16862A8E8F52 /* StoreTests.swift */; };
+		9854E8942B1E1C8E463B8D9F /* GarmentNamingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDB55BCCD115DA53365D1BB /* GarmentNamingTests.swift */; };
+		A2270677048F27CD2CD95F85 /* CodablePersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 713DDB58898AA69CB7736D6B /* CodablePersistenceTests.swift */; };
+		A6F7B3F5F5DBE5A8620BF684 /* FrontShopStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */; };
+		B6CA082021EBAA454A26887C /* TailorIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */; };
+		C0FEFCC97C18A26E6EE55299 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1840DB1FE95F8E8741EEF7A8 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2E9800881F6FDE8B01485F97 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6D3609272F961E7A003BF7C8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6D36092E2F961E7A003BF7C8;
+			remoteInfo = DesignerAna;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		1840DB1FE95F8E8741EEF7A8 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		3454E5AA2F01CC8157658159 /* AuroraChamberSceneTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuroraChamberSceneTests.swift; sourceTree = "<group>"; };
+		58C4038A227D42C28793B909 /* DesignerAnaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DesignerAnaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D36092F2F961E7A003BF7C8 /* DesignerAna.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DesignerAna.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		713DDB58898AA69CB7736D6B /* CodablePersistenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodablePersistenceTests.swift; sourceTree = "<group>"; };
+		7913AC728B4C470506693AD8 /* DesignerAnaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DesignerAnaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E62AD67A7E1782F99B8D8B7 /* MagicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MagicTests.swift; sourceTree = "<group>"; };
+		A59F4302178E16862A8E8F52 /* StoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StoreTests.swift; sourceTree = "<group>"; };
+		BEDB55BCCD115DA53365D1BB /* GarmentNamingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GarmentNamingTests.swift; sourceTree = "<group>"; };
+		C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TailorIdentityTests.swift; sourceTree = "<group>"; };
+		DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FrontShopStateTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6D3609312F961E7A003BF7C8 /* DesignerAna */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = DesignerAna;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1CC4C86D92BCAD9F452349FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C0FEFCC97C18A26E6EE55299 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6D36092C2F961E7A003BF7C8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -29,11 +70,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4F623EC24549EB13ADCD51C4 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				1840DB1FE95F8E8741EEF7A8 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		6D3609262F961E7A003BF7C8 = {
 			isa = PBXGroup;
 			children = (
 				6D3609312F961E7A003BF7C8 /* DesignerAna */,
 				6D3609302F961E7A003BF7C8 /* Products */,
+				A483A02BF2E4AF41252BEA98 /* Frameworks */,
+				F2B1416D4ED8F7EF73FE458F /* DesignerAnaTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -41,8 +92,33 @@
 			isa = PBXGroup;
 			children = (
 				6D36092F2F961E7A003BF7C8 /* DesignerAna.app */,
+				7913AC728B4C470506693AD8 /* DesignerAnaTests.xctest */,
+				58C4038A227D42C28793B909 /* DesignerAnaTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A483A02BF2E4AF41252BEA98 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4F623EC24549EB13ADCD51C4 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F2B1416D4ED8F7EF73FE458F /* DesignerAnaTests */ = {
+			isa = PBXGroup;
+			children = (
+				3454E5AA2F01CC8157658159 /* AuroraChamberSceneTests.swift */,
+				713DDB58898AA69CB7736D6B /* CodablePersistenceTests.swift */,
+				DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */,
+				BEDB55BCCD115DA53365D1BB /* GarmentNamingTests.swift */,
+				9E62AD67A7E1782F99B8D8B7 /* MagicTests.swift */,
+				A59F4302178E16862A8E8F52 /* StoreTests.swift */,
+				C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */,
+			);
+			name = DesignerAnaTests;
+			path = DesignerAnaTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -64,11 +140,27 @@
 				6D3609312F961E7A003BF7C8 /* DesignerAna */,
 			);
 			name = DesignerAna;
-			packageProductDependencies = (
-			);
 			productName = DesignerAna;
 			productReference = 6D36092F2F961E7A003BF7C8 /* DesignerAna.app */;
 			productType = "com.apple.product-type.application";
+		};
+		98D0A2B010B233CE68BE4E3C /* DesignerAnaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 765FF9D3EF6A2081CFBDA3C2 /* Build configuration list for PBXNativeTarget "DesignerAnaTests" */;
+			buildPhases = (
+				BE78D1EE25BDFBAE89F6A520 /* Sources */,
+				1CC4C86D92BCAD9F452349FD /* Frameworks */,
+				0012CD3EB8515F208E11B97A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				18B242AEE85CC967191AAD8F /* PBXTargetDependency */,
+			);
+			name = DesignerAnaTests;
+			productName = DesignerAnaTests;
+			productReference = 58C4038A227D42C28793B909 /* DesignerAnaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -100,11 +192,19 @@
 			projectRoot = "";
 			targets = (
 				6D36092E2F961E7A003BF7C8 /* DesignerAna */,
+				98D0A2B010B233CE68BE4E3C /* DesignerAnaTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0012CD3EB8515F208E11B97A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6D36092D2F961E7A003BF7C8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -122,7 +222,30 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BE78D1EE25BDFBAE89F6A520 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D280D52964333AB1A43EC65 /* AuroraChamberSceneTests.swift in Sources */,
+				A2270677048F27CD2CD95F85 /* CodablePersistenceTests.swift in Sources */,
+				A6F7B3F5F5DBE5A8620BF684 /* FrontShopStateTests.swift in Sources */,
+				9854E8942B1E1C8E463B8D9F /* GarmentNamingTests.swift in Sources */,
+				18C02AB60E8ED682F3974597 /* MagicTests.swift in Sources */,
+				94FDC8DC5EF03B25CD8DB285 /* StoreTests.swift in Sources */,
+				B6CA082021EBAA454A26887C /* TailorIdentityTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		18B242AEE85CC967191AAD8F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DesignerAna;
+			target = 6D36092E2F961E7A003BF7C8 /* DesignerAna */;
+			targetProxy = 2E9800881F6FDE8B01485F97 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6D3609442F961E7B003BF7C8 /* Debug */ = {
@@ -312,6 +435,47 @@
 			};
 			name = Release;
 		};
+		81C31369AB433A772DFDDBB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = VQ4643X8XU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.annyeongbirdie.thepurrfectstitch.DesignerAnaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DesignerAna.app/DesignerAna";
+			};
+			name = Debug;
+		};
+		AE9D640DD99A9C7D4F85BA24 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = VQ4643X8XU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.annyeongbirdie.thepurrfectstitch.DesignerAnaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DesignerAna.app/DesignerAna";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -329,6 +493,15 @@
 			buildConfigurations = (
 				6D3609472F961E7B003BF7C8 /* Debug */,
 				6D3609482F961E7B003BF7C8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		765FF9D3EF6A2081CFBDA3C2 /* Build configuration list for PBXNativeTarget "DesignerAnaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AE9D640DD99A9C7D4F85BA24 /* Release */,
+				81C31369AB433A772DFDDBB2 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

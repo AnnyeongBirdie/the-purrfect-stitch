@@ -4,17 +4,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run
 
-Open `DesignerAna.xcodeproj` in Xcode and run on an iOS Simulator or device. There is no test target and no linting setup.
+Open `DesignerAna.xcodeproj` in Xcode and run on an iOS Simulator or device. There is no linting setup. **A test target exists as of 2026-09-07** — `DesignerAnaTests` (see "Test target" below).
 
 From the command line:
 ```bash
-# Build for simulator
+# Build for simulator — prefer an explicit UDID (see below) over
+# 'platform=iOS Simulator,name=iPhone 16e': that name-based form has
+# repeatedly failed with an ambiguous-destination error/timeout on this
+# machine (confirmed across multiple sessions), even though the simulator
+# is genuinely installed.
 xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
-  -destination 'platform=iOS Simulator,name=iPhone 16e' build
+  -destination 'id=<simulator-udid>' build
+
+# Find available simulator UDIDs
+xcrun simctl list devices available
 
 # Clean build
 xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna clean
+
+# Run the test suite (same destination-UDID caveat as above)
+xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
+  -destination 'id=<simulator-udid>' test
 ```
+
+### Test target
+
+`DesignerAnaTests` (added 2026-09-07) covers the Model layer's pure logic — the
+cheapest, highest-signal place to test in a SpriteKit game, since none of it
+needs a running scene or simulator interaction. 35 tests across:
+`StoreTests` (per-customer keying isolation, `resetCustomerSide()`, the
+per-customer migration's one-shot/idempotent behavior, one-shot flags),
+`MagicTests` (`add(_:)`'s threshold-crossing logic), `FrontShopStateTests`
+(an exhaustive truth table for `accepts(_:)` — every state×input pair, not a
+sample), `GarmentNamingTests` (all 9 clothing×color asset-name combinations),
+`TailorIdentityTests` (`Tailor.identity(for:)` / `haloScale(for:)`),
+`CodablePersistenceTests` (round-trips plus a hand-written old-format JSON
+blob to directly verify the "old saves still decode" comments in
+`ActiveOrder`/`Order.swift`), and `AuroraChamberSceneTests` (a regression
+test for the shipped "off by 300 마력" dialogue bug — see Phase 7 below;
+`AuroraChamberScene.closingLine(forMagicPoints:)` was pulled out of
+`didMove(to:)` specifically to make that branch testable in isolation).
+
+**Test-isolation gotcha, worth knowing before adding more `Store`-touching
+tests:** the test bundle is hosted inside the real `DesignerAna.app` process
+(`TEST_HOST`/`BUNDLE_LOADER`, the standard way to test an app target rather
+than a framework), so `Store`'s `UserDefaults.standard` calls read/write the
+**same** UserDefaults domain as whatever's actually been played on that
+simulator — including this project's own extensive manual playtesting
+history. `StoreTests`' `setUp`/`tearDown` explicitly clears every key it
+touches, **including the `"_none"` per-customer fallback slot** (used when
+no customer is selected) — omitting that one specifically caused two real
+test failures the first time this suite ran, from leftover real playtest
+data in that exact slot. `Wallet.shared.balance` also reads through
+whichever customer is *currently* selected — reading it right after
+`Store.resetCustomerSide()` (which clears the selection) resolves to the
+unrelated `"_none"` slot, not the customer whose data was just wiped; the
+reset test re-selects that customer before checking their balance because
+of this.
+
+No CI wiring for `xcodebuild analyze` or SwiftLint/SwiftFormat exists —
+`.github/workflows/build.yml` (added 2026-09-07) just builds and runs this
+test target on every push/PR to `main`.
 
 - Swift 5.0, iOS 26.2 deployment target, supports iPhone + iPad
 - No CocoaPods, SPM packages, or external dependencies
