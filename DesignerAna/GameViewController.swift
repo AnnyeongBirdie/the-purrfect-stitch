@@ -28,12 +28,15 @@ class GameViewController: UIViewController {
         }
     }
 
+    // Landscape-only, matching INFOPLIST_KEY_UISupportedInterfaceOrientations in
+    // the build settings. UIKit *intersects* this override with the plist's
+    // declared set, so anything wider here is dead code that only misleads the
+    // reader — which is exactly what the old version did (it returned .all for
+    // iPad and .allButUpsideDown for iPhone, neither of which could ever take
+    // effect). Keep this in sync with the build setting if the app ever gains
+    // a portrait screen.
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            return .allButUpsideDown
-        } else {
-            return .all
-        }
+        return [.landscapeLeft, .landscapeRight]
     }
 
     override var prefersStatusBarHidden: Bool {
