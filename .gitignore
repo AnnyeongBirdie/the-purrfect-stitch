@@ -69,3 +69,8 @@ ASSESSMENT*.md
 
 # Blog drafts and working notes for velog posts (local-only).
 /_BlogDrafts/
+
+# Owner's own "explain it like I'm an intern" cheatsheets — learning
+# material for the owner, not project documentation. Same leading-underscore,
+# local-only convention as the folders above.
+/_InternMode/
