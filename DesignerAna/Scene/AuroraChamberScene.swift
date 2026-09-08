@@ -68,24 +68,29 @@ class AuroraChamberScene: SKScene {
 
     // MARK: - Scene setup
 
+    // Pure and internal (not private) specifically so it's unit-testable —
+    // this exact branch was a shipped bug once (see CLAUDE.md's "Dialogue
+    // bug found + fixed" note): the "come back when you're stronger" line
+    // is flatly contradicted if the player already reached 300 마력 before
+    // finishing the relics-quest chain (this scene fires before
+    // Store.saveRelicQuestComplete(), so the 300-마력 handoff stays dormant
+    // per the locked gate, but only briefly — it fires on the very next
+    // order completion once this chain ends). At mp >= 300, swap to an
+    // acknowledging line instead of the "not ready yet" one.
+    static func closingLine(forMagicPoints mp: Int) -> String {
+        mp >= 300
+            ? "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼이나 올랐다니, 이미 충분히 강해졌구나. 곧 다시 만나게 될 것 같은 예감이 드는구나."
+            : "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼 올랐구나. 좀 더 강해지면 공부를 마치러 돌아오렴."
+    }
+
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
         // Inject the tailor's current magic point total into Aurora's beat 2 text.
-        // If the player reached 300 마력 before finishing this relics-quest chain
-        // (this scene fires before Store.saveRelicQuestComplete() — see
-        // PrincessAnaScene's outro — so the 300-마력 handoff scene is still
-        // dormant per the locked gate in CLAUDE.md, but only briefly: it'll
-        // fire on the very next order completion once this chain ends), the
-        // "come back when you're stronger" line would be flatly contradicted
-        // by what happens right after. Branch to an acknowledging line instead.
         let mp = Magic.shared.points
-        let closingLine = mp >= 300
-            ? "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼이나 올랐다니, 이미 충분히 강해졌구나. 곧 다시 만나게 될 것 같은 예감이 드는구나."
-            : "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼 올랐구나. 좀 더 강해지면 공부를 마치러 돌아오렴."
         beats[2] = Beat(
             speaker: "마법사 오로라",
-            text: "호호, 알고 있단다. 네가 얼마나 훌륭한 재봉사가 됐는지… 선생님은 정말 자랑스럽구나. \(closingLine)"
+            text: "호호, 알고 있단다. 네가 얼마나 훌륭한 재봉사가 됐는지… 선생님은 정말 자랑스럽구나. \(Self.closingLine(forMagicPoints: mp))"
         )
 
         setupBackdrop()
