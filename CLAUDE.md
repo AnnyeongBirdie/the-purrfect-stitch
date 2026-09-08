@@ -448,7 +448,7 @@ Everything in this section is design, not code. **Nothing here blocks v1.** It a
 
 ### v1 ship gate & final sprint
 
-**Two sprints stand between here and submission** — the education-content sprint (gate item 3) and the ending sprint (gate item 4). They are independent of each other and can run in either order. `_Prompts/V1Sprint_prompt.md` covers the first.
+**Two sprints stand between here and submission** — the education-content sprint (gate item 3) and the ending sprint (gate item 4). They are independent of each other and could run in either order; **the owner's chosen sequence is education first, then ending.** Both have prompts, gitignored and main-checkout only: `_Prompts/EducationSprint_prompt.md` and `_Prompts/EndingSprint_prompt.md`.
 
 **Ship target confirmed 2026-09-08: a real App Store submission**, not another sideload round. That decision adds an entire non-code lane no prior version of this roadmap tracked — see "Submission lane" below. Until submission, every build is still pre-ship alpha regardless of how polished any individual scene is.
 
@@ -474,7 +474,7 @@ Two corrections worth keeping so they don't get re-lost: Phase 4 used to mislabe
 
 #### Final-sprint code items (v1)
 
-**A full sprint prompt for these plus the content set lives at `_Prompts/V1Sprint_prompt.md`** (gitignored, main-checkout only — invisible to worktree sessions). It carries the curriculum-verification step, the distractor design rules, the review gate, and the simulator/CI verification checklist.
+**A full sprint prompt for these plus the content set lives at `_Prompts/EducationSprint_prompt.md`** (gitignored, main-checkout only — invisible to worktree sessions). It carries the curriculum-verification step, the distractor design rules, the review gate, and the simulator/CI verification checklist. The ending sprint has its own prompt at `_Prompts/EndingSprint_prompt.md`.
 
 All bounded, and each verified either this session or in `DIAGNOSTICS_prompt_results.md`.
 
