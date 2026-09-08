@@ -1,0 +1,866 @@
+[
+  {
+    "question": "247 + 138 = ?",
+    "choices": [
+      "385",
+      "375",
+      "395",
+      "285"
+    ],
+    "answer": "385",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "356 + 275 = ?",
+    "choices": [
+      "521",
+      "631",
+      "641",
+      "531"
+    ],
+    "answer": "631",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "428 + 193 = ?",
+    "choices": [
+      "511",
+      "631",
+      "621",
+      "521"
+    ],
+    "answer": "621",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "165 + 259 = ?",
+    "choices": [
+      "314",
+      "434",
+      "324",
+      "424"
+    ],
+    "answer": "424",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "573 + 186 = ?",
+    "choices": [
+      "759",
+      "659",
+      "769",
+      "660"
+    ],
+    "answer": "759",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "249 + 367 = ?",
+    "choices": [
+      "506",
+      "616",
+      "626",
+      "516"
+    ],
+    "answer": "616",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "384 + 256 = ?",
+    "choices": [
+      "530",
+      "650",
+      "640",
+      "540"
+    ],
+    "answer": "640",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "138 + 295 = ?",
+    "choices": [
+      "323",
+      "443",
+      "333",
+      "433"
+    ],
+    "answer": "433",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "476 + 215 = ?",
+    "choices": [
+      "691",
+      "681",
+      "701",
+      "591"
+    ],
+    "answer": "691",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "500 - 268 = ?",
+    "choices": [
+      "368",
+      "232",
+      "242",
+      "132"
+    ],
+    "answer": "232",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "342 - 157 = ?",
+    "choices": [
+      "215",
+      "195",
+      "185",
+      "85"
+    ],
+    "answer": "185",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "623 - 378 = ?",
+    "choices": [
+      "355",
+      "255",
+      "145",
+      "245"
+    ],
+    "answer": "245",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "731 - 459 = ?",
+    "choices": [
+      "272",
+      "328",
+      "282",
+      "172"
+    ],
+    "answer": "272",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "900 - 345 = ?",
+    "choices": [
+      "645",
+      "555",
+      "565",
+      "455"
+    ],
+    "answer": "555",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "415 - 198 = ?",
+    "choices": [
+      "383",
+      "227",
+      "217",
+      "117"
+    ],
+    "answer": "217",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "802 - 536 = ?",
+    "choices": [
+      "334",
+      "276",
+      "166",
+      "266"
+    ],
+    "answer": "266",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "250 - 176 = ?",
+    "choices": [
+      "74",
+      "126",
+      "84",
+      "174"
+    ],
+    "answer": "74",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "604 - 259 = ?",
+    "choices": [
+      "455",
+      "345",
+      "355",
+      "245"
+    ],
+    "answer": "345",
+    "reward": 15,
+    "category": "addSub"
+  },
+  {
+    "question": "7 × 8 = ?",
+    "choices": [
+      "49",
+      "56",
+      "63",
+      "48"
+    ],
+    "answer": "56",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "6 × 9 = ?",
+    "choices": [
+      "48",
+      "60",
+      "54",
+      "45"
+    ],
+    "answer": "54",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "24 × 3 = ?",
+    "choices": [
+      "69",
+      "75",
+      "48",
+      "72"
+    ],
+    "answer": "72",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "46 × 2 = ?",
+    "choices": [
+      "92",
+      "90",
+      "94",
+      "46"
+    ],
+    "answer": "92",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "138 × 4 = ?",
+    "choices": [
+      "548",
+      "552",
+      "556",
+      "414"
+    ],
+    "answer": "552",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "213 × 3 = ?",
+    "choices": [
+      "636",
+      "642",
+      "639",
+      "426"
+    ],
+    "answer": "639",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "12 × 13 = ?",
+    "choices": [
+      "144",
+      "168",
+      "143",
+      "156"
+    ],
+    "answer": "156",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "15 × 12 = ?",
+    "choices": [
+      "180",
+      "168",
+      "192",
+      "165"
+    ],
+    "answer": "180",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "34 × 2 = ?",
+    "choices": [
+      "66",
+      "68",
+      "70",
+      "34"
+    ],
+    "answer": "68",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "56 ÷ 7 = ?",
+    "choices": [
+      "7",
+      "9",
+      "8",
+      "10"
+    ],
+    "answer": "8",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "54 ÷ 6 = ?",
+    "choices": [
+      "8",
+      "10",
+      "6",
+      "9"
+    ],
+    "answer": "9",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "72 ÷ 3 = ?",
+    "choices": [
+      "24",
+      "23",
+      "25",
+      "42"
+    ],
+    "answer": "24",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "96 ÷ 4 = ?",
+    "choices": [
+      "23",
+      "24",
+      "25",
+      "42"
+    ],
+    "answer": "24",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "84 ÷ 7 = ?",
+    "choices": [
+      "11",
+      "13",
+      "12",
+      "21"
+    ],
+    "answer": "12",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "90 ÷ 5 = ?",
+    "choices": [
+      "17",
+      "19",
+      "81",
+      "18"
+    ],
+    "answer": "18",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "78 ÷ 6 = ?",
+    "choices": [
+      "13",
+      "12",
+      "14",
+      "31"
+    ],
+    "answer": "13",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "64 ÷ 8 = ?",
+    "choices": [
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
+    "answer": "8",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "45 ÷ 9 = ?",
+    "choices": [
+      "4",
+      "6",
+      "5",
+      "9"
+    ],
+    "answer": "5",
+    "reward": 15,
+    "category": "mulDiv"
+  },
+  {
+    "question": "\"apple\"의 뜻은?",
+    "choices": [
+      "바나나",
+      "포도",
+      "사과",
+      "딸기"
+    ],
+    "answer": "사과",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"banana\"의 뜻은?",
+    "choices": [
+      "사과",
+      "포도",
+      "딸기",
+      "바나나"
+    ],
+    "answer": "바나나",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"cat\"의 뜻은?",
+    "choices": [
+      "고양이",
+      "개",
+      "토끼",
+      "새"
+    ],
+    "answer": "고양이",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"dog\"의 뜻은?",
+    "choices": [
+      "고양이",
+      "개",
+      "토끼",
+      "새"
+    ],
+    "answer": "개",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"mom\"의 뜻은?",
+    "choices": [
+      "아빠",
+      "이모",
+      "엄마",
+      "할머니"
+    ],
+    "answer": "엄마",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"dad\"의 뜻은?",
+    "choices": [
+      "엄마",
+      "삼촌",
+      "할아버지",
+      "아빠"
+    ],
+    "answer": "아빠",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"book\"의 뜻은?",
+    "choices": [
+      "책",
+      "공책",
+      "지우개",
+      "연필"
+    ],
+    "answer": "책",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"pencil\"의 뜻은?",
+    "choices": [
+      "지우개",
+      "연필",
+      "자",
+      "책"
+    ],
+    "answer": "연필",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"school\"의 뜻은?",
+    "choices": [
+      "집",
+      "공원",
+      "학교",
+      "병원"
+    ],
+    "answer": "학교",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"water\"의 뜻은?",
+    "choices": [
+      "우유",
+      "주스",
+      "차",
+      "물"
+    ],
+    "answer": "물",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"milk\"의 뜻은?",
+    "choices": [
+      "우유",
+      "물",
+      "주스",
+      "차"
+    ],
+    "answer": "우유",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"red\"의 뜻은?",
+    "choices": [
+      "파란색",
+      "빨간색",
+      "노란색",
+      "초록색"
+    ],
+    "answer": "빨간색",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"blue\"의 뜻은?",
+    "choices": [
+      "빨간색",
+      "노란색",
+      "파란색",
+      "초록색"
+    ],
+    "answer": "파란색",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"thank you\"의 뜻은?",
+    "choices": [
+      "미안해",
+      "안녕",
+      "축하해",
+      "고마워"
+    ],
+    "answer": "고마워",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"rabbit\"의 뜻은?",
+    "choices": [
+      "토끼",
+      "고양이",
+      "개",
+      "새"
+    ],
+    "answer": "토끼",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"bird\"의 뜻은?",
+    "choices": [
+      "고양이",
+      "새",
+      "개",
+      "토끼"
+    ],
+    "answer": "새",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"run\"의 뜻은?",
+    "choices": [
+      "걷다",
+      "먹다",
+      "달리다",
+      "수영하다"
+    ],
+    "answer": "달리다",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"swim\"의 뜻은?",
+    "choices": [
+      "달리다",
+      "걷다",
+      "먹다",
+      "수영하다"
+    ],
+    "answer": "수영하다",
+    "reward": 15,
+    "category": "enToKo"
+  },
+  {
+    "question": "\"사과\"는 영어로?",
+    "choices": [
+      "banana",
+      "grape",
+      "strawberry",
+      "apple"
+    ],
+    "answer": "apple",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"바나나\"는 영어로?",
+    "choices": [
+      "banana",
+      "apple",
+      "grape",
+      "strawberry"
+    ],
+    "answer": "banana",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"고양이\"는 영어로?",
+    "choices": [
+      "dog",
+      "cat",
+      "rabbit",
+      "bird"
+    ],
+    "answer": "cat",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"개\"는 영어로?",
+    "choices": [
+      "cat",
+      "rabbit",
+      "dog",
+      "bird"
+    ],
+    "answer": "dog",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"엄마\"는 영어로?",
+    "choices": [
+      "dad",
+      "aunt",
+      "grandma",
+      "mom"
+    ],
+    "answer": "mom",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"아빠\"는 영어로?",
+    "choices": [
+      "dad",
+      "mom",
+      "uncle",
+      "grandpa"
+    ],
+    "answer": "dad",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"책\"은 영어로?",
+    "choices": [
+      "notebook",
+      "book",
+      "eraser",
+      "pencil"
+    ],
+    "answer": "book",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"연필\"은 영어로?",
+    "choices": [
+      "eraser",
+      "ruler",
+      "pencil",
+      "book"
+    ],
+    "answer": "pencil",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"학교\"는 영어로?",
+    "choices": [
+      "home",
+      "park",
+      "hospital",
+      "school"
+    ],
+    "answer": "school",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"물\"은 영어로?",
+    "choices": [
+      "water",
+      "milk",
+      "juice",
+      "tea"
+    ],
+    "answer": "water",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"우유\"는 영어로?",
+    "choices": [
+      "water",
+      "milk",
+      "juice",
+      "tea"
+    ],
+    "answer": "milk",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"빨간색\"은 영어로?",
+    "choices": [
+      "blue",
+      "yellow",
+      "red",
+      "green"
+    ],
+    "answer": "red",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"파란색\"은 영어로?",
+    "choices": [
+      "red",
+      "yellow",
+      "green",
+      "blue"
+    ],
+    "answer": "blue",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"고마워\"는 영어로?",
+    "choices": [
+      "thank you",
+      "sorry",
+      "hello",
+      "congratulations"
+    ],
+    "answer": "thank you",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"토끼\"는 영어로?",
+    "choices": [
+      "cat",
+      "rabbit",
+      "dog",
+      "bird"
+    ],
+    "answer": "rabbit",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"새\"는 영어로?",
+    "choices": [
+      "cat",
+      "dog",
+      "bird",
+      "rabbit"
+    ],
+    "answer": "bird",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"달리다\"는 영어로?",
+    "choices": [
+      "walk",
+      "eat",
+      "swim",
+      "run"
+    ],
+    "answer": "run",
+    "reward": 15,
+    "category": "koToEn"
+  },
+  {
+    "question": "\"수영하다\"는 영어로?",
+    "choices": [
+      "swim",
+      "run",
+      "walk",
+      "eat"
+    ],
+    "answer": "swim",
+    "reward": 15,
+    "category": "koToEn"
+  }
+]

@@ -15,6 +15,7 @@
 		A6F7B3F5F5DBE5A8620BF684 /* FrontShopStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */; };
 		B6CA082021EBAA454A26887C /* TailorIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */; };
 		C0FEFCC97C18A26E6EE55299 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1840DB1FE95F8E8741EEF7A8 /* Foundation.framework */; };
+		1C893C9F60D64E278C4B2DF9 /* RiddleContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C9BCF9D0774C8CA8B487C7 /* RiddleContentTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +40,7 @@
 		BEDB55BCCD115DA53365D1BB /* GarmentNamingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GarmentNamingTests.swift; sourceTree = "<group>"; };
 		C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TailorIdentityTests.swift; sourceTree = "<group>"; };
 		DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FrontShopStateTests.swift; sourceTree = "<group>"; };
+		38C9BCF9D0774C8CA8B487C7 /* RiddleContentTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RiddleContentTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -114,6 +116,7 @@
 				DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */,
 				BEDB55BCCD115DA53365D1BB /* GarmentNamingTests.swift */,
 				9E62AD67A7E1782F99B8D8B7 /* MagicTests.swift */,
+				38C9BCF9D0774C8CA8B487C7 /* RiddleContentTests.swift */,
 				A59F4302178E16862A8E8F52 /* StoreTests.swift */,
 				C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */,
 			);
@@ -182,6 +185,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				ko,
 				Base,
 			);
 			mainGroup = 6D3609262F961E7A003BF7C8;
@@ -233,6 +237,7 @@
 				18C02AB60E8ED682F3974597 /* MagicTests.swift in Sources */,
 				94FDC8DC5EF03B25CD8DB285 /* StoreTests.swift in Sources */,
 				B6CA082021EBAA454A26887C /* TailorIdentityTests.swift in Sources */,
+				1C893C9F60D64E278C4B2DF9 /* RiddleContentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
