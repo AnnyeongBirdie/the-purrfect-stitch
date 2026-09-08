@@ -9,23 +9,26 @@ on:
 jobs:
   build-and-test:
     runs-on: macos-15
+    env:
+      # A fully-qualified destination (name + OS) is unambiguous on its own —
+      # xcodebuild finds and boots the matching simulator itself. An earlier
+      # version of this workflow tried to resolve a UDID by grepping `xcrun
+      # simctl list devices available` for "iPhone 16", but that list isn't
+      # scoped to this scheme's deployment target — it grabbed a device from
+      # a different iOS runtime than the one actually available for this
+      # scheme (OS 26.2), and xcodebuild rejected the mismatched UDID.
+      DESTINATION: platform=iOS Simulator,name=iPhone 16e,OS=26.2
     steps:
       - uses: actions/checkout@v4
-
-      - name: Boot a simulator
-        run: |
-          UDID=$(xcrun simctl list devices available | grep -m1 "iPhone 16" | grep -oE '[0-9A-F-]{36}')
-          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-          xcrun simctl boot "$UDID" || true
 
       - name: Build
         run: |
           xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
-            -destination "id=$SIMULATOR_UDID" clean build \
+            -destination "$DESTINATION" clean build \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test
         run: |
           xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
-            -destination "id=$SIMULATOR_UDID" test \
+            -destination "$DESTINATION" test \
             CODE_SIGNING_ALLOWED=NO
