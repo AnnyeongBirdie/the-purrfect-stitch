@@ -4,7 +4,7 @@
 //
 //  Loads the shipped riddles.json (not a fixture) and mechanically proves
 //  every question is answerable and every arithmetic question is correct.
-//  This is the reason the owner can trust 72 questions she did not write
+//  This is the reason the owner can trust 200 questions she did not write
 //  herself — treat a failure here as a content bug, never as a test to relax.
 //
 
@@ -26,14 +26,14 @@ final class RiddleContentTests: XCTestCase {
         return try JSONDecoder().decode([Riddle].self, from: data)
     }
 
-    func testShippedSetHas72QuestionsAcrossFourCategories() throws {
+    func testShippedSetHas200QuestionsAcrossFourCategories() throws {
         let riddles = try loadShippedRiddles()
-        XCTAssertEqual(riddles.count, 72)
+        XCTAssertEqual(riddles.count, 200)
 
         var counts: [RiddleCategory: Int] = [:]
         for r in riddles { counts[r.category, default: 0] += 1 }
         for category in RiddleCategory.allCases {
-            XCTAssertEqual(counts[category], 18, "\(category) should have exactly 18 questions")
+            XCTAssertEqual(counts[category], 50, "\(category) should have exactly 50 questions")
         }
     }
 
@@ -98,7 +98,7 @@ final class RiddleContentTests: XCTestCase {
     func testArithmeticSelfCheckForMathCategories() throws {
         let riddles = try loadShippedRiddles()
         let mathRiddles = riddles.filter { $0.category == .addSub || $0.category == .mulDiv }
-        XCTAssertEqual(mathRiddles.count, 36)
+        XCTAssertEqual(mathRiddles.count, 100)
 
         let pattern = try NSRegularExpression(pattern: #"(\d+)\s*([+\-×÷])\s*(\d+)\s*="#)
         var checked = 0
@@ -137,8 +137,8 @@ final class RiddleContentTests: XCTestCase {
             checked += 1
         }
 
-        XCTAssertLessThanOrEqual(skipped, 2, "arithmetic self-check should reach nearly all 36 math questions")
-        XCTAssertGreaterThanOrEqual(checked, 34)
+        XCTAssertLessThanOrEqual(skipped, 4, "arithmetic self-check should reach nearly all 100 math questions")
+        XCTAssertGreaterThanOrEqual(checked, 96)
     }
 
     /// The correct answer's index must be spread across all four button
