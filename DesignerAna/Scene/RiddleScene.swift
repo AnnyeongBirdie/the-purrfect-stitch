@@ -157,6 +157,17 @@ class RiddleScene: SKScene {
         rewardHint.zPosition               = 1
         bubbleNode.addChild(rewardHint)
 
+        // Category label — a small muted line under the header, above the question
+        let categoryLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
+        categoryLbl.text                    = riddle.category.displayName
+        categoryLbl.fontSize                = 14
+        categoryLbl.fontColor               = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.65)
+        categoryLbl.horizontalAlignmentMode = .center
+        categoryLbl.verticalAlignmentMode   = .center
+        categoryLbl.position                = CGPoint(x: 0, y: headerY - 24)
+        categoryLbl.zPosition               = 1
+        bubbleNode.addChild(categoryLbl)
+
         // Question text
         let qLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         qLabel.text                    = riddle.question
@@ -166,7 +177,7 @@ class RiddleScene: SKScene {
         qLabel.verticalAlignmentMode   = .center
         qLabel.numberOfLines           = 2
         qLabel.preferredMaxLayoutWidth = bubbleW - 32
-        qLabel.position                = CGPoint(x: 0, y: hh * 0.42)
+        qLabel.position                = CGPoint(x: 0, y: hh * 0.42 - 14)
         qLabel.zPosition               = 1
         bubbleNode.addChild(qLabel)
 
