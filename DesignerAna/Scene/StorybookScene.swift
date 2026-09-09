@@ -234,23 +234,27 @@ class StorybookScene: SKScene {
                         pageTitle: "냥을 쓰는 방법",
                         pageBody:
                             "냥은 재봉사 가게에서 옷을 주문할 때 써요.\n\n" +
-                            "드레스 50냥 · 바지 40냥 · 셔츠 30냥\n\n" +
+                            "드레스 60냥 · 바지 45냥 · 셔츠 45냥\n\n" +
                             "지갑 💰 아이콘을 누르면 퀴즈를 풀어서 냥을 벌 수 있어요. " +
-                            "정답 하나당 +15냥!\n\n" +
+                            "정답 하나당 +5냥!\n\n" +
                             "던전 보물 상자에서도 냥이 나온답니다! 🪙"
                     ),
+                    // Updated 2026-09-09 — used to describe only Daphne's
+                    // wizard magic, written before Ana's fairy magic existed
+                    // in the dungeons (Phase 7b). Now covers both traditions.
                     Page(
                         illustrationAsset: nil,
                         illustrationEmoji: "✨",
                         pageTitle: "마력이란?",
                         pageBody:
                             "마력은 마법을 쓸 수 있는 고양이들의 특별한 힘이에요.\n\n" +
-                            "재봉사 다프네는 스승인 오로라에게 마법을 배웠기 때문에, " +
-                            "던전에서 마력을 쌓아나갈 수 있답니다.\n\n" +
-                            "던전 보물 상자를 열면 마력이 쑥쑥 올라가요. " +
-                            "작업실 곳곳에 숨겨진 발바닥 흔적을 찾아도 마력이 조금씩 늘어난답니다. 🐾\n\n" +
-                            "마력이 높을수록 다프네가 더 강한 마법사로 성장한다는 걸 " +
-                            "마법사 오로라가 알아차린다고 해요. ⭐"
+                            "재봉사 다프네는 마법사 오로라에게 배운 마법사의 마력을, " +
+                            "아나 공주는 요정 대모 플로라에게 배운 요정의 마법을 갖고 있어요. " +
+                            "배우는 곳도, 색깔도 다르답니다 (다프네는 반짝이는 금빛✨, " +
+                            "아나는 은은한 초록빛🍀).\n\n" +
+                            "던전 보물 상자를 열거나, 작업실 곳곳에 숨겨진 발바닥 흔적을 " +
+                            "찾으면 마력이 조금씩 늘어나요. 🐾\n\n" +
+                            "마력이 높아질수록 재봉사는 더 강한 마법사로 성장한대요!"
                     )
                 ]
             ),
@@ -783,10 +787,26 @@ class StorybookScene: SKScene {
             let sprite = SKSpriteNode(imageNamed: assetName)
             let scale: CGFloat
             if page.replayPortraitAsset != nil {
-                // Replay thumbnail: scale landscape background to fit left-page width.
+                // Replay thumbnail: aspect-fit within a fixed bounding box
+                // (width AND height), not just fit-to-width. Bug found and
+                // fixed 2026-09-09: Tailorshop_Background/Backroom_Background
+                // were generated earlier than this game's other backdrops
+                // and never got their aspect ratio standardized to match
+                // (~1690×931 and ~1536×1024 vs. every later backdrop's
+                // ~1847×851) — fitting only to width let their squarer
+                // aspect ratio render visibly taller than every sibling page
+                // in the story chapter. Fitting to whichever of width/height
+                // is more constraining makes every thumbnail's *size*
+                // consistent regardless of the source art's aspect ratio,
+                // so this can't recur the next time a backdrop is generated
+                // at a slightly different ratio — fixing the two existing
+                // images would only have fixed this one instance of it.
                 let leftPageW = size.width * 0.41
-                let nativeW   = sprite.texture?.size().width ?? 100
-                scale = nativeW > 0 ? leftPageW / nativeW : 1.0
+                let nativeW   = sprite.texture?.size().width  ?? 100
+                let nativeH   = sprite.texture?.size().height ?? 100
+                let scaleByWidth  = nativeW > 0 ? leftPageW  / nativeW : 1.0
+                let scaleByHeight = nativeH > 0 ? illuTargetH / nativeH : 1.0
+                scale = min(scaleByWidth, scaleByHeight)
             } else {
                 let nativeH = sprite.texture?.size().height ?? 100
                 scale = nativeH > 0 ? illuTargetH / nativeH : 1.0
