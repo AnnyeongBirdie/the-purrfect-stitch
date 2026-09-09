@@ -1426,10 +1426,26 @@ class BossMinigameNode: SKNode {
         // Sweep-projectile contact — checked here by hand. The kinematic hero
         // does not reliably trip the physics contact delegate, so the sweep
         // (a physics-body hazard) is tested for overlap directly.
+        //
+        // Bug found 2026-09-09 (owner report, both tailors): this used to
+        // compare the projectile's Y against hero.position.y — the hero's
+        // sprite CENTER, not her feet. The projectile sits at a fixed
+        // floor-relative height (floorTop + 16, in executeSweepAttack()),
+        // but the hero's center-when-standing is groundFootOffset above her
+        // feet, and groundFootOffset scales per tailor (heightRatio — Ana
+        // renders taller than Daphne, see setup() above). For Daphne the
+        // old center-to-center gap while standing was exactly 30, tying
+        // the old `< 30` cutoff and failing to register; for Ana (taller)
+        // the gap is even larger, missing outright. Comparing against the
+        // hero's FEET (hero.position.y - groundFootOffset) instead removes
+        // the height dependency entirely — the feet sit at a constant
+        // floor-relative Y for every tailor by design — so the same small
+        // tolerance now works for both.
         if !isDead, !isCompleting, !bossAsleep {
+            let heroFeetY = hero.position.y - groundFootOffset
             for proj in children where proj.name == "sweepProjectile" {
                 if abs(hero.position.x - proj.position.x) < 42,
-                   abs(hero.position.y - proj.position.y) < 30 {
+                   abs(heroFeetY - proj.position.y) < 20 {
                     handleDeath()
                     break
                 }
