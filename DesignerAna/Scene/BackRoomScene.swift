@@ -439,7 +439,12 @@ class BackRoomScene: SKScene {
     // very first time it appears (Store.loadLevelUpBadgeFlashed()), then
     // just sits there statically on every later appearance.
     private func updateLevelUpBadge() {
-        guard levelUpBadgeNode == nil, Magic.shared.points >= 150, let magicBubbleNode else { return }
+        // Ana arrives already knowing her fairy magic — no level-up gate for
+        // her era. Gated on identity, not on her point total (Phase 7b) —
+        // see the matching gate in MinigameNode/BossMinigameNode.
+        let unlocked = tailorIdentity.id == Tailor.anaID
+                    || Magic.shared.points >= MagicLevelUpThreshold.levelOne.rawValue
+        guard levelUpBadgeNode == nil, unlocked, let magicBubbleNode else { return }
 
         let badge = SKShapeNode(circleOfRadius: 15)
         badge.fillColor = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 0.95)
