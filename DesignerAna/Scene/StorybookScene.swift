@@ -386,23 +386,24 @@ class StorybookScene: SKScene {
                         replayPortraitAsset: "Portrait_Daphne"
                     ) : lockedStoryPage(),
 
-                    // 1 — TailorChoiceScene, AuroraChamberScene and
-                    // PrincessAnaScene fire together as one sequence once
-                    // all four relics are collected, so they share the same
-                    // unlock condition (matches the old chapter-level lock
-                    // this replaces).
+                    // 1 — RelicDeductionScene (renamed from TailorChoiceScene
+                    // 2026-09-09 — the old A/B branch is gone, Aurora is now
+                    // mandatory), AuroraChamberScene and PrincessAnaScene fire
+                    // together as one sequence once all four relics are
+                    // collected, so they share the same unlock condition
+                    // (matches the old chapter-level lock this replaces).
                     storyChapterPageUnlocked(pageIndex: 1, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "WizardAssistant_Dungeon",
                         illustrationEmoji: nil,
-                        pageTitle: "재봉사의 선택",
+                        pageTitle: "재봉사의 결심",
                         pageBody:
-                            "보물들을 앞에 두고 다프네가 고민하는 장면이에요.\n\n" +
-                            "오로라 선생님을 먼저 찾아가거나, 곧장 성으로 갈 수도 있어요.\n\n" +
-                            "이번엔 어떤 선택을 해볼까요? 🤔",
-                        replaySceneName: "TailorChoiceScene",
+                            "보물들을 앞에 두고 다프네가 결심하는 장면이에요.\n\n" +
+                            "오로라 선생님을 찾아가 도움을 구하기로 해요.\n\n" +
+                            "다시 한번 그 순간을 봐보세요. 💭",
+                        replaySceneName: "RelicDeductionScene",
                         replayPortraitAsset: "Portrait_Daphne"
                     ) : lockedStoryPage(),
 
@@ -416,7 +417,6 @@ class StorybookScene: SKScene {
                         pageTitle: "마법사 오로라의 방",
                         pageBody:
                             "오로라의 방에서 펼쳐지는 따뜻한 재회와 수수께끼예요.\n\n" +
-                            "오로라 루트를 선택했을 때만 볼 수 있는 장면이랍니다.\n\n" +
                             "수수께끼를 다시 풀어보세요! ✨",
                         replaySceneName: "AuroraChamberScene",
                         replayPortraitAsset: "Portrait_Aurora"
@@ -1122,7 +1122,7 @@ class StorybookScene: SKScene {
 
         // Chapter index 4 = the unified story chapter (task 9). Page indices
         // match the order of the pages in that chapter: 0 = the opening,
-        // 1 = TailorChoice, 2 = Aurora, 3 = Princess Ana, 4 = TailorHandoff,
+        // 1 = RelicDeduction, 2 = Aurora, 3 = Princess Ana, 4 = TailorHandoff,
         // 5 = the Estelle epilogue (task 7).
         switch sceneName {
         case "DaphneBecomesTailorScene":
@@ -1132,8 +1132,8 @@ class StorybookScene: SKScene {
             scene.replayReturnPage = 0
             view.presentScene(scene, transition: t)
 
-        case "TailorChoiceScene":
-            let scene = TailorChoiceScene()
+        case "RelicDeductionScene":
+            let scene = RelicDeductionScene()
             scene.scaleMode      = .resizeFill
             scene.isReplayMode   = true
             scene.replayReturnPage = 1

@@ -1,9 +1,15 @@
 //
-//  TailorChoiceScene.swift
+//  RelicDeductionScene.swift
 //  DesignerAna
 //
-//  Cinematic choice scene triggered once after all four relics are collected.
-//  The tailor reflects on the relic deduction, then the player picks the next destination.
+//  Cinematic scene triggered once after all four relics are collected.
+//  The tailor reflects on the relic deduction, then heads to Aurora's
+//  chamber — a mandatory stop before the castle. Renamed from
+//  TailorChoiceScene 2026-09-09: this used to branch A/B (Aurora vs.
+//  straight to the castle), but going to Aurora first is now mandatory —
+//  otherwise Daphne is never told she can return once she levels up (see
+//  AuroraChamberScene). With the branch gone, "choice" no longer described
+//  what this scene does.
 //
 //  Speaker layout:
 //    left → 재봉사 다프네 (inner monologue — talking to herself)
@@ -12,7 +18,7 @@
 import SpriteKit
 import UIKit
 
-class TailorChoiceScene: SKScene {
+class RelicDeductionScene: SKScene {
 
     // MARK: - Public properties set before presentScene
 
@@ -31,15 +37,13 @@ class TailorChoiceScene: SKScene {
     private let beats: [String] = [
         "보랏빛 지팡이, 그림 붓, 팔레트, 그리고 왕실 가족 초상화...\n모두 던전에서 찾은 보물들인데, 왕실의 물건들 같아.",
         "혹시 없어진 에스텔 공주님과 관련있을까? 단서일지도 몰라. 꼭 갖다드려야겠어.",
-        "그런데... 왕궁은 그냥 들어갈 수 없는데...\n아나 공주님 이라면 만나주실지 몰라. 먼저 어떻게 할까? 🤔"
+        "그런데... 왕궁은 그냥 들어갈 수 없는데...\n먼저 오로라 선생님을 찾아가 봐야겠어. 분명 좋은 방법을 알려주실 거야!"
     ]
 
     // MARK: - State
 
     private var beatIndex = 0
-    private var choicesVisible = false
-    private var readyToShowChoices = false  // true after last beat; choices appear on next tap
-    private var choiceMade = false
+    private var proceeding = false   // guards against double-tap once the exit fires
 
     // MARK: - HUD
 
@@ -179,61 +183,35 @@ class TailorChoiceScene: SKScene {
     // MARK: - Beat advancement
 
     private func advanceBeat() {
-        guard beatIndex < beats.count - 1 else { return }
+        guard beatIndex < beats.count - 1 else {
+            // Last beat read — proceed to Aurora's chamber on the next tap.
+            proceedToAurora()
+            return
+        }
         beatIndex += 1
         hud.show(speaker: "재봉사 다프네", text: beats[beatIndex])
-        // After the last beat, flag that the NEXT tap should reveal choices.
-        if beatIndex == beats.count - 1 {
-            readyToShowChoices = true
-        }
     }
 
     // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !choiceMade, let touch = touches.first else { return }
-        let loc = touch.location(in: self)
-        let hit = nodes(at: loc).compactMap { $0.name }.first
-
-        if choicesVisible {
-            switch hit {
-            case "choice_0":
-                Store.saveRelicChoiceFirst("A")
-                handleChoice("A")
-            case "choice_1":
-                Store.saveRelicChoiceFirst("B")
-                handleChoice("B")
-            default:
-                break
-            }
-            return
-        }
-
-        // Player has read the last beat — reveal choices on this tap.
-        if readyToShowChoices {
-            readyToShowChoices = false
-            choicesVisible = true
-            hud.showChoices([
-                "옛 선생님께 조언을 구할래요 ✨",
-                "곧장 성으로 갈래요 🏰"
-            ])
-            return
-        }
-
+        guard !proceeding else { return }
         advanceBeat()
     }
 
-    // MARK: - Choice routing
+    // MARK: - Exit — Aurora's chamber is now mandatory (owner request
+    // 2026-09-09): the old A/B choice let a player skip straight to the
+    // castle, but Aurora is the one who tells Daphne she can come back once
+    // she levels up — skipping her meant the player never heard that line.
 
-    private func handleChoice(_ choice: String) {
-        guard !choiceMade else { return }
-        choiceMade = true
-        hud.hideChoices()
+    private func proceedToAurora() {
+        guard !proceeding else { return }
+        proceeding = true
 
-        run(.wait(forDuration: 0.3)) { [weak self] in self?.routeAfterChoice(choice) }
+        run(.wait(forDuration: 0.3)) { [weak self] in self?.routeToAurora() }
     }
 
-    private func routeAfterChoice(_ choice: String) {
+    private func routeToAurora() {
         guard let view = self.view else { return }
 
         if isReplayMode {
@@ -249,16 +227,9 @@ class TailorChoiceScene: SKScene {
             return
         }
 
-        if choice == "A" {
-            let aurora = AuroraChamberScene()
-            aurora.scaleMode = .resizeFill
-            aurora.completedOrder = completedOrder
-            view.presentScene(aurora, transition: SKTransition.crossFade(withDuration: 0.6))
-            return
-        }
-        let ana = PrincessAnaScene()
-        ana.scaleMode = .resizeFill
-        ana.completedOrder = completedOrder
-        view.presentScene(ana, transition: SKTransition.crossFade(withDuration: 0.6))
+        let aurora = AuroraChamberScene()
+        aurora.scaleMode = .resizeFill
+        aurora.completedOrder = completedOrder
+        view.presentScene(aurora, transition: SKTransition.crossFade(withDuration: 0.6))
     }
 }

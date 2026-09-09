@@ -48,7 +48,7 @@ class DaphneBecomesTailorScene: SKScene {
     var isFirstPlayOpening = false
     /// When true (launched from StorybookScene), returns to StorybookScene
     /// on exit instead of FrontShopScene. Named to match
-    /// TailorChoiceScene/AuroraChamberScene/PrincessAnaScene's identical
+    /// RelicDeductionScene/AuroraChamberScene/PrincessAnaScene's identical
     /// property exactly — this scene used to have its own differently-named
     /// returnChapterIndex/returnPageIndex pair for the same job, which was
     /// exactly the kind of two-names-for-one-concept mismatch that made the

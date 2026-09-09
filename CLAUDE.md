@@ -105,7 +105,7 @@ GameViewController
                  │       with shouldShowFinishedGarment = true
                  │
                  └─ (4th relic collected — Phase 5, fires once)
-                     TailorChoiceScene → AuroraChamberScene → PrincessAnaScene
+                     RelicDeductionScene → AuroraChamberScene → PrincessAnaScene
                        └─ FrontShopScene, shouldShowFinishedGarment = true
                             + triggerCustomerPickerAfterSave = true
                             └─ (trophy saved) → SettingsScene (customer-picker
@@ -121,14 +121,14 @@ Side-scenes (DressingRoomScene, RiddleScene, SettingsScene, StorybookScene) all 
 
 ### Three functional spaces + POV map
 
-The tailor shop has three functional spaces, each with a deliberate POV. The shop **front**'s ordering flow (`FrontShopScene`) is third-person customer POV as of Phase 6b — the player picks a customer avatar in settings, and that avatar is rendered on screen as a visible NPC the shopkeeper (Polaris) actually talks to; the player's taps still drive the NPC's choices, but the player watches rather than being addressed directly as the customer. This was a deliberately scoped flip: `SettingsScene`, `RiddleScene`, and `DressingRoomScene` were explicitly left alone (see Phase 6b) — they're meta/utility screens (avatar picker, riddle minigame, wardrobe browser), not narrative "customer talks to shopkeeper" moments, so they don't carry a customer-POV framing at all. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene`, and `DaphneBecomesTailorScene` scenes. All basement scenes are tailor POV.
+The tailor shop has three functional spaces, each with a deliberate POV. The shop **front**'s ordering flow (`FrontShopScene`) is third-person customer POV as of Phase 6b — the player picks a customer avatar in settings, and that avatar is rendered on screen as a visible NPC the shopkeeper (Polaris) actually talks to; the player's taps still drive the NPC's choices, but the player watches rather than being addressed directly as the customer. This was a deliberately scoped flip: `SettingsScene`, `RiddleScene`, and `DressingRoomScene` were explicitly left alone (see Phase 6b) — they're meta/utility screens (avatar picker, riddle minigame, wardrobe browser), not narrative "customer talks to shopkeeper" moments, so they don't carry a customer-POV framing at all. The **back room** (workshop) is tailor POV — the player watches the tailor work and sees both the customer's deposit reference (💰 냥) and the tailor's growth tracker (🐾 마력) in the HUD. The **basement** is the four dungeons (fabric cabinet, sewing, buttons, mannequin boss); plus Phase 5's `RelicDeductionScene`, `AuroraChamberScene`, `PrincessAnaScene`, and `DaphneBecomesTailorScene` scenes. All basement scenes are tailor POV.
 
 | Space | Scenes | POV |
 |---|---|---|
 | Shop front — ordering flow | `FrontShopScene` | Customer NPC, third-person (player watches, still drives the taps) |
 | Shop front — utility screens | `SettingsScene`, `RiddleScene`, `DressingRoomScene`, `StorybookScene` | Not narrative POV — meta/utility UI, unaffected by 6b |
 | Back room | `BackRoomScene` (HUD column top-to-bottom: 💰 냥, then 그만할래 quit button, then 🐾 마력 at the bottom — do not place anything between 💰 and 그만할래, or between 그만할래 and 🐾) | Tailor |
-| Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `TailorChoiceScene`, `AuroraChamberScene`, `PrincessAnaScene`, `DaphneBecomesTailorScene` | Tailor |
+| Basement (dungeons) | `MinigameNode`, `BossMinigameNode`, and Phase 5: `RelicDeductionScene`, `AuroraChamberScene`, `PrincessAnaScene`, `DaphneBecomesTailorScene` | Tailor |
 
 ### Back room HUD layout convention
 
@@ -280,7 +280,7 @@ A meta-quest layered onto the existing dungeon loop. The tailor collects four of
 - `CatPaw` breadcrumb trails in all four dungeons. Each paw awards 1 마력 on contact and disappears. Seeds 1–3: 10 paws per level along the path to the relic. Boss: 8 paws scattered across the arena floor and platforms. Portrait relic bobs on the upper stepping stone from the start of the boss fight (walk-over collection, not auto-collect).
 
 **Shipped (later June sessions):**
-- `TailorChoiceScene` — fires once from `BackRoomScene` (`presentTailorChoiceScene()`, gated on all four relics collected): cinematic relic deduction + A/B choice, then routes onward.
+- `RelicDeductionScene` (renamed from `TailorChoiceScene` 2026-09-09) — fires once from `BackRoomScene` (`presentRelicDeductionScene()`, gated on all four relics collected): cinematic relic deduction, then routes onward to `AuroraChamberScene`. **The A/B choice (Aurora vs. straight to the castle) was removed 2026-09-09** — owner call: going to Aurora first is now mandatory, since she's the one who tells Daphne she can come back once she levels up, and the old choice let a player skip that line entirely.
 - `AuroraChamberScene` — Aurora the wizard mentor, riddle gate, fade transition to the final scene. Built on the shared `NarrativeHUD` (bust-up portraits + dialogue panel).
 - `PrincessAnaScene` — final scene: relics handed to Ana via the orbit/float handoff animation, godmother reveal, curse story. Saves the quest-complete flag (`Store.saveRelicQuestComplete()`) on the outro. **Fixed 2026-09-05:** Ana's sprite was positioned at `-size.height * 0.15`, clipping her feet off the bottom edge — moved to `-size.height * 0.08` to match where Flora stands (`enterGodmother()`), the correct reference for this scene's adult-height characters. **Added 2026-09-06 — souvenir selfie-gift beat** (new beat 18, between the old beats 17 and 18/now-19): Ana gifts Daphne the framed `Selfie_TailorAndPrincessAna` keepsake via her own fairy magic, `animateSelfieGift()`. Deliberately a different visual language from `animateRelicHandoff`'s gold orbit-then-float (Daphne's wizard magic) and `spawnSparkles`' silver radial burst (Flora's) — uses Ana's own established emerald green (#4CB87A, her `nameColor` in this scene's `SpeakerConfig`) and, per owner direction ("think of Tinker Bell"), a continuously-spawned trailing comet tail behind the moving light rather than a static halo or one-shot burst. Direction is reversed from the relics (Ana → Daphne, not Daphne → Ana). Gated by `selfieGiftInFlight` the same way `activeRelicAnimations` gates the relic handoffs, so taps can't skip past it mid-flight.
 

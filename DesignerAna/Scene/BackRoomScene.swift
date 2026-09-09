@@ -994,13 +994,13 @@ class BackRoomScene: SKScene {
         setInstructionText(garmentCompletionText(for: order))
         updateHUDCounters()
 
-        // Phase 5 — TailorChoiceScene fires once when all four relics have been
-        // collected and the deduction scene hasn't been shown yet.
+        // Phase 5 — RelicDeductionScene fires once when all four relics have
+        // been collected and the deduction scene hasn't been shown yet.
         let allRelicsCollected = Store.loadCollectedRelics().count == DungeonItem.allCases.count
 
         if allRelicsCollected && !Store.loadRelicDeductionShown() {
             Store.saveRelicDeductionShown()
-            presentTailorChoiceScene()
+            presentRelicDeductionScene()
         } else {
             placeDressOnMannequin()
         }
@@ -1011,9 +1011,9 @@ class BackRoomScene: SKScene {
         // implying Ana finished a dress she never touched.
     }
 
-    private func presentTailorChoiceScene() {
+    private func presentRelicDeductionScene() {
         guard let view = self.view else { return }
-        let scene = TailorChoiceScene()
+        let scene = RelicDeductionScene()
         scene.scaleMode = .resizeFill
         scene.completedOrder = order
         let transition = SKTransition.crossFade(withDuration: 0.6)

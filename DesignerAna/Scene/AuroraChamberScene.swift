@@ -2,8 +2,12 @@
 //  AuroraChamberScene.swift
 //  DesignerAna
 //
-//  Phase 5 — Path A. Aurora (WizardCat) greets the tailor, poses a riddle,
-//  then transitions them to Princess Ana's room.
+//  Phase 5 — Aurora (WizardCat) greets the tailor, poses a riddle, then
+//  transitions them to Princess Ana's room. A mandatory stop on the way to
+//  the castle (RelicDeductionScene, renamed from TailorChoiceScene
+//  2026-09-09 once the old A/B branch that could skip this scene was
+//  removed) — Aurora is the one who tells Daphne she can come back once
+//  she levels up, so a player must hear this scene.
 //
 
 import SpriteKit
@@ -11,10 +15,10 @@ import UIKit
 
 class AuroraChamberScene: SKScene {
 
-    // MARK: - Public properties forwarded from TailorChoiceScene
+    // MARK: - Public properties forwarded from RelicDeductionScene
 
     var completedOrder: Order?
-    /// Forwarded from TailorChoiceScene; causes the scene to return to
+    /// Forwarded from RelicDeductionScene; causes the scene to return to
     /// StorybookScene on exit instead of chaining to PrincessAnaScene.
     var isReplayMode = false
     /// Page index within the replay chapter (4) to return to. Set by StorybookScene.

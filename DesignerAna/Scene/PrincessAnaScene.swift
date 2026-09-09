@@ -16,7 +16,10 @@ import UIKit
 
 class PrincessAnaScene: SKScene {
 
-    // MARK: - Public properties forwarded from AuroraChamberScene / TailorChoiceScene
+    // MARK: - Public properties forwarded from AuroraChamberScene
+    // (the only path here since RelicDeductionScene's old A/B branch, which
+    // used to also reach this scene directly, was removed — see
+    // RelicDeductionScene's header comment)
 
     var completedOrder: Order?
     /// When true, startOutro() returns to StorybookScene instead of FrontShopScene.

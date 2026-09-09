@@ -17,7 +17,6 @@ enum UserDefaultsKey {
     static let customerSelected     = "customer.selected"
     static let collectedRelics      = "relics.collected"
     static let relicDeductionShown  = "relics.deductionShown"
-    static let relicChoiceFirst     = "relics.choiceFirst"
     static let relicQuestComplete   = "relics.questComplete"
     static let currentTailor        = "tailor.current"
     static let tailorHandoffShown   = "tailor.handoffShown"
@@ -166,15 +165,6 @@ enum Store {
     static func saveRelicDeductionShown() {
         defaults.set(true, forKey: UserDefaultsKey.relicDeductionShown)
     }
-    static func loadRelicChoiceFirst() -> String? {
-        defaults.string(forKey: UserDefaultsKey.relicChoiceFirst)
-    }
-    static func saveRelicChoiceFirst(_ choice: String) {
-        // Only records the *first* choice — don't overwrite if already set.
-        guard defaults.string(forKey: UserDefaultsKey.relicChoiceFirst) == nil else { return }
-        defaults.set(choice, forKey: UserDefaultsKey.relicChoiceFirst)
-    }
-
     static func loadRelicQuestComplete() -> Bool {
         defaults.bool(forKey: UserDefaultsKey.relicQuestComplete)
     }
@@ -187,7 +177,6 @@ enum Store {
     /// call saveCollectedRelics([]) before this if you also want a fresh relic set.
     static func clearRelicQuestState() {
         defaults.removeObject(forKey: UserDefaultsKey.relicDeductionShown)
-        defaults.removeObject(forKey: UserDefaultsKey.relicChoiceFirst)
         defaults.removeObject(forKey: UserDefaultsKey.relicQuestComplete)
     }
 
@@ -244,7 +233,7 @@ enum Store {
     /// *after* the epilogue's own outro (task 7's "save → epilogue → game
     /// complete" sequence), not at the moment it's presented, mirroring how
     /// PrincessAnaScene sets relicQuestComplete in its own outro rather than
-    /// at TailorChoiceScene's start. Read by Magic.add(_:), which becomes a
+    /// at RelicDeductionScene's start. Read by Magic.add(_:), which becomes a
     /// full no-op once this is true — the single seam that stops 마력
     /// accrual, so no call site needs to learn about the end state — and by
     /// BackRoomScene's frozen-HUD completion badge.
