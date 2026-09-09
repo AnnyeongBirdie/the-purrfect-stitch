@@ -10,25 +10,66 @@ jobs:
   build-and-test:
     runs-on: macos-15
     env:
-      # A fully-qualified destination (name + OS) is unambiguous on its own —
-      # xcodebuild finds and boots the matching simulator itself. An earlier
-      # version of this workflow tried to resolve a UDID by grepping `xcrun
-      # simctl list devices available` for "iPhone 16", but that list isn't
-      # scoped to this scheme's deployment target — it grabbed a device from
-      # a different iOS runtime than the one actually available for this
-      # scheme (OS 26.2), and xcodebuild rejected the mismatched UDID.
-      DESTINATION: platform=iOS Simulator,name=iPhone 16e,OS=26.2
+      # The project's deployment target (see CLAUDE.md: "iOS 26.2 deployment
+      # target"). A hardcoded destination string naming a specific device
+      # ("iPhone 16e") is not resilient across GitHub-hosted runner instances:
+      # confirmed 2026-09-09 that two back-to-back runs on nominally the same
+      # "macos-15" image, same Xcode 16.4, differed in which simulators were
+      # actually pre-cached — one run had no "iPhone 16e" for iOS 26.2 at all,
+      # the very next run did. Below, we resolve a concrete simulator UDID at
+      # run time instead of hardcoding one.
+      #
+      # This must be scoped to the runtime (iOS 26.2), not just a device name
+      # match. An earlier version of this workflow tried grepping `xcrun
+      # simctl list devices available` for "iPhone 16" without that scoping,
+      # and it grabbed a device from a different iOS runtime than this
+      # scheme's deployment target — xcodebuild rejected the mismatched UDID.
+      # The runtime substring below is what avoids repeating that mistake.
+      SIMULATOR_RUNTIME_MATCH: iOS-26-2
     steps:
       - uses: actions/checkout@v4
+
+      # Always printed, not just on failure, so a future break is
+      # diagnosable straight from this run's log instead of needing a
+      # separate debugging pass.
+      - name: Show available simulators
+        run: |
+          echo "== Runtimes =="
+          xcrun simctl list runtimes available
+          echo
+          echo "== Devices =="
+          xcrun simctl list devices available
+
+      - name: Resolve a simulator destination
+        id: destination
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r --arg match "$SIMULATOR_RUNTIME_MATCH" '
+                .devices
+                | to_entries[]
+                | select(.key | contains($match))
+                | .value[]
+                | select(.name | test("iPhone"))
+                | .udid
+              ' \
+            | head -n1)
+
+          if [ -z "$UDID" ]; then
+            echo "::error::No available iPhone simulator found for a runtime matching '$SIMULATOR_RUNTIME_MATCH'. See the 'Show available simulators' step above for what this runner actually has installed."
+            exit 1
+          fi
+
+          echo "Resolved simulator UDID: $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: |
           xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
-            -destination "$DESTINATION" clean build \
+            -destination "id=${{ steps.destination.outputs.udid }}" clean build \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test
         run: |
           xcodebuild -project DesignerAna.xcodeproj -scheme DesignerAna \
-            -destination "$DESTINATION" test \
+            -destination "id=${{ steps.destination.outputs.udid }}" test \
             CODE_SIGNING_ALLOWED=NO
