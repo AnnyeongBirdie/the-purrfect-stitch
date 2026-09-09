@@ -72,6 +72,11 @@ class BackRoomScene: SKScene {
     private var walletBubbleNode: SKShapeNode?
     private var levelUpBadgeNode: SKShapeNode?
     private var gameCompleteBadgeNode: SKShapeNode?
+    // Panel backgrounds built by setupStatusPanels() — kept as properties
+    // (added 2026-09-09) so their zPosition can be boosted while a dungeon
+    // minigame is on screen; see setStatusHUDBoosted(_:) below.
+    private var tailorPanelNode: SKShapeNode?
+    private var customerPanelNode: SKShapeNode?
     private var instructionShadowLabel: SKLabelNode!
 
     // (earnedMinigameRewards removed — Economy refactor #2; dungeons now credit Magic directly)
@@ -623,6 +628,7 @@ class BackRoomScene: SKScene {
             panel.position = CGPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
             panel.zPosition = 15
             addChild(panel)
+            tailorPanelNode = panel
         }
 
         if let walletBubbleNode {
@@ -635,7 +641,34 @@ class BackRoomScene: SKScene {
             panel.position = walletBubbleNode.position
             panel.zPosition = 15
             addChild(panel)
+            customerPanelNode = panel
         }
+    }
+
+    // Owner report after a device playthrough: "it feels weird not to see
+    // Daphne's Status HUD change as magic points are accrued and relics are
+    // collected" while inside a dungeon. The minigame overlay
+    // (MinigameNode/BossMinigameNode, zPosition 50) is a full-screen node
+    // added on top of BackRoomScene, so it was drawing over the HUD (15/20)
+    // for the entire run — boost the HUD above the minigame's own content
+    // (its tallest persistent element sits at effective zPosition 57; see
+    // MinigameNode/BossMinigameNode for the max local values) while a
+    // dungeon is active, and drop it back down once control returns to the
+    // plain back room. Restoring to the original 15/20 (rather than leaving
+    // it boosted permanently) matters because the exit-dialog overlay
+    // (zPosition 60, only ever shown in the back room, never during a
+    // minigame) is meant to darken the ENTIRE screen including the HUD
+    // corners — a permanently-boosted HUD would poke out above that dim.
+    private func setStatusHUDBoosted(_ boosted: Bool) {
+        let panelZ: CGFloat   = boosted ? 58 : 15
+        let contentZ: CGFloat = boosted ? 59 : 20
+        tailorPanelNode?.zPosition   = panelZ
+        customerPanelNode?.zPosition = panelZ
+        magicBubbleNode?.zPosition   = contentZ
+        walletBubbleNode?.zPosition  = contentZ
+        levelUpBadgeNode?.zPosition  = contentZ
+        gameCompleteBadgeNode?.zPosition = contentZ
+        relicSlots.forEach { $0.zPosition = contentZ }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -925,6 +958,7 @@ class BackRoomScene: SKScene {
         activeMinigame = minigame
         addChild(minigame)
         minigame.setup(in: scene)
+        setStatusHUDBoosted(true)
     }
 
     private func presentBossMinigame() {
@@ -945,11 +979,13 @@ class BackRoomScene: SKScene {
         activeBossMinigame = boss
         addChild(boss)
         boss.setup(in: scene)
+        setStatusHUDBoosted(true)
     }
 
     private func handleBossCompletion() {
         activeBossMinigame?.removeFromParent()
         activeBossMinigame = nil
+        setStatusHUDBoosted(false)
         scene?.physicsWorld.gravity = .zero
         tailor.isPaused = false
         updateQuitButtonVisibility()
@@ -988,6 +1024,7 @@ class BackRoomScene: SKScene {
         // Tear down overlay
         activeMinigame?.removeFromParent()
         activeMinigame = nil
+        setStatusHUDBoosted(false)
 
         // Restore gravity (back room has no physics bodies, so zero is correct)
         scene?.physicsWorld.gravity = .zero
