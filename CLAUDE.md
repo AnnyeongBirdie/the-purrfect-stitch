@@ -546,6 +546,32 @@ Captured here so they're not lost; not planned for current phases.
 - **iPad support (dropped from v1 on 2026-09-08 — see the v1 ship gate for the full rationale).** `TARGETED_DEVICE_FAMILY` is `"1"` (iPhone only). Bringing iPad back is a real piece of work, not a flag flip, and it now has to be done Apple's way rather than with `UIRequiresFullScreen` — that key is deprecated and has no direct replacement for fixed-aspect apps. What it would take: adopt `UIWindowScene.sizeRestrictions` (a preference, not a guarantee — the system makes a best-effort attempt only, and it can be `nil` on older iPadOS with Stage Manager), then make the scenes actually survive being resized. That last part is the expensive half: every scene in this codebase positions nodes with hand-tuned absolute values and fraction-of-`size` math, plus the per-sprite transparent-padding table, all tuned against a phone aspect ratio. Budget a real layout pass and a real iPad playtest, not a build-setting change. Apple's TN3192 is the migration note to start from.
 - **Parent-facing riddle editor, without a login gate.** ⚠️ **Reversed 2026-09-09 — read the v1 ship gate's item 3 first.** The 2026-09-08 framing ("reachability is enough") didn't survive a closer look: Files-app sharing (`UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`) makes `Documents/riddles.json` *reachable*, but tapping a `.json` in the Files app opens a read-only Quick Look preview, not an editor — actually editing it needs a Mac or a third-party text editor app, which isn't "any parent can do this." **Decision: v1 does not market or document parent editability at all** — the 200-question set is the whole pitch, and reachability stays as an unadvertised bonus for the rare technical parent, not a claimed feature. Building a real editor (raw-text or a structured form) was scoped in detail — two sub-options, effort estimates, and the forward-compatibility wrinkle with v2's paid-pack file model (an editor must write to its own `custom.json`, never a purchased pack's file) — and preserved in the gitignored, owner-local `_InternMode/V2 Brainstorm - Parent Riddle Editing.md` (main-checkout only, invisible to worktree sessions, same convention as `RIDDLE_BANK.md`/`GAME_VOCABULARY.md`) for whenever V2 planning revisits this. The owner still wants no account/login system regardless of which option is chosen — that constraint is unchanged and carries into that document.
 
+## Intern Mode
+
+The owner is learning Swift/Xcode as she goes and periodically asks for a plain-English, no-jargon
+explanation of how something in this codebase actually works — Swift language features, the app's
+architecture, persistence, whatever the current topic is. When that happens (she may call it "Intern Mode"
+explicitly, or just ask "explain this like I'm new to Swift"):
+
+1. **Explain it in plain terms in the conversation first**, assuming no prior Swift/Xcode background — she's
+   picking this up as she goes, not brushing up on something she already knows.
+2. **Then save it.** Write a persistent cheatsheet to `_InternMode/How Does It Work - <Subject>.md`
+   (gitignored, main-checkout only — same convention as `RIDDLE_BANK.md`/`GAME_VOCABULARY.md`, invisible to
+   worktree sessions). Follow the format of the existing files there: an `# How Does It Work: <Subject>`
+   title (colon in the heading is fine; the *filename* uses `" - "` instead, since colons are awkward in
+   filenames), then an italicized context line — `*Intern-mode cheatsheet. Written <date via `bash date`>,
+   covering ...*` — then the explanation, then usually a one-sentence summary at the end.
+3. **This is for her to re-study later, not for the codebase or future Claude sessions.** Don't treat it as
+   project documentation, don't assume a future session has read it, and don't let it drift out of sync with
+   the code — if she asks about the same topic again after something changed, write a fresh or updated
+   cheatsheet rather than trusting the old one's details are still accurate.
+
+Existing entries as of 2026-09-09: `How Does It Work - Testing.md` (the `DesignerAnaTests` target,
+`@testable import`, `XCTestCase`) and `How Does It Work - Data Storage and Swift Types.md` (`struct` vs
+`class` vs `enum`, the enum-as-namespace pattern `RiddleBank`/`Store` use, the singleton pattern
+`Wallet`/`Magic`/`ProfileManager` use, and why this app has no database — plus when SwiftData would actually
+start to matter for V2).
+
 ## Closing handoff procedure
 
 At session end, when updating `DesignerAna_handoff.md` (the "closing handoff"), **stamp the date by running `bash date` and using that value** — do not infer the date from file timestamps, previous handoffs, or memory. The handoff date must reflect the session it documents. We made this mistake once (handoff dated May 29 for work done June 2), which caused confusion at the next session's start.
