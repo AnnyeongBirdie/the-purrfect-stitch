@@ -1074,19 +1074,18 @@ class FrontShopScene: SKScene {
         }
 
         // Phase 7b (task 6/7) — the v1 ending, 3000 마력 in Ana's era.
-        // Gate condition is done and tested (Magic.hasReachedEnding(_:_:),
-        // MagicTests) and the one-shot flag exists (Store.loadEndingShown/
-        // saveEndingShown), mirroring the handoff gate above exactly. The
-        // actual `if readyForEnding { Store.saveEndingShown();
-        // presentEstelleEpilogueScene(); return }` wiring is deliberately
-        // NOT added here yet — EstelleEpilogueScene doesn't exist until
-        // task 7 builds it, and setting the one-shot flag before a real
-        // scene exists to show would make a player who crosses 3000 today
-        // silently never see the epilogue once task 7 ships. Wire this in
-        // the same commit that adds the scene.
-        // let readyForEnding = Magic.hasReachedEnding(points: Magic.shared.points,
-        //                                              tailorID: Store.loadCurrentTailor())
-        //     && !Store.loadEndingShown()
+        // Mirrors the handoff gate immediately above exactly, including why
+        // it lives here rather than in BackRoomScene: firing before the
+        // save would let the epilogue conclude and THEN show the trophy.
+        let readyForEnding = Magic.hasReachedEnding(points: Magic.shared.points,
+                                                      tailorID: Store.loadCurrentTailor())
+            && !Store.loadEndingShown()
+
+        if readyForEnding {
+            Store.saveEndingShown()
+            presentEstelleEpilogueScene()
+            return
+        }
 
         if triggerCustomerPickerAfterSave {
             triggerCustomerPickerAfterSave = false
@@ -1102,6 +1101,14 @@ class FrontShopScene: SKScene {
     private func presentTailorHandoffScene() {
         guard let view = self.view else { return }
         let scene = TailorHandoffScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
+    }
+
+    private func presentEstelleEpilogueScene() {
+        guard let view = self.view else { return }
+        let scene = EstelleEpilogueScene(size: self.size)
         scene.scaleMode = self.scaleMode
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)
