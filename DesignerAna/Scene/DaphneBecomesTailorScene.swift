@@ -331,13 +331,16 @@ class DaphneBecomesTailorScene: SKScene {
         guard let view = self.view else { return }
 
         if isFirstPlayOpening {
-            // The mandatory first-play opening exits straight into the shop
-            // rather than back to the storybook — she chose her cat, met
-            // Daphne's story, and now starts playing. Genuine entry, so the
-            // shop bell rings (suppressEntryBell defaults to false).
-            let shop = FrontShopScene(size: size)
-            shop.scaleMode = .resizeFill
-            view.presentScene(shop, transition: SKTransition.crossFade(withDuration: 0.5))
+            // Reordered 2026-09-09 (Read > Watch > Pick): the opening now
+            // plays BEFORE the customer picker, not after — she learns why
+            // the shop needs a tailor, then chooses who she is. Exits to
+            // the picker; SettingsScene.transitionToFrontShop() takes her
+            // to FrontShopScene once she's picked.
+            Store.saveHasSeenOpening()
+            let picker = SettingsScene(size: size)
+            picker.scaleMode = .resizeFill
+            picker.isFirstLaunchPicker = true
+            view.presentScene(picker, transition: SKTransition.crossFade(withDuration: 0.5))
             return
         }
 

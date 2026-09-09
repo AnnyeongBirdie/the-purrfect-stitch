@@ -572,26 +572,12 @@ class SettingsScene: SKScene {
         view.presentScene(picker, transition: SKTransition.crossFade(withDuration: 0.4))
     }
 
+    // Reordered 2026-09-09: the mandatory opening now plays BEFORE the
+    // picker (TitleScene.goToShop() / DaphneBecomesTailorScene's
+    // isFirstPlayOpening exit), not after — Read > Watch > Pick. This used
+    // to also trigger the opening from here; that branch moved.
     private func transitionToFrontShop() {
         guard let view = self.view else { return }
-
-        // Phase 7b, task 9c — the mandatory first-play opening. Plays once,
-        // automatically, right after the player picks her cat and before
-        // she ever sees the shop. Gated on isFirstLaunchPicker so it can
-        // only trigger from a picker completion (never a plain "뒤로가기"
-        // from normal settings) — and on the one-shot flag, so every LATER
-        // picker completion (새 손님 reset, the post-relics-quest handoff,
-        // future 손님 바꾸기) already has it set from the very first launch
-        // and falls straight through to the shop exactly as before.
-        if isFirstLaunchPicker, !Store.loadHasSeenOpening() {
-            Store.saveHasSeenOpening()
-            let opening = DaphneBecomesTailorScene(size: self.size)
-            opening.scaleMode = .resizeFill
-            opening.isFirstPlayOpening = true
-            let transition = SKTransition.crossFade(withDuration: 0.5)
-            view.presentScene(opening, transition: transition)
-            return
-        }
 
         let scene = FrontShopScene(size: self.size)
         scene.scaleMode         = .resizeFill

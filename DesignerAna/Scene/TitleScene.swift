@@ -130,14 +130,28 @@ class TitleScene: SKScene {
 
     // MARK: - Routing
 
+    // Reordered 2026-09-09 (owner request): Read (storybook) > Watch
+    // (opening) > Pick (customer, then first order) — the opening explains
+    // why the shop needs a tailor before she picks who she is, rather than
+    // picking first and learning the premise second.
     private func goToShop(view: SKView) {
         if Store.loadSelectedCustomer() != nil {
             // Returning player — straight to front shop.
             let scene = FrontShopScene(size: size)
             scene.scaleMode = .resizeFill
             view.presentScene(scene, transition: SKTransition.crossFade(withDuration: 0.5))
+        } else if !Store.loadHasSeenOpening() {
+            // Brand-new player: watch the opening first. Its own outro
+            // (DaphneBecomesTailorScene.finishExit(), isFirstPlayOpening
+            // branch) hands off to the customer picker, which then goes to
+            // FrontShopScene.
+            let opening = DaphneBecomesTailorScene(size: size)
+            opening.scaleMode = .resizeFill
+            opening.isFirstPlayOpening = true
+            view.presentScene(opening, transition: SKTransition.crossFade(withDuration: 0.5))
         } else {
-            // No customer yet — run the first-time customer picker first.
+            // Already seen the opening but no customer selected (e.g. after
+            // 새 손님) — straight to the picker, no need to replay it.
             let settings = SettingsScene(size: size)
             settings.scaleMode = .resizeFill
             settings.isFirstLaunchPicker = true

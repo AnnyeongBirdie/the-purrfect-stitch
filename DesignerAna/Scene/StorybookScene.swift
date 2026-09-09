@@ -1261,10 +1261,11 @@ class StorybookScene: SKScene {
     // let a brand-new player skip both entirely and land in the shop with
     // whatever avatar ProfileManager.selectedIndex defaults to (index 0),
     // never having chosen a customer. Mirrors TitleScene.goToShop()'s exact
-    // check: only a player who already has a selected customer goes
-    // straight to the shop; everyone else goes to the picker instead, which
-    // chains into the mandatory opening itself (SettingsScene.
-    // transitionToFrontShop(), Phase 7b task 9c).
+    // three-way check (updated the same day for the Read > Watch > Pick
+    // reorder): a returning player goes straight to the shop; a brand-new
+    // player watches the opening first (which itself hands off to the
+    // picker); a player who's seen the opening but has no customer
+    // selected (e.g. after 새 손님) goes straight to the picker.
     private func transitionToFrontShop() {
         guard let view = self.view else { return }
 
@@ -1274,6 +1275,12 @@ class StorybookScene: SKScene {
             scene.suppressEntryBell = true
             let transition = SKTransition.crossFade(withDuration: 0.5)
             view.presentScene(scene, transition: transition)
+        } else if !Store.loadHasSeenOpening() {
+            let opening = DaphneBecomesTailorScene(size: self.size)
+            opening.scaleMode = .resizeFill
+            opening.isFirstPlayOpening = true
+            let transition = SKTransition.crossFade(withDuration: 0.5)
+            view.presentScene(opening, transition: transition)
         } else {
             let settings = SettingsScene(size: self.size)
             settings.scaleMode = .resizeFill
