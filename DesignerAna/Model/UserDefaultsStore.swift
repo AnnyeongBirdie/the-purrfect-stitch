@@ -24,6 +24,7 @@ enum UserDefaultsKey {
     static let storybookOpened      = "storybook.opened"
     static let levelUpBadgeFlashed  = "magic.levelUpBadgeFlashed"
     static let endingShown          = "ending.shown"
+    static let hasSeenOpening       = "storybook.hasSeenOpening"
 }
 
 enum Store {
@@ -219,6 +220,20 @@ enum Store {
     }
     static func saveEndingShown() {
         defaults.set(true, forKey: UserDefaultsKey.endingShown)
+    }
+
+    /// Gates the mandatory first-play opening (Phase 7b, task 9c) —
+    /// DaphneBecomesTailorScene plays automatically once, right after the
+    /// first-launch customer picker and before the player ever sees the
+    /// shop. Also doubles as this page's own unlock condition in the new
+    /// unified story chapter (task 9b) — a player who opens the storybook
+    /// before ever picking a customer sees it locked, same as any other
+    /// unreached story page. Mirrors tailorHandoffShown's one-shot pattern.
+    static func loadHasSeenOpening() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.hasSeenOpening)
+    }
+    static func saveHasSeenOpening() {
+        defaults.set(true, forKey: UserDefaultsKey.hasSeenOpening)
     }
 
     /// Gates TitleScene's "바로 시작하기" — locked until the player has opened

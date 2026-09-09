@@ -22,7 +22,10 @@ class PrincessAnaScene: SKScene {
     /// When true, startOutro() returns to StorybookScene instead of FrontShopScene.
     var isReplayMode = false
     /// Page index within the replay chapter (4) to return to. Set by StorybookScene.
-    var replayReturnPage = 2
+    /// Page 3 as of Phase 7b's storybook restructure (task 9) — page 0 is
+    /// now the opening (DaphneBecomesTailorScene), which didn't share this
+    /// chapter before.
+    var replayReturnPage = 3
 
     // MARK: - Beat data
 
@@ -482,6 +485,9 @@ class PrincessAnaScene: SKScene {
         if isReplayMode {
             // Return to the exact storybook page without re-saving quest state.
             let storybook = StorybookScene(size: size)
+            // Chapter index 4 is the unified story chapter — unchanged by the
+            // Phase 7b page-index migration (task 9), which only shifted page
+            // numbers within it. See CLAUDE.md's page-index migration table.
             storybook.replayReturnChapter = 4
             storybook.replayReturnPage    = replayReturnPage
             storybook.scaleMode = .resizeFill

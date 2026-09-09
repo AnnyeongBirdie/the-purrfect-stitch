@@ -2,9 +2,20 @@
 //  DaphneBecomesTailorScene.swift
 //  DesignerAna
 //
-//  Backstory scene: how Daphne was hired at the tailor shop.
-//  Triggered from the storybook (Chapter 4, page "재봉사 가게") via the
-//  "새로운 재봉사 고용" button. Always returns to StorybookScene on exit.
+//  Backstory scene: how Daphne was hired at the tailor shop. This is the
+//  game's opening story beat.
+//
+//  Two ways to reach this scene (Phase 7b, task 9 — the storybook
+//  restructure):
+//    1. The mandatory first-play opening: SettingsScene presents this
+//       automatically, right after the player picks her cat on a genuine
+//       first launch, before she ever sees the shop. Set isFirstPlayOpening
+//       = true; exits to FrontShopScene instead of StorybookScene.
+//    2. A storybook replay, from the unified story chapter's page 0 (was:
+//       an action button on the chapter 4 "재봉사 가게" lore page, before
+//       task 9 folded this scene into the story chapter as a normal entry
+//       like every other replayable scene). Set isReplayMode = true; exits
+//       back to StorybookScene at replayReturnChapter/replayReturnPage.
 //
 //  Background:  Tailorshop_Background (front shop)
 //  Speakers (NarrativeHUD only has two portrait slots — left/right; a third
@@ -21,7 +32,7 @@
 //    3. Beat 10: Aurora calls Daphne → readyForDaphne = true.
 //    4. Next tap: Daphne appears at center with sparkles.
 //    5. Three-way dialogue until beat 15.
-//    6. Exit returns to StorybookScene at the stored chapter/page.
+//    6. Exit — see isFirstPlayOpening / isReplayMode above.
 //
 
 import SpriteKit
@@ -29,12 +40,25 @@ import UIKit
 
 class DaphneBecomesTailorScene: SKScene {
 
-    // MARK: - Navigation return destination (set by StorybookScene)
+    // MARK: - Navigation (set by SettingsScene or StorybookScene)
 
-    /// Chapter index (0-based) to return to when the scene exits.
-    var returnChapterIndex: Int = 3
-    /// Page index within that chapter to return to.
-    var returnPageIndex:    Int = 0
+    /// True when this is the mandatory first-play opening rather than a
+    /// storybook replay — see the file header. Takes priority over
+    /// isReplayMode if somehow both were set.
+    var isFirstPlayOpening = false
+    /// When true (launched from StorybookScene), returns to StorybookScene
+    /// on exit instead of FrontShopScene. Named to match
+    /// TailorChoiceScene/AuroraChamberScene/PrincessAnaScene's identical
+    /// property exactly — this scene used to have its own differently-named
+    /// returnChapterIndex/returnPageIndex pair for the same job, which was
+    /// exactly the kind of two-names-for-one-concept mismatch that made the
+    /// Phase 7b page-index migration (task 9) risky to reason about.
+    var isReplayMode = false
+    /// Chapter index within the storybook to return to on replay.
+    var replayReturnChapter: Int = 4
+    /// Page index within that chapter to return to on replay. Page 0 — the
+    /// opening is always the first page of the unified story chapter.
+    var replayReturnPage:    Int = 0
 
     // MARK: - Beat data
 
@@ -283,9 +307,21 @@ class DaphneBecomesTailorScene: SKScene {
     private func startExit() {
         exiting = true
         guard let view = self.view else { return }
+
+        if isFirstPlayOpening {
+            // The mandatory first-play opening exits straight into the shop
+            // rather than back to the storybook — she chose her cat, met
+            // Daphne's story, and now starts playing. Genuine entry, so the
+            // shop bell rings (suppressEntryBell defaults to false).
+            let shop = FrontShopScene(size: size)
+            shop.scaleMode = .resizeFill
+            view.presentScene(shop, transition: SKTransition.crossFade(withDuration: 0.5))
+            return
+        }
+
         let storybook = StorybookScene(size: size)
-        storybook.replayReturnChapter = returnChapterIndex
-        storybook.replayReturnPage    = returnPageIndex
+        storybook.replayReturnChapter = replayReturnChapter
+        storybook.replayReturnPage    = replayReturnPage
         storybook.scaleMode           = .resizeFill
         view.presentScene(storybook, transition: SKTransition.crossFade(withDuration: 0.5))
     }

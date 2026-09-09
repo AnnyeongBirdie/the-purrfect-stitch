@@ -21,7 +21,10 @@ class TailorChoiceScene: SKScene {
     /// returns to StorybookScene on exit instead of FrontShopScene.
     var isReplayMode = false
     /// Page index within the replay chapter (4) to return to. Set by StorybookScene.
-    var replayReturnPage = 0
+    /// Page 1 as of Phase 7b's storybook restructure (task 9) — page 0 is
+    /// now the opening (DaphneBecomesTailorScene), which didn't share this
+    /// chapter before.
+    var replayReturnPage = 1
 
     // MARK: - Beat data
 
@@ -236,6 +239,9 @@ class TailorChoiceScene: SKScene {
         if isReplayMode {
             // Replay mode: one scene at a time — return to the exact storybook page.
             let storybook = StorybookScene(size: size)
+            // Chapter index 4 is the unified story chapter — unchanged by the
+            // Phase 7b page-index migration (task 9), which only shifted page
+            // numbers within it. See CLAUDE.md's page-index migration table.
             storybook.replayReturnChapter = 4
             storybook.replayReturnPage    = replayReturnPage
             storybook.scaleMode = .resizeFill
