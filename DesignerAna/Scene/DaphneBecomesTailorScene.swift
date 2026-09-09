@@ -115,6 +115,8 @@ class DaphneBecomesTailorScene: SKScene {
     private var waitingForDaphne = false
     /// Guards against double-exit.
     private var exiting = false
+    /// Blocks taps while the intro/outro title slate is on screen.
+    private var isShowingSlate = false
 
     // MARK: - HUD
 
@@ -133,7 +135,18 @@ class DaphneBecomesTailorScene: SKScene {
         setupBackdrop()
         setupCharacters()
         setupHUD(safeBottom: view.safeAreaInsets.bottom)
-        runAuroraEntrance()
+
+        // Intro slate — signals this scene is structurally different from
+        // every other narrative scene (the game's opening), per owner
+        // request after her first full playthrough. Aurora's entrance
+        // (sparkles + fade-in) is deliberately held until the slate clears,
+        // so the "story begins" moment reads as starting after it, not
+        // racing behind it.
+        isShowingSlate = true
+        hud.showTitleSlate(text: "옛날 옛적에, 먼지 나라에 묘한 옷 공방이 있었습니다.") { [weak self] in
+            self?.isShowingSlate = false
+            self?.runAuroraEntrance()
+        }
     }
 
     private func setupBackdrop() {
@@ -306,6 +319,15 @@ class DaphneBecomesTailorScene: SKScene {
 
     private func startExit() {
         exiting = true
+        isShowingSlate = true
+
+        // Outro slate — the flip side of the intro slate above.
+        hud.showTitleSlate(text: "시작해 볼까요?") { [weak self] in
+            self?.finishExit()
+        }
+    }
+
+    private func finishExit() {
         guard let view = self.view else { return }
 
         if isFirstPlayOpening {
@@ -331,8 +353,8 @@ class DaphneBecomesTailorScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !exiting, touches.first != nil else { return }
 
-        // Block during animated transitions.
-        if waitingForAuroraEntrance || waitingForDaphne { return }
+        // Block during animated transitions or the intro/outro title slate.
+        if waitingForAuroraEntrance || waitingForDaphne || isShowingSlate { return }
 
         // Beat 10: trigger Daphne's entrance on the player's tap.
         if readyForDaphne {

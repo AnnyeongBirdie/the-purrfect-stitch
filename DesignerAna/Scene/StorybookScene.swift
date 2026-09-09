@@ -1234,12 +1234,32 @@ class StorybookScene: SKScene {
 
     // MARK: - Scene transition ─────────────────────────────────────────────────
 
+    // Bug fix (found 2026-09-09 on a fresh-install device playthrough): this
+    // used to present FrontShopScene unconditionally. StorybookScene is
+    // reachable straight from TitleScene's "이야기 소개" — before the
+    // first-launch picker or the mandatory opening ever run — so "← 가게"
+    // let a brand-new player skip both entirely and land in the shop with
+    // whatever avatar ProfileManager.selectedIndex defaults to (index 0),
+    // never having chosen a customer. Mirrors TitleScene.goToShop()'s exact
+    // check: only a player who already has a selected customer goes
+    // straight to the shop; everyone else goes to the picker instead, which
+    // chains into the mandatory opening itself (SettingsScene.
+    // transitionToFrontShop(), Phase 7b task 9c).
     private func transitionToFrontShop() {
         guard let view = self.view else { return }
-        let scene = FrontShopScene(size: self.size)
-        scene.scaleMode        = .resizeFill
-        scene.suppressEntryBell = true
-        let transition = SKTransition.crossFade(withDuration: 0.5)
-        view.presentScene(scene, transition: transition)
+
+        if Store.loadSelectedCustomer() != nil {
+            let scene = FrontShopScene(size: self.size)
+            scene.scaleMode         = .resizeFill
+            scene.suppressEntryBell = true
+            let transition = SKTransition.crossFade(withDuration: 0.5)
+            view.presentScene(scene, transition: transition)
+        } else {
+            let settings = SettingsScene(size: self.size)
+            settings.scaleMode = .resizeFill
+            settings.isFirstLaunchPicker = true
+            let transition = SKTransition.crossFade(withDuration: 0.5)
+            view.presentScene(settings, transition: transition)
+        }
     }
 }

@@ -78,9 +78,11 @@ class EstelleEpilogueScene: SKScene {
         let text: String
     }
 
-    // Beats 0-9. Beat 1 triggers the portal-open on the next tap; beat 3
-    // triggers the Act 1→2 transition; beat 7 triggers the Act 2→3
-    // transition; beat 9 (last) triggers the outro.
+    // Beats 0-12. Beat 1 triggers the portal-open on the next tap; beat 5
+    // triggers the Act 1→2 transition; beat 10 triggers the Act 2→3
+    // transition; beat 12 (last) triggers the outro. Beats 2-3 and 6 were
+    // added after an owner playthrough (2026-09-09) — see git history for
+    // the original, shorter beat set.
     private let beats: [Beat] = [
         // Act 1 — Ana's hideout
         // 0
@@ -89,32 +91,43 @@ class EstelleEpilogueScene: SKScene {
         // 1 — portal-open fires on the next tap after this beat is shown
         Beat(speaker: "아나 공주",
              text: "마력이 점점 차오르고 있어... 뭔가 느껴져."),
-        // 2 — shown after the portal finishes opening
+        // 2 — shown after the portal finishes opening. Ana's first reaction
+        // is surprise at seeing a *person* at all — everyone in the kingdom
+        // is a cat, so a human is startling before recognition even starts.
         Beat(speaker: "아나 공주",
-             text: "언니...? 언니야! 살아있었구나! 그런데... 대체 어디에 있는 거야?"),
-        // 3 — Act 1→2 transition fires on the next tap
+             text: "어...? 저 안에 사람이 보여! 설마... 우리 왕국엔 사람이 없는데?"),
+        // 3 — recognizes her sister specifically by the curly hair and dress.
+        Beat(speaker: "아나 공주",
+             text: "잠깐, 저 곱슬머리랑 드레스... 어디서 많이 본 것 같은데... 언니? 에스텔 언니야?!"),
+        // 4
+        Beat(speaker: "아나 공주",
+             text: "언니...! 살아있었구나! 그런데... 대체 어디에 있는 거야?"),
+        // 5 — Act 1→2 transition fires on the next tap
         Beat(speaker: "아나 공주",
              text: "언니! 내 목소리 안 들려? ...이건 문이 아니라 창문 같아. 나는... 갈 수가 없어."),
 
         // Act 2 — 경복궁. POV shifts to Estelle and does not shift back.
-        // 4
+        // 6 — the first thing Estelle notices on arrival is her own body.
+        Beat(speaker: "에스텔 공주",
+             text: "어? 내 손이... 이게 뭐지? 내가... 사람이 된 거야?"),
+        // 7
         Beat(speaker: "에스텔 공주",
              text: "여기는... 우리 왕국의 궁궐이랑 닮았어. 혹시 내가 돌아온 걸까?"),
-        // 5 — the guard's entrance fades in alongside this beat
+        // 8 — the guard's entrance fades in alongside this beat
         Beat(speaker: "궁궐 경비원",
              text: "저기요, 입장권 좀 보여주시겠어요?"),
-        // 6
+        // 9
         Beat(speaker: "에스텔 공주",
              text: "입장권이요...? 그게 무엇인가요?"),
-        // 7 — Act 2→3 transition fires on the next tap
+        // 10 — Act 2→3 transition fires on the next tap
         Beat(speaker: "궁궐 경비원",
              text: "한복을 입으신 분들은 무료로 입장하실 수 있어요. 그런데 그 옷은... 한복이 아니네요. 죄송하지만 나가주셔야 할 것 같아요."),
 
         // Act 3 — 광화문광장
-        // 8
+        // 11
         Beat(speaker: "에스텔 공주",
              text: "여기는... 대체 어디지? 이렇게 많은 사람들과 이상한 것들은 처음 봐."),
-        // 9 — last beat; outro (with the closing snail) fires on the next tap
+        // 12 — last beat; outro (with the closing snail) fires on the next tap
         Beat(speaker: "에스텔 공주",
              text: "그래도... 이럴 때일수록 그림을 그려야겠어."),
     ]
@@ -125,12 +138,14 @@ class EstelleEpilogueScene: SKScene {
 
     /// Set after beat 1; next tap triggers the portal-open.
     private var readyForPortal = false
-    /// Set after beat 3; next tap triggers the Act 1→2 transition.
+    /// Set after beat 5; next tap triggers the Act 1→2 transition.
     private var readyForAct2 = false
-    /// Set after beat 7; next tap triggers the Act 2→3 transition.
+    /// Set after beat 10; next tap triggers the Act 2→3 transition.
     private var readyForAct3 = false
     /// Blocks taps while any animated transition is playing.
     private var isTransitioning = false
+    /// Blocks taps while the intro/outro title slate is on screen.
+    private var isShowingSlate = false
     /// Guards against double-exit.
     private var exiting = false
 
@@ -233,7 +248,16 @@ class EstelleEpilogueScene: SKScene {
         )
 
         hud.revealSpeakers(["아나 공주"], activeSpeaker: "아나 공주")
-        hud.show(speaker: beats[0].speaker, text: beats[0].text)
+
+        // Intro slate — signals this scene is structurally different from
+        // every other narrative scene (the v1 ending), per owner request
+        // after her first full playthrough.
+        isShowingSlate = true
+        hud.showTitleSlate(text: "에필로그") { [weak self] in
+            guard let self else { return }
+            self.isShowingSlate = false
+            self.hud.show(speaker: self.beats[0].speaker, text: self.beats[0].text)
+        }
     }
 
     // MARK: - Act 1 — portal open
@@ -313,12 +337,12 @@ class EstelleEpilogueScene: SKScene {
             self.estelleSprite.run(.fadeIn(withDuration: 0.6))
             self.hud.revealSpeaker(named: "에스텔 공주")
             self.isTransitioning = false
-            self.beatIndex = 4
-            self.hud.show(speaker: self.beats[4].speaker, text: self.beats[4].text)
+            self.beatIndex = 6
+            self.hud.show(speaker: self.beats[6].speaker, text: self.beats[6].text)
         }
     }
 
-    // MARK: - Guard entrance (Act 2, beat 5 — quiet fade-in, no tap gate)
+    // MARK: - Guard entrance (Act 2, beat 8 — quiet fade-in, no tap gate)
 
     private func revealGuard() {
         guardSprite.run(.fadeIn(withDuration: 0.5))
@@ -342,8 +366,8 @@ class EstelleEpilogueScene: SKScene {
         ])) { [weak self] in
             guard let self else { return }
             self.isTransitioning = false
-            self.beatIndex = 8
-            self.hud.show(speaker: self.beats[8].speaker, text: self.beats[8].text)
+            self.beatIndex = 11
+            self.hud.show(speaker: self.beats[11].speaker, text: self.beats[11].text)
         }
     }
 
@@ -387,11 +411,11 @@ class EstelleEpilogueScene: SKScene {
         switch beatIndex {
         case 1:
             readyForPortal = true
-        case 3:
-            readyForAct2 = true
         case 5:
+            readyForAct2 = true
+        case 8:
             revealGuard()
-        case 7:
+        case 10:
             readyForAct3 = true
         default:
             break
@@ -400,8 +424,25 @@ class EstelleEpilogueScene: SKScene {
 
     // MARK: - Outro
 
+    // The closing snail plays identically in both modes (it's part of the
+    // scene's own content, not a gameplay side effect), then the outro
+    // slate signals the scene is ending before either destination — only
+    // what happens AFTER the slate differs by mode. See finishOutro().
     private func startOutro() {
         exiting = true
+        isShowingSlate = true
+        spawnClosingSnail()
+
+        run(.wait(forDuration: 2.0)) { [weak self] in
+            guard let self else { return }
+            self.hud.showTitleSlate(text: "이야기는 계속됩니다...") { [weak self] in
+                self?.isShowingSlate = false
+                self?.finishOutro()
+            }
+        }
+    }
+
+    private func finishOutro() {
         guard let view = self.view else { return }
 
         if isReplayMode {
@@ -415,20 +456,15 @@ class EstelleEpilogueScene: SKScene {
             return
         }
 
-        spawnClosingSnail()
-
         // Sequence is save (already done, before this scene was presented)
         // → epilogue (this scene) → game complete. Free play begins the
         // moment this flag is set — see Magic.add(_:)'s early return and
         // BackRoomScene's 👑 completion badge.
-        run(.wait(forDuration: 2.0)) { [weak self] in
-            guard let self, let view = self.view else { return }
-            Store.saveGameComplete()
-            let shop = FrontShopScene(size: self.size)
-            shop.scaleMode = .resizeFill
-            shop.suppressEntryBell = true
-            view.presentScene(shop, transition: SKTransition.crossFade(withDuration: 0.8))
-        }
+        Store.saveGameComplete()
+        let shop = FrontShopScene(size: self.size)
+        shop.scaleMode = .resizeFill
+        shop.suppressEntryBell = true
+        view.presentScene(shop, transition: SKTransition.crossFade(withDuration: 0.8))
     }
 
     // MARK: - Touch handling
@@ -436,8 +472,8 @@ class EstelleEpilogueScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !exiting, touches.first != nil else { return }
 
-        // Block during animated transitions.
-        if isTransitioning { return }
+        // Block during animated transitions or the intro/outro title slate.
+        if isTransitioning || isShowingSlate { return }
 
         // Beat 1: trigger the portal-open on the player's tap.
         if readyForPortal {
