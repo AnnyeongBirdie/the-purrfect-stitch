@@ -42,9 +42,18 @@ final class Magic {
     /// between levelOne and levelTwo in one add. (The `#if DEBUG` triple-tap
     /// shortcut grants 250 at once as of Phase 7b — still can't jump a
     /// 500-point gap either, so this invariant holds for it too.)
+    ///
+    /// Once `Store.loadGameComplete()` is true (Phase 7b, task 8 — free
+    /// play after the v1 ending), this is a full no-op: `points` doesn't
+    /// change and nil is always returned. This is the single seam that
+    /// stops 마력 accrual post-ending — every real call site (breadcrumb
+    /// pickup, chest rewards, the debug grant) is unchanged and simply
+    /// stops having an effect, rather than each one learning about the end
+    /// state. `points` itself is untouched (not reset, not capped) — she
+    /// earned the total and the frozen HUD keeps showing it.
     @discardableResult
     func add(_ amount: Int) -> MagicLevelUpThreshold? {
-        guard amount > 0 else { return nil }
+        guard amount > 0, !Store.loadGameComplete() else { return nil }
         let before = points
         points += amount
         if before < MagicLevelUpThreshold.levelTwo.rawValue, points >= MagicLevelUpThreshold.levelTwo.rawValue {

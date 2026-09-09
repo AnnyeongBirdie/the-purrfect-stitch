@@ -14,11 +14,13 @@ final class MagicTests: XCTestCase {
 
     override func setUpWithError() throws {
         Magic.shared.points = 0
+        UserDefaults.standard.removeObject(forKey: "game.complete")
     }
 
     override func tearDownWithError() throws {
         Magic.shared.points = 0
         UserDefaults.standard.removeObject(forKey: "magic.points")
+        UserDefaults.standard.removeObject(forKey: "game.complete")
     }
 
     func testAddBelowFirstThresholdReturnsNil() {
@@ -87,5 +89,25 @@ final class MagicTests: XCTestCase {
         // the gate must still require Ana's era specifically, not just the
         // point total, or Daphne could trigger Ana's ending.
         XCTAssertFalse(Magic.hasReachedEnding(points: 5000, tailorID: "daphne"))
+    }
+
+    // MARK: - Frozen accrual after the v1 ending (Phase 7b, task 8)
+
+    func testAddIsANoOpOnceGameIsComplete() {
+        Magic.shared.points = 3000
+        Store.saveGameComplete()
+
+        XCTAssertNil(Magic.shared.add(50), "add(_:) must return nil once the game is complete")
+        XCTAssertEqual(Magic.shared.points, 3000, "points must not change once the game is complete")
+    }
+
+    func testAddStillWorksNormallyBeforeGameIsComplete() {
+        // Regression guard: confirms the frozen-accrual guard is keyed on
+        // Store.loadGameComplete(), not on the point total already being
+        // past every MagicLevelUpThreshold — 3000 is past both, but accrual
+        // must still work normally until the game-complete flag is set.
+        Magic.shared.points = 3000
+        Magic.shared.add(50)
+        XCTAssertEqual(Magic.shared.points, 3050)
     }
 }

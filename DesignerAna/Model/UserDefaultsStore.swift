@@ -25,6 +25,8 @@ enum UserDefaultsKey {
     static let levelUpBadgeFlashed  = "magic.levelUpBadgeFlashed"
     static let endingShown          = "ending.shown"
     static let hasSeenOpening       = "storybook.hasSeenOpening"
+    static let gameComplete         = "game.complete"
+    static let gameCompleteBadgeFlashed = "game.completeBadgeFlashed"
 }
 
 enum Store {
@@ -234,6 +236,32 @@ enum Store {
     }
     static func saveHasSeenOpening() {
         defaults.set(true, forKey: UserDefaultsKey.hasSeenOpening)
+    }
+
+    /// The v1 ending has actually been reached and free play has begun
+    /// (Phase 7b, task 8) — distinct from `endingShown` (Magic.swift), which
+    /// only guards presenting the epilogue scene once. This flag is set
+    /// *after* the epilogue's own outro (task 7's "save → epilogue → game
+    /// complete" sequence), not at the moment it's presented, mirroring how
+    /// PrincessAnaScene sets relicQuestComplete in its own outro rather than
+    /// at TailorChoiceScene's start. Read by Magic.add(_:), which becomes a
+    /// full no-op once this is true — the single seam that stops 마력
+    /// accrual, so no call site needs to learn about the end state — and by
+    /// BackRoomScene's frozen-HUD completion badge.
+    static func loadGameComplete() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.gameComplete)
+    }
+    static func saveGameComplete() {
+        defaults.set(true, forKey: UserDefaultsKey.gameComplete)
+    }
+
+    /// Gates the frozen-HUD completion badge's attention-getting flash —
+    /// same one-shot pattern as levelUpBadgeFlashed.
+    static func loadGameCompleteBadgeFlashed() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.gameCompleteBadgeFlashed)
+    }
+    static func saveGameCompleteBadgeFlashed() {
+        defaults.set(true, forKey: UserDefaultsKey.gameCompleteBadgeFlashed)
     }
 
     /// Gates TitleScene's "바로 시작하기" — locked until the player has opened

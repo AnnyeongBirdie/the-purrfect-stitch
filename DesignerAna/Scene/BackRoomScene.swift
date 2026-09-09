@@ -71,6 +71,7 @@ class BackRoomScene: SKScene {
     private var magicBubbleNode: SKShapeNode?
     private var walletBubbleNode: SKShapeNode?
     private var levelUpBadgeNode: SKShapeNode?
+    private var gameCompleteBadgeNode: SKShapeNode?
     private var instructionShadowLabel: SKLabelNode!
 
     // (earnedMinigameRewards removed — Economy refactor #2; dungeons now credit Magic directly)
@@ -421,12 +422,14 @@ class BackRoomScene: SKScene {
         magicLabel = magicLbl
 
         updateLevelUpBadge()
+        updateGameCompleteBadge()
     }
 
     private func updateHUDCounters() {
         walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
         magicLabel?.text  = "🐾 \(Magic.shared.points)마력"
         updateLevelUpBadge()
+        updateGameCompleteBadge()
     }
 
     // ✨ level-up badge — sits beside the 🐾 bubble rather than literally
@@ -466,6 +469,51 @@ class BackRoomScene: SKScene {
 
         if !Store.loadLevelUpBadgeFlashed() {
             Store.saveLevelUpBadgeFlashed()
+            badge.setScale(0.3)
+            let popIn = SKAction.sequence([
+                .scale(to: 1.3, duration: 0.18),
+                .scale(to: 1.0, duration: 0.10)
+            ])
+            let flash = SKAction.sequence([
+                .scale(to: 1.25, duration: 0.18),
+                .scale(to: 1.0, duration: 0.18)
+            ])
+            badge.run(.sequence([popIn, .repeat(flash, count: 3)]))
+        }
+    }
+
+    // 👑 game-complete badge (Phase 7b, task 8) — the v1 ending has been
+    // reached and 마력 accrual is frozen (see Magic.add(_:)'s early return).
+    // Sits immediately to the right of the ✨ badge, same y, same size —
+    // reuses that badge's visual style/placement approach rather than
+    // inventing a second idiom, per the task spec. A separate node (not a
+    // second state of the ✨ badge) since ✨ keeps meaning "ability
+    // unlocked" independently of whether the game is complete. Not yet
+    // reachable from anywhere — Store.saveGameComplete() is set by the
+    // Estelle epilogue's outro (task 7, not yet built); this only reads
+    // the flag, so it activates automatically once that lands.
+    private func updateGameCompleteBadge() {
+        guard gameCompleteBadgeNode == nil, Store.loadGameComplete(), let magicBubbleNode else { return }
+
+        let badge = SKShapeNode(circleOfRadius: 15)
+        badge.fillColor = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 0.95)
+        badge.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+        badge.lineWidth = 2
+        badge.position = CGPoint(x: magicBubbleNode.position.x + tailorBubbleSize.width / 2 + 8 + 15 + 34,
+                                 y: magicBubbleNode.position.y - 10)
+        badge.zPosition = 20
+        addChild(badge)
+
+        let crown = SKLabelNode(text: "👑")
+        crown.fontSize = 16
+        crown.horizontalAlignmentMode = .center
+        crown.verticalAlignmentMode = .center
+        badge.addChild(crown)
+
+        gameCompleteBadgeNode = badge
+
+        if !Store.loadGameCompleteBadgeFlashed() {
+            Store.saveGameCompleteBadgeFlashed()
             badge.setScale(0.3)
             let popIn = SKAction.sequence([
                 .scale(to: 1.3, duration: 0.18),
@@ -556,6 +604,9 @@ class BackRoomScene: SKScene {
             // instead of at setup.
             let reservedBadgeX = magicBubbleNode.position.x + tailorBubbleSize.width / 2 + 8 + 15
             maxX = max(maxX, reservedBadgeX + 15)
+            // Reserve the 👑 game-complete badge's space too, same
+            // reasoning — it sits 34pt further right of the ✨ badge (task 8).
+            maxX = max(maxX, reservedBadgeX + 34 + 15)
             for slot in relicSlots {
                 minX = min(minX, slot.position.x - 14)
                 maxX = max(maxX, slot.position.x + 14)
