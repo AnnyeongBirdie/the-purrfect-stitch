@@ -223,16 +223,20 @@ class FrontShopScene: SKScene {
         let clothingType: ClothingType
         let deposit: Int
 
+        // Deposits retuned 2026-09-09 (owner playthrough) alongside the
+        // riddle economy (5냥/question, 10 questions/round = 50냥 max per
+        // round): 바지/셔츠 at 45 fit inside one round (50 > 45); 드레스 at
+        // 60 needs two rounds (100 > 60). Was 50/30/40.
         switch nodeName {
         case "dressButton":
             clothingType = .dress
-            deposit = 50
+            deposit = 60
         case "shirtButton":
             clothingType = .shirt
-            deposit = 30
+            deposit = 45
         case "pantsButton":
             clothingType = .pants
-            deposit = 40
+            deposit = 45
         default:
             return
         }

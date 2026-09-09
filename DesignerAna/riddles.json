@@ -8,7 +8,7 @@
       "52"
     ],
     "answer": "42",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -20,7 +20,7 @@
       "72"
     ],
     "answer": "62",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -32,7 +32,7 @@
       "83"
     ],
     "answer": "73",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -44,7 +44,7 @@
       "55"
     ],
     "answer": "55",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -56,7 +56,7 @@
       "91"
     ],
     "answer": "81",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -68,7 +68,7 @@
       "96"
     ],
     "answer": "86",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -80,7 +80,7 @@
       "92"
     ],
     "answer": "82",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -92,7 +92,7 @@
       "82"
     ],
     "answer": "82",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -104,7 +104,7 @@
       "94"
     ],
     "answer": "84",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -116,7 +116,7 @@
       "92"
     ],
     "answer": "82",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -128,7 +128,7 @@
       "104"
     ],
     "answer": "94",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -140,7 +140,7 @@
       "82"
     ],
     "answer": "82",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -152,7 +152,7 @@
       "101"
     ],
     "answer": "91",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -164,7 +164,7 @@
       "92"
     ],
     "answer": "82",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -176,7 +176,7 @@
       "82"
     ],
     "answer": "72",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -188,7 +188,7 @@
       "93"
     ],
     "answer": "93",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -200,7 +200,7 @@
       "103"
     ],
     "answer": "93",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -212,7 +212,7 @@
       "84"
     ],
     "answer": "74",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -224,7 +224,7 @@
       "100"
     ],
     "answer": "90",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -236,7 +236,7 @@
       "81"
     ],
     "answer": "81",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -248,7 +248,7 @@
       "93"
     ],
     "answer": "83",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -260,7 +260,7 @@
       "101"
     ],
     "answer": "91",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -272,7 +272,7 @@
       "103"
     ],
     "answer": "93",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -284,7 +284,7 @@
       "91"
     ],
     "answer": "91",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -296,7 +296,7 @@
       "91"
     ],
     "answer": "81",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -308,7 +308,7 @@
       "36"
     ],
     "answer": "25",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -320,7 +320,7 @@
       "36"
     ],
     "answer": "25",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -332,7 +332,7 @@
       "26"
     ],
     "answer": "26",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -344,7 +344,7 @@
       "56"
     ],
     "answer": "46",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -356,7 +356,7 @@
       "46"
     ],
     "answer": "35",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -368,7 +368,7 @@
       "46"
     ],
     "answer": "36",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -380,7 +380,7 @@
       "17"
     ],
     "answer": "17",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -392,7 +392,7 @@
       "33"
     ],
     "answer": "23",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -404,7 +404,7 @@
       "46"
     ],
     "answer": "35",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -416,7 +416,7 @@
       "37"
     ],
     "answer": "27",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -428,7 +428,7 @@
       "35"
     ],
     "answer": "35",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -440,7 +440,7 @@
       "48"
     ],
     "answer": "38",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -452,7 +452,7 @@
       "46"
     ],
     "answer": "35",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -464,7 +464,7 @@
       "38"
     ],
     "answer": "28",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -476,7 +476,7 @@
       "39"
     ],
     "answer": "39",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -488,7 +488,7 @@
       "34"
     ],
     "answer": "24",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -500,7 +500,7 @@
       "48"
     ],
     "answer": "38",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -512,7 +512,7 @@
       "36"
     ],
     "answer": "26",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -524,7 +524,7 @@
       "27"
     ],
     "answer": "27",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -536,7 +536,7 @@
       "37"
     ],
     "answer": "27",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -548,7 +548,7 @@
       "48"
     ],
     "answer": "38",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -560,7 +560,7 @@
       "37"
     ],
     "answer": "27",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -572,7 +572,7 @@
       "36"
     ],
     "answer": "36",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -584,7 +584,7 @@
       "39"
     ],
     "answer": "29",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -596,7 +596,7 @@
       "39"
     ],
     "answer": "29",
-    "reward": 15,
+    "reward": 5,
     "category": "addSub"
   },
   {
@@ -608,7 +608,7 @@
       "70"
     ],
     "answer": "80",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -620,7 +620,7 @@
       "13"
     ],
     "answer": "16",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -632,7 +632,7 @@
       "121"
     ],
     "answer": "121",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -644,7 +644,7 @@
       "73"
     ],
     "answer": "81",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -656,7 +656,7 @@
       "18"
     ],
     "answer": "27",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -668,7 +668,7 @@
       "15"
     ],
     "answer": "20",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -680,7 +680,7 @@
       "96"
     ],
     "answer": "96",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -692,7 +692,7 @@
       "43"
     ],
     "answer": "49",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -704,7 +704,7 @@
       "48"
     ],
     "answer": "56",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -716,7 +716,7 @@
       "10"
     ],
     "answer": "15",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -728,7 +728,7 @@
       "6"
     ],
     "answer": "6",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -740,7 +740,7 @@
       "10"
     ],
     "answer": "20",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -752,7 +752,7 @@
       "18"
     ],
     "answer": "24",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -764,7 +764,7 @@
       "40"
     ],
     "answer": "50",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -776,7 +776,7 @@
       "36"
     ],
     "answer": "36",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -788,7 +788,7 @@
       "55"
     ],
     "answer": "66",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -800,7 +800,7 @@
       "44"
     ],
     "answer": "55",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -812,7 +812,7 @@
       "36"
     ],
     "answer": "48",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -824,7 +824,7 @@
       "30"
     ],
     "answer": "30",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -836,7 +836,7 @@
       "54"
     ],
     "answer": "63",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -848,7 +848,7 @@
       "24"
     ],
     "answer": "36",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -860,7 +860,7 @@
       "9"
     ],
     "answer": "18",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -872,7 +872,7 @@
       "24"
     ],
     "answer": "24",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -884,7 +884,7 @@
       "63"
     ],
     "answer": "72",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -896,7 +896,7 @@
       "20"
     ],
     "answer": "30",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -908,7 +908,7 @@
       "8"
     ],
     "answer": "5",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -920,7 +920,7 @@
       "12"
     ],
     "answer": "12",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -932,7 +932,7 @@
       "20"
     ],
     "answer": "10",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -944,7 +944,7 @@
       "11"
     ],
     "answer": "8",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -956,7 +956,7 @@
       "2"
     ],
     "answer": "4",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -968,7 +968,7 @@
       "11"
     ],
     "answer": "11",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -980,7 +980,7 @@
       "8"
     ],
     "answer": "6",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -992,7 +992,7 @@
       "11"
     ],
     "answer": "3",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1004,7 +1004,7 @@
       "7"
     ],
     "answer": "5",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1016,7 +1016,7 @@
       "9"
     ],
     "answer": "9",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1028,7 +1028,7 @@
       "21"
     ],
     "answer": "12",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1040,7 +1040,7 @@
       "5"
     ],
     "answer": "7",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1052,7 +1052,7 @@
       "12"
     ],
     "answer": "5",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1064,7 +1064,7 @@
       "7"
     ],
     "answer": "7",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1076,7 +1076,7 @@
       "8"
     ],
     "answer": "6",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1088,7 +1088,7 @@
       "6"
     ],
     "answer": "4",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1100,7 +1100,7 @@
       "12"
     ],
     "answer": "6",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1112,7 +1112,7 @@
       "2"
     ],
     "answer": "2",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1124,7 +1124,7 @@
       "11"
     ],
     "answer": "9",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1136,7 +1136,7 @@
       "6"
     ],
     "answer": "2",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1148,7 +1148,7 @@
       "20"
     ],
     "answer": "10",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1160,7 +1160,7 @@
       "7"
     ],
     "answer": "7",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1172,7 +1172,7 @@
       "12"
     ],
     "answer": "9",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1184,7 +1184,7 @@
       "21"
     ],
     "answer": "12",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1196,7 +1196,7 @@
       "6"
     ],
     "answer": "3",
-    "reward": 15,
+    "reward": 5,
     "category": "mulDiv"
   },
   {
@@ -1208,7 +1208,7 @@
       "새"
     ],
     "answer": "고양이",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1220,7 +1220,7 @@
       "개"
     ],
     "answer": "개",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1232,7 +1232,7 @@
       "소"
     ],
     "answer": "토끼",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1244,7 +1244,7 @@
       "사자"
     ],
     "answer": "새",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1256,7 +1256,7 @@
       "호랑이"
     ],
     "answer": "돼지",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1268,7 +1268,7 @@
       "소"
     ],
     "answer": "소",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1280,7 +1280,7 @@
       "개"
     ],
     "answer": "사자",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1292,7 +1292,7 @@
       "토끼"
     ],
     "answer": "호랑이",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1304,7 +1304,7 @@
       "할아버지"
     ],
     "answer": "엄마",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1316,7 +1316,7 @@
       "아빠"
     ],
     "answer": "아빠",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1328,7 +1328,7 @@
       "아빠"
     ],
     "answer": "할머니",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1340,7 +1340,7 @@
       "할머니"
     ],
     "answer": "할아버지",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1352,7 +1352,7 @@
       "우유"
     ],
     "answer": "사과",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1364,7 +1364,7 @@
       "바나나"
     ],
     "answer": "바나나",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1376,7 +1376,7 @@
       "계란"
     ],
     "answer": "물",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1388,7 +1388,7 @@
       "주스"
     ],
     "answer": "우유",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1400,7 +1400,7 @@
       "케이크"
     ],
     "answer": "빵",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1412,7 +1412,7 @@
       "계란"
     ],
     "answer": "계란",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1424,7 +1424,7 @@
       "바나나"
     ],
     "answer": "주스",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1436,7 +1436,7 @@
       "물"
     ],
     "answer": "케이크",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1448,7 +1448,7 @@
       "초록색"
     ],
     "answer": "빨간색",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1460,7 +1460,7 @@
       "파란색"
     ],
     "answer": "파란색",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1472,7 +1472,7 @@
       "하얀색"
     ],
     "answer": "노란색",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1484,7 +1484,7 @@
       "빨간색"
     ],
     "answer": "초록색",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1496,7 +1496,7 @@
       "파란색"
     ],
     "answer": "검은색",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1508,7 +1508,7 @@
       "하얀색"
     ],
     "answer": "하얀색",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1520,7 +1520,7 @@
       "지우개"
     ],
     "answer": "책",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1532,7 +1532,7 @@
       "자"
     ],
     "answer": "연필",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1544,7 +1544,7 @@
       "가방"
     ],
     "answer": "학교",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1556,7 +1556,7 @@
       "지우개"
     ],
     "answer": "지우개",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1568,7 +1568,7 @@
       "연필"
     ],
     "answer": "자",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1580,7 +1580,7 @@
       "학교"
     ],
     "answer": "가방",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1592,7 +1592,7 @@
       "자다"
     ],
     "answer": "달리다",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1604,7 +1604,7 @@
       "수영하다"
     ],
     "answer": "수영하다",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1616,7 +1616,7 @@
       "그리다"
     ],
     "answer": "먹다",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1628,7 +1628,7 @@
       "달리다"
     ],
     "answer": "자다",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1640,7 +1640,7 @@
       "수영하다"
     ],
     "answer": "읽다",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1652,7 +1652,7 @@
       "그리다"
     ],
     "answer": "그리다",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1664,7 +1664,7 @@
       "구름"
     ],
     "answer": "태양",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1676,7 +1676,7 @@
       "태양"
     ],
     "answer": "달",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1688,7 +1688,7 @@
       "달"
     ],
     "answer": "별",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1700,7 +1700,7 @@
       "구름"
     ],
     "answer": "구름",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1712,7 +1712,7 @@
       "머리"
     ],
     "answer": "눈",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1724,7 +1724,7 @@
       "눈"
     ],
     "answer": "손",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1736,7 +1736,7 @@
       "손"
     ],
     "answer": "발",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1748,7 +1748,7 @@
       "머리"
     ],
     "answer": "머리",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1760,7 +1760,7 @@
       "슬픈"
     ],
     "answer": "큰",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1772,7 +1772,7 @@
       "큰"
     ],
     "answer": "작은",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1784,7 +1784,7 @@
       "작은"
     ],
     "answer": "행복한",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1796,7 +1796,7 @@
       "슬픈"
     ],
     "answer": "슬픈",
-    "reward": 15,
+    "reward": 5,
     "category": "enToKo"
   },
   {
@@ -1808,7 +1808,7 @@
       "cat"
     ],
     "answer": "cat",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1820,7 +1820,7 @@
       "pig"
     ],
     "answer": "dog",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1832,7 +1832,7 @@
       "cow"
     ],
     "answer": "rabbit",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1844,7 +1844,7 @@
       "lion"
     ],
     "answer": "bird",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1856,7 +1856,7 @@
       "pig"
     ],
     "answer": "pig",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1868,7 +1868,7 @@
       "cat"
     ],
     "answer": "cow",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1880,7 +1880,7 @@
       "dog"
     ],
     "answer": "lion",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1892,7 +1892,7 @@
       "rabbit"
     ],
     "answer": "tiger",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1904,7 +1904,7 @@
       "mom"
     ],
     "answer": "mom",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1916,7 +1916,7 @@
       "mom"
     ],
     "answer": "dad",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1928,7 +1928,7 @@
       "dad"
     ],
     "answer": "grandma",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1940,7 +1940,7 @@
       "grandma"
     ],
     "answer": "grandpa",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1952,7 +1952,7 @@
       "apple"
     ],
     "answer": "apple",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1964,7 +1964,7 @@
       "bread"
     ],
     "answer": "banana",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1976,7 +1976,7 @@
       "egg"
     ],
     "answer": "water",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -1988,7 +1988,7 @@
       "juice"
     ],
     "answer": "milk",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2000,7 +2000,7 @@
       "bread"
     ],
     "answer": "bread",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2012,7 +2012,7 @@
       "apple"
     ],
     "answer": "egg",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2024,7 +2024,7 @@
       "banana"
     ],
     "answer": "juice",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2036,7 +2036,7 @@
       "water"
     ],
     "answer": "cake",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2048,7 +2048,7 @@
       "red"
     ],
     "answer": "red",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2060,7 +2060,7 @@
       "black"
     ],
     "answer": "blue",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2072,7 +2072,7 @@
       "white"
     ],
     "answer": "yellow",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2084,7 +2084,7 @@
       "red"
     ],
     "answer": "green",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2096,7 +2096,7 @@
       "black"
     ],
     "answer": "black",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2108,7 +2108,7 @@
       "yellow"
     ],
     "answer": "white",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2120,7 +2120,7 @@
       "eraser"
     ],
     "answer": "book",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2132,7 +2132,7 @@
       "ruler"
     ],
     "answer": "pencil",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2144,7 +2144,7 @@
       "school"
     ],
     "answer": "school",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2156,7 +2156,7 @@
       "book"
     ],
     "answer": "eraser",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2168,7 +2168,7 @@
       "pencil"
     ],
     "answer": "ruler",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2180,7 +2180,7 @@
       "school"
     ],
     "answer": "bag",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2192,7 +2192,7 @@
       "run"
     ],
     "answer": "run",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2204,7 +2204,7 @@
       "read"
     ],
     "answer": "swim",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2216,7 +2216,7 @@
       "draw"
     ],
     "answer": "eat",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2228,7 +2228,7 @@
       "run"
     ],
     "answer": "sleep",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2240,7 +2240,7 @@
       "read"
     ],
     "answer": "read",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2252,7 +2252,7 @@
       "eat"
     ],
     "answer": "draw",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2264,7 +2264,7 @@
       "cloud"
     ],
     "answer": "sun",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2276,7 +2276,7 @@
       "sun"
     ],
     "answer": "moon",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2288,7 +2288,7 @@
       "star"
     ],
     "answer": "star",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2300,7 +2300,7 @@
       "star"
     ],
     "answer": "cloud",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2312,7 +2312,7 @@
       "head"
     ],
     "answer": "eye",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2324,7 +2324,7 @@
       "eye"
     ],
     "answer": "hand",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2336,7 +2336,7 @@
       "foot"
     ],
     "answer": "foot",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2348,7 +2348,7 @@
       "foot"
     ],
     "answer": "head",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2360,7 +2360,7 @@
       "sad"
     ],
     "answer": "big",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2372,7 +2372,7 @@
       "big"
     ],
     "answer": "small",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2384,7 +2384,7 @@
       "happy"
     ],
     "answer": "happy",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   },
   {
@@ -2396,7 +2396,7 @@
       "happy"
     ],
     "answer": "sad",
-    "reward": 15,
+    "reward": 5,
     "category": "koToEn"
   }
 ]
