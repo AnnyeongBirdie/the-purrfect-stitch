@@ -3,8 +3,9 @@
 //  DesignerAna
 //
 //  Multiple-choice riddle model + question bank.
-//  RiddleBank first tries to load from Documents/riddles.json
-//  (parent-editable at runtime), then falls back to hardcoded defaults.
+//  RiddleBank checks Documents/riddles.json first (an override point, not a
+//  documented or supported v1 feature — see CLAUDE.md's 2026-09-09 note),
+//  then the bundled 200-question set, then a tiny hardcoded last resort.
 //
 
 import Foundation
@@ -12,9 +13,9 @@ import os.log
 
 // MARK: - Category
 
-/// Stable ASCII ids so a parent's hand-edited JSON never has to contain
-/// Korean category text. Display names are resolved in code so they can
-/// change without invalidating every parent file.
+/// Stable ASCII ids so a hand-edited JSON file never has to contain Korean
+/// category text. Display names are resolved in code so they can change
+/// without invalidating any override file already on disk.
 enum RiddleCategory: String, Codable, CaseIterable {
     case addSub   // 덧셈과 뺄셈
     case mulDiv   // 곱셈과 나눗셈
@@ -59,7 +60,7 @@ struct Riddle: Codable {
         choices  = try c.decode([String].self,  forKey: .choices)
         answer   = try c.decode(String.self, forKey: .answer)
         reward   = (try? c.decode(Int.self, forKey: .reward)) ?? 15
-        // A parent's file that omits or misspells category still loads —
+        // A hand-edited file that omits or misspells category still loads —
         // it just falls back to a neutral value rather than throwing and
         // silently dumping the whole file back to defaults.
         category = (try? c.decode(RiddleCategory.self, forKey: .category)) ?? .addSub
@@ -73,18 +74,22 @@ enum RiddleBank {
     private static let log = OSLog(subsystem: "com.annyeongbirdie.thepurrfectstitch", category: "RiddleBank")
 
     /// Returns a shuffled copy of the riddle deck.
-    /// Load order: a parent's Documents/riddles.json override, then the
+    /// Load order: a Documents/riddles.json override if one exists, then the
     /// bundled v1 content set, then a tiny hardcoded last resort so a
     /// corrupt bundle can never leave the quiz empty.
     static func load() -> [Riddle] {
         (loadFromDocuments() ?? loadFromBundle() ?? fallbackRiddles).shuffled()
     }
 
-    /// Copies the bundled content set into Documents on first launch, so a
-    /// parent who opens the Files app finds an editable file in the real
-    /// format instead of an empty folder. Absent-only — never overwrites,
-    /// or a parent's edits would be destroyed on every launch. Deleting the
-    /// file is therefore the reset path: the next launch reseeds it.
+    /// Copies the bundled content set into Documents on first launch. This is
+    /// a raw override mechanism, not a supported v1 feature: the file is
+    /// technically reachable via the Files app (UIFileSharingEnabled), but
+    /// tapping a .json there opens a read-only preview, not an editor — real
+    /// edits need a Mac or a third-party text editor (see CLAUDE.md's
+    /// 2026-09-09 decision not to market this). Absent-only — never
+    /// overwrites, so any edits already on disk survive every later launch.
+    /// Deleting the file is therefore the reset path: the next launch
+    /// reseeds the shipped set.
     static func seedDocumentsIfNeeded() {
         guard let docs = FileManager.default
                 .urls(for: .documentDirectory, in: .userDomainMask).first else { return }
@@ -95,7 +100,7 @@ enum RiddleBank {
         try? data.write(to: url, options: .atomic)
     }
 
-    // MARK: Documents-based override (parent-editable)
+    // MARK: Documents-based override (unsupported in v1, see seedDocumentsIfNeeded)
 
     private static func loadFromDocuments() -> [Riddle]? {
         guard let docs = FileManager.default
@@ -108,8 +113,8 @@ enum RiddleBank {
             guard !riddles.isEmpty else { return nil }
             return riddles
         } catch {
-            // Known limitation (v1): this is the only signal a parent's typo
-            // gets. A visible in-app warning is filed as a v2 candidate.
+            // Known limitation (v1): this log line is the only signal a
+            // typo in that file gets — there is no in-app warning.
             os_log("Documents/riddles.json failed to decode, falling back to bundled defaults: %{public}@",
                    log: log, type: .error, String(describing: error))
             return nil
