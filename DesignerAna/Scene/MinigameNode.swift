@@ -47,6 +47,12 @@ class MinigameNode: SKNode {
     private var chestClaimable = false   // locked for 0.8s after spawn so hero must walk to it
     private var isCompleting = false
     private var isDead = false
+    // Freezes update()'s hero/monster/hazard simulation for the duration of
+    // the level-up VFX (owner report 2026-09-09: "if she's in motion
+    // already," the hero walks straight out of the pillar since nothing
+    // stopped her). The VFX's own SKActions are unaffected — only the
+    // per-frame kinematic/collision loop in update() is gated.
+    private var isLevelingUp = false
 
     private var heroStartPosition: CGPoint = .zero
 
@@ -830,7 +836,7 @@ class MinigameNode: SKNode {
         guard lastUpdateTime > 0 else { lastUpdateTime = currentTime; return }
         let dt = currentTime - lastUpdateTime
         lastUpdateTime = currentTime
-        guard !isDead, !isCompleting else { return }
+        guard !isDead, !isCompleting, !isLevelingUp else { return }
 
         if moveDirection != 0 {
             hero.position.x += moveDirection * heroSpeed * CGFloat(dt)
@@ -1456,12 +1462,39 @@ class MinigameNode: SKNode {
     private func handleLevelUp(_ threshold: MagicLevelUpThreshold?) {
         switch threshold {
         case .levelOne:
+            freezeDuringLevelUp(threshold: .levelOne)
             playLevelUpVFX(at: hero.position, threshold: .levelOne)
             buildMagicLightButton(animated: true)
         case .levelTwo:
+            freezeDuringLevelUp(threshold: .levelTwo)
             playLevelUpVFX(at: hero.position, threshold: .levelTwo)
         case nil:
             break
+        }
+    }
+
+    // Freezes hero/monster/hazard simulation (update()'s isLevelingUp gate)
+    // and physics-driven hazards (falling buttons use a constant-velocity
+    // SKPhysicsBody, not update() — physicsWorld.speed = 0 stops those too,
+    // independent of the VFX's own SKActions) for exactly as long as
+    // playLevelUpVFX's own timeline runs, then restores both.
+    // ⚠️ riseDuration/holdDuration here must stay in sync with the same
+    // constants inside playLevelUpVFX() below — duplicated rather than
+    // threaded through as a return value/completion, matching this
+    // codebase's existing sibling-duplication convention (see the
+    // MinigameNode/BossMinigameNode split), but worth flagging since
+    // unlike that split, this duplication is within the same file.
+    private func freezeDuringLevelUp(threshold: MagicLevelUpThreshold) {
+        let big = threshold == .levelTwo
+        let riseDuration: TimeInterval = big ? 0.6 : 0.4
+        let holdDuration: TimeInterval = big ? 1.0 : 0.5
+        let totalDuration = riseDuration + holdDuration + 0.4   // + fadeOut
+
+        isLevelingUp = true
+        scene?.physicsWorld.speed = 0
+        run(.sequence([.wait(forDuration: totalDuration)])) { [weak self] in
+            self?.isLevelingUp = false
+            self?.scene?.physicsWorld.speed = 1
         }
     }
 

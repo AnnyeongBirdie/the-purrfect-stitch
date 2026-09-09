@@ -90,6 +90,14 @@ class BossMinigameNode: SKNode {
     private var chestOpened = false
     private var isCompleting = false
     private var isDead = false
+    // Freezes update()'s hero/collision simulation for the duration of the
+    // level-up VFX (owner report 2026-09-09: "if she's in motion already,"
+    // the hero walks straight out of the pillar). boss.isPaused and
+    // physicsWorld.speed handle freezing the boss's own attack animations
+    // and physics-driven hazards (sweep projectiles) — see
+    // freezeDuringLevelUp(). The VFX's own SKActions are unaffected since
+    // they run on `self`, not `boss`.
+    private var isLevelingUp = false
 
     // MARK: - Layout
     private var sceneW: CGFloat = 0
@@ -1349,7 +1357,7 @@ class BossMinigameNode: SKNode {
         guard lastUpdateTime > 0 else { lastUpdateTime = currentTime; return }
         let dt = currentTime - lastUpdateTime
         lastUpdateTime = currentTime
-        guard !isDead, !isCompleting else { return }
+        guard !isDead, !isCompleting, !isLevelingUp else { return }
 
         // Hero horizontal movement
         if moveDirection != 0 {
@@ -1637,12 +1645,40 @@ class BossMinigameNode: SKNode {
     private func handleLevelUp(_ threshold: MagicLevelUpThreshold?) {
         switch threshold {
         case .levelOne:
+            freezeDuringLevelUp(threshold: .levelOne)
             playLevelUpVFX(at: hero.position, threshold: .levelOne)
             buildMagicLightButton(animated: true)
         case .levelTwo:
+            freezeDuringLevelUp(threshold: .levelTwo)
             playLevelUpVFX(at: hero.position, threshold: .levelTwo)
         case nil:
             break
+        }
+    }
+
+    // ⚠️ riseDuration/holdDuration here must stay in sync with the same
+    // constants inside playLevelUpVFX() below — see MinigameNode's copy of
+    // this same function for why they're duplicated rather than threaded
+    // through as a return value.
+    //
+    // boss.isPaused freezes the boss's own in-flight attack animations
+    // (the slam pad drop, the summon pulse — both run via boss.run(...),
+    // not self.run(...), so this doesn't touch the VFX added to `self`).
+    // physicsWorld.speed = 0 freezes a sweep projectile already in flight
+    // (it moves via a constant-velocity SKPhysicsBody, not update()).
+    private func freezeDuringLevelUp(threshold: MagicLevelUpThreshold) {
+        let big = threshold == .levelTwo
+        let riseDuration: TimeInterval = big ? 0.6 : 0.4
+        let holdDuration: TimeInterval = big ? 1.0 : 0.5
+        let totalDuration = riseDuration + holdDuration + 0.4   // + fadeOut
+
+        isLevelingUp = true
+        boss.isPaused = true
+        scene?.physicsWorld.speed = 0
+        run(.sequence([.wait(forDuration: totalDuration)])) { [weak self] in
+            self?.isLevelingUp = false
+            self?.boss.isPaused = false
+            self?.scene?.physicsWorld.speed = 1
         }
     }
 
