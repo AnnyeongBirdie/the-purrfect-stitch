@@ -24,7 +24,9 @@ class SettingsScene: SKScene {
     private var safeBottom: CGFloat = 0
 
     private var panelW: CGFloat { min(size.width * 0.44, 310) }
-    private var panelH: CGFloat { min(size.height * 0.84, 290) }
+    // Raised from 290 (Phase 7b, task 10) to fit the new 손님 바꾸기 button
+    // and its reserved block-reason line above the destructive button.
+    private var panelH: CGFloat { min(size.height * 0.84, 328) }
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -242,27 +244,68 @@ class SettingsScene: SKScene {
             startBtn.addChild(startLbl)
             panelNode.addChild(startBtn)
         } else {
-            // ── 새 손님 button (destructive) ─────────────────────────────────
-            let newBtn = SKShapeNode(rectOf: CGSize(width: btnW, height: 44), cornerRadius: 12)
-            newBtn.fillColor   = UIColor(red: 0.70, green: 0.30, blue: 0.25, alpha: 1.0)
-            newBtn.strokeColor = .clear
-            newBtn.position    = CGPoint(x: 0, y: hh - 224)
-            newBtn.zPosition   = 1
-            newBtn.name        = "newCustomerBtn"
+            // ── 손님 바꾸기 button (non-destructive — task 10) ─────────────────
+            // Blocked (dimmed + inert), not hidden, while an order is live —
+            // order.active is a flat key, not per-customer, so switching
+            // mid-order would hand the new customer the previous one's
+            // in-progress order. Matches the carousel arrows' existing
+            // dim-not-disappear convention above.
+            let orderActive = Store.loadActiveOrder() != nil
 
-            let newLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-            newLbl.text                    = "새 손님"
-            newLbl.fontSize                = 18
-            newLbl.fontColor               = .white
-            newLbl.horizontalAlignmentMode = .center
-            newLbl.verticalAlignmentMode   = .center
-            newLbl.name                    = "newCustomerBtn"
-            newLbl.zPosition               = 2
-            newBtn.addChild(newLbl)
-            panelNode.addChild(newBtn)
+            let switchBtn = SKShapeNode(rectOf: CGSize(width: btnW, height: 44), cornerRadius: 12)
+            switchBtn.fillColor   = UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 1.0)
+            switchBtn.strokeColor = .clear
+            switchBtn.alpha       = orderActive ? 0.35 : 1.0
+            switchBtn.position    = CGPoint(x: 0, y: hh - 224)
+            switchBtn.zPosition   = 1
+            switchBtn.name        = "switchCustomerBtn"
+
+            let switchLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+            switchLbl.text                    = "손님 바꾸기"
+            switchLbl.fontSize                = 18
+            switchLbl.fontColor               = .white
+            switchLbl.horizontalAlignmentMode = .center
+            switchLbl.verticalAlignmentMode   = .center
+            switchLbl.name                    = "switchCustomerBtn"
+            switchLbl.zPosition               = 2
+            switchBtn.addChild(switchLbl)
+            panelNode.addChild(switchBtn)
+
+            // Reserved unconditionally (empty string when not blocked) so
+            // the destructive button below never shifts depending on order
+            // state — same "reserve the space up front" fix as the ✨
+            // level-up badge in BackRoomScene's Status HUD.
+            let reasonLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
+            reasonLbl.text                    = orderActive ? "주문을 끝내면 바꿀 수 있어요." : ""
+            reasonLbl.fontSize                = 12
+            reasonLbl.fontColor               = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 0.75)
+            reasonLbl.horizontalAlignmentMode = .center
+            reasonLbl.verticalAlignmentMode   = .center
+            reasonLbl.position                = CGPoint(x: 0, y: hh - 250)
+            reasonLbl.zPosition               = 1
+            panelNode.addChild(reasonLbl)
+
+            // ── 이 손님 처음부터 button (destructive — was 새 손님) ─────────────
+            let resetBtn = SKShapeNode(rectOf: CGSize(width: btnW, height: 44), cornerRadius: 12)
+            resetBtn.fillColor   = UIColor(red: 0.70, green: 0.30, blue: 0.25, alpha: 1.0)
+            resetBtn.strokeColor = .clear
+            resetBtn.position    = CGPoint(x: 0, y: hh - 278)
+            resetBtn.zPosition   = 1
+            resetBtn.name        = "newCustomerBtn"
+
+            let resetLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+            resetLbl.text                    = "이 손님 처음부터"
+            resetLbl.fontSize                = 18
+            resetLbl.fontColor               = .white
+            resetLbl.horizontalAlignmentMode = .center
+            resetLbl.verticalAlignmentMode   = .center
+            resetLbl.name                    = "newCustomerBtn"
+            resetLbl.zPosition               = 2
+            resetBtn.addChild(resetLbl)
+            panelNode.addChild(resetBtn)
 
             // Draws the eye here instead of the (now-locked) carousel above.
-            newBtn.run(.repeatForever(.sequence([
+            resetBtn.run(.repeatForever(.sequence([
                 .fadeAlpha(to: 0.55, duration: 0.55),
                 .fadeAlpha(to: 1.0,  duration: 0.55)
             ])), withKey: "pulse")
@@ -292,27 +335,37 @@ class SettingsScene: SKScene {
         overlay.addChild(panel)
 
         let title = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        title.text = "정말 새 손님으로 시작할까요?"
+        title.text = "이 손님을 처음부터 다시 시작할까요?"
         title.fontSize = 18
         title.fontColor = .black
         title.position = CGPoint(x: 0, y: 88)
         title.verticalAlignmentMode = .center
         panel.addChild(title)
 
-        for (i, line) in ["지금까지 모은 옷과 냥은 사라져요.", "(재봉사의 마력과 이야기책은 그대로 남아요.)"].enumerated() {
+        // Owner-approved copy (task 10a) — three lines, not two: the old
+        // wording read as "everything is gone," when resetCustomerSide()
+        // actually only clears the CURRENT customer's slot. Line 2 makes
+        // that explicit now that 손님 바꾸기 exists as the non-destructive
+        // alternative.
+        let lines = [
+            "이 손님이 모은 옷과 냥이 모두 사라져요.",
+            "다른 손님들의 것은 그대로 남아요.",
+            "(재봉사의 마력과 이야기책도 그대로예요.)"
+        ]
+        for (i, line) in lines.enumerated() {
             let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
             lbl.text = line
             lbl.fontSize = 13
             lbl.fontColor = UIColor(red: 0.35, green: 0.18, blue: 0.0, alpha: 1.0)
-            lbl.position = CGPoint(x: 0, y: 58 - CGFloat(i) * 22)
+            lbl.position = CGPoint(x: 0, y: 68 - CGFloat(i) * 22)
             lbl.verticalAlignmentMode = .center
             panel.addChild(lbl)
         }
 
         let confirmBtn = makeSettingsDialogButton(
-            text: "예, 새 손님으로 시작할래요",
+            text: "예, 처음부터 할래요",
             name: "newCustomerConfirm",
-            position: CGPoint(x: 0, y: 0),
+            position: CGPoint(x: 0, y: -6),
             width: 300, height: 46
         )
         confirmBtn.fillColor = UIColor(red: 0.70, green: 0.30, blue: 0.25, alpha: 1.0)
@@ -427,6 +480,12 @@ class SettingsScene: SKScene {
                 showNewCustomerConfirmation()
                 return
 
+            case "switchCustomerBtn":
+                guard Store.loadActiveOrder() == nil else { return }   // blocked while an order is live
+                SoundManager.shared.play("sfx_button_tap.mp3")
+                transitionToCustomerSwitch()
+                return
+
             case "newCustomerConfirm":
                 SoundManager.shared.play("sfx_button_tap.mp3")
                 newCustomerOverlayNode?.removeFromParent()
@@ -490,6 +549,28 @@ class SettingsScene: SKScene {
     }
 
     // MARK: - Navigation
+
+    // Task 10 — the non-destructive picker path. Reuses the exact same
+    // no-reset picker presentation FrontShopScene.transitionToCustomerHandoff()
+    // already uses for the post-relics-quest handoff, rather than writing a
+    // second route to the same screen.
+    private func transitionToCustomerSwitch() {
+        guard let view = self.view else { return }
+
+        // Sync ProfileManager's selection to the customer actually on
+        // record before presenting the picker (task 10c) — ProfileManager.
+        // selectedIndex otherwise starts at 0, so a child switching away
+        // and back would not see her own cat highlighted.
+        if let currentAssetName = Store.loadSelectedCustomer(),
+           let idx = ProfileManager.avatars.firstIndex(where: { $0.asset == currentAssetName }) {
+            ProfileManager.shared.selectedIndex = idx
+        }
+
+        let picker = SettingsScene(size: size)
+        picker.scaleMode = scaleMode
+        picker.isFirstLaunchPicker = true
+        view.presentScene(picker, transition: SKTransition.crossFade(withDuration: 0.4))
+    }
 
     private func transitionToFrontShop() {
         guard let view = self.view else { return }
