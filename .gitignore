@@ -35,6 +35,7 @@ BossMinigame_prompt.md
 RELICS.md
 RIDDLE_BANK.md
 MAGIC.md
+RIDDLE_EDITOR_V2.md
 ASSESSMENT*.md
 # Prompt docs. Note the original *_prompt.md rule (below) is lowercase/singular
 # and missed capitalized/plural names like BustUpPortrait_Prompts.md, so match
