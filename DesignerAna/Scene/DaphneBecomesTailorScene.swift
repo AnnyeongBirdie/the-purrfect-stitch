@@ -233,15 +233,98 @@ class DaphneBecomesTailorScene: SKScene {
 
     // MARK: - Aurora entrance (purple sparkles + fade-in)
 
+    // Strengthened 2026-09-09 (owner request, after the intro slate landed):
+    // a plain fade-in didn't read as "arriving by magic." Now three things
+    // sell the teleport: a magic circle pulses at her feet, sparkles
+    // converge INWARD onto her position (the reverse of the outward burst
+    // TailorHandoffScene.performTeleportOut uses for a teleport-OUT — magic
+    // assembling her rather than dust drifting off an already-solid
+    // sprite), and she pops up from a smaller scale while fading in instead
+    // of just materializing at full size.
     private func runAuroraEntrance() {
-        // Purple sparkle burst at Aurora's position
-        spawnSparkles(at: auroraSprite.position, color: UIColor(red: 0.60, green: 0.30, blue: 0.90, alpha: 1.0))
+        let auroraColor  = UIColor(red: 0.60, green: 0.30, blue: 0.90, alpha: 1.0)
+        let auroraBright = UIColor(red: 0.80, green: 0.58, blue: 1.0,  alpha: 1.0)
 
-        auroraSprite.run(.fadeIn(withDuration: 1.5)) { [weak self] in
+        spawnMagicCircle(
+            at: CGPoint(x: auroraSprite.position.x, y: auroraSprite.position.y - 95),
+            color: auroraColor,
+            brightColor: auroraBright
+        )
+        spawnConvergingSparkles(at: auroraSprite.position, color: auroraBright)
+
+        // Materialize pop: start at 60% scale, grow to full size on arrival.
+        // .scale(by:) multiplies the current scale rather than replacing
+        // it, so this stays correct even though her xScale is already
+        // negative (she's flipped to face right — see setupCharacters).
+        auroraSprite.xScale *= 0.6
+        auroraSprite.yScale *= 0.6
+        let popIn = SKAction.scale(by: 1.0 / 0.6, duration: 0.55)
+        popIn.timingMode = .easeOut
+
+        auroraSprite.run(.group([.fadeIn(withDuration: 0.5), popIn])) { [weak self] in
             guard let self else { return }
             self.waitingForAuroraEntrance = false
             self.hud.setActiveSpeaker(named: "마법사 오로라")
             self.hud.show(speaker: self.beats[0].speaker, text: self.beats[0].text)
+        }
+    }
+
+    // A flat ellipse "magic circle" pad that pops in under Aurora, pulses
+    // once, then expands and fades as she finishes arriving.
+    private func spawnMagicCircle(at position: CGPoint, color: UIColor, brightColor: UIColor) {
+        let ring = SKShapeNode(ellipseOf: CGSize(width: 150, height: 46))
+        ring.fillColor   = color.withAlphaComponent(0.25)
+        ring.strokeColor = brightColor.withAlphaComponent(0.9)
+        ring.lineWidth   = 3
+        ring.position    = position
+        ring.zPosition   = 4
+        ring.alpha       = 0
+        ring.setScale(0.1)
+        addChild(ring)
+
+        let appear = SKAction.group([
+            .fadeAlpha(to: 0.9, duration: 0.25),
+            .scale(to: 1.0, duration: 0.35)
+        ])
+        appear.timingMode = .easeOut
+
+        ring.run(.sequence([
+            appear,
+            .wait(forDuration: 0.5),
+            .group([.fadeOut(withDuration: 0.5), .scale(to: 1.3, duration: 0.5)]),
+            .removeFromParent()
+        ]))
+    }
+
+    // Sparkles that start scattered around a point and converge inward onto
+    // it, fading as they arrive — the "magic assembling a character" half
+    // of a teleport-in. Mirror image of spawnSparkles' outward burst below.
+    private func spawnConvergingSparkles(at position: CGPoint, color: UIColor) {
+        for i in 0..<12 {
+            let spark = SKShapeNode(circleOfRadius: 5)
+            spark.fillColor   = color
+            spark.strokeColor = UIColor.white.withAlphaComponent(0.6)
+            spark.lineWidth   = 1
+            spark.zPosition   = 20
+            spark.alpha       = 0
+
+            let angle  = CGFloat(i) / 12 * .pi * 2
+            let radius = CGFloat.random(in: 70...110)
+            spark.position = CGPoint(
+                x: position.x + cos(angle) * radius,
+                y: position.y + sin(angle) * radius
+            )
+            addChild(spark)
+
+            spark.run(.sequence([
+                .fadeIn(withDuration: 0.1),
+                .group([
+                    .move(to: position, duration: 0.45),
+                    .scale(to: 0.3, duration: 0.45)
+                ]),
+                .fadeOut(withDuration: 0.15),
+                .removeFromParent()
+            ]))
         }
     }
 
