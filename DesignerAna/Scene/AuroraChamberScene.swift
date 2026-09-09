@@ -71,14 +71,15 @@ class AuroraChamberScene: SKScene {
     // Pure and internal (not private) specifically so it's unit-testable —
     // this exact branch was a shipped bug once (see CLAUDE.md's "Dialogue
     // bug found + fixed" note): the "come back when you're stronger" line
-    // is flatly contradicted if the player already reached 300 마력 before
+    // is flatly contradicted if the player already reached the handoff
+    // threshold (levelTwo — 1000 as of Phase 7b's retune, was 300) before
     // finishing the relics-quest chain (this scene fires before
-    // Store.saveRelicQuestComplete(), so the 300-마력 handoff stays dormant
-    // per the locked gate, but only briefly — it fires on the very next
-    // order completion once this chain ends). At mp >= 300, swap to an
-    // acknowledging line instead of the "not ready yet" one.
+    // Store.saveRelicQuestComplete(), so the handoff stays dormant per the
+    // locked gate, but only briefly — it fires on the very next order
+    // completion once this chain ends). At or past that threshold, swap to
+    // an acknowledging line instead of the "not ready yet" one.
     static func closingLine(forMagicPoints mp: Int) -> String {
-        mp >= 300
+        mp >= MagicLevelUpThreshold.levelTwo.rawValue
             ? "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼이나 올랐다니, 이미 충분히 강해졌구나. 곧 다시 만나게 될 것 같은 예감이 드는구나."
             : "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼 올랐구나. 좀 더 강해지면 공부를 마치러 돌아오렴."
     }

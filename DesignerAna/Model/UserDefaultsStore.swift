@@ -23,6 +23,7 @@ enum UserDefaultsKey {
     static let tailorHandoffShown   = "tailor.handoffShown"
     static let storybookOpened      = "storybook.opened"
     static let levelUpBadgeFlashed  = "magic.levelUpBadgeFlashed"
+    static let endingShown          = "ending.shown"
 }
 
 enum Store {
@@ -196,13 +197,28 @@ enum Store {
         defaults.set(id, forKey: UserDefaultsKey.currentTailor)
     }
 
-    /// Gates the 300-마력 Daphne→Ana handoff scene so it fires only once,
+    /// Gates the Daphne→Ana handoff scene (MagicLevelUpThreshold.levelTwo —
+    /// 1000 마력 as of Phase 7b's retune, was 300) so it fires only once,
     /// mirroring relicDeductionShown's one-shot pattern.
     static func loadTailorHandoffShown() -> Bool {
         defaults.bool(forKey: UserDefaultsKey.tailorHandoffShown)
     }
     static func saveTailorHandoffShown() {
         defaults.set(true, forKey: UserDefaultsKey.tailorHandoffShown)
+    }
+
+    /// Gates the v1 final ending (Phase 7b, task 6/7 — Ana's Estelle
+    /// epilogue at 3000 마력) so it fires only once, mirroring
+    /// tailorHandoffShown's one-shot pattern exactly. Not yet set from
+    /// anywhere — FrontShopScene.handleSaveTrophy() will call
+    /// saveEndingShown() the moment it presents the real epilogue scene
+    /// (task 7), not before; see Magic.hasReachedEnding(points:tailorID:)
+    /// for the pure, tested gate condition this flag pairs with.
+    static func loadEndingShown() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.endingShown)
+    }
+    static func saveEndingShown() {
+        defaults.set(true, forKey: UserDefaultsKey.endingShown)
     }
 
     /// Gates TitleScene's "바로 시작하기" — locked until the player has opened
@@ -217,9 +233,11 @@ enum Store {
 
     /// Gates the Tailor Status HUD's ✨ level-up badge's attention-getting
     /// flash — it should flash a few times only the first time it appears
-    /// (the first BackRoomScene load after Magic.points crosses 150), then
-    /// just sit there statically on every load after, mirroring
-    /// tailorHandoffShown's one-shot pattern.
+    /// (the first BackRoomScene load after Magic.points crosses 500, or
+    /// immediately for Ana's era, which unlocks the badge by identity —
+    /// see BackRoomScene.updateLevelUpBadge()), then just sit there
+    /// statically on every load after, mirroring tailorHandoffShown's
+    /// one-shot pattern.
     static func loadLevelUpBadgeFlashed() -> Bool {
         defaults.bool(forKey: UserDefaultsKey.levelUpBadgeFlashed)
     }

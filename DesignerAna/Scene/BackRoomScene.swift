@@ -434,7 +434,8 @@ class BackRoomScene: SKScene {
     // there isn't a clean way to fit a third row there without pushing the
     // relic row further down, which the three-file relicRowTopInset sync
     // above already has to account for once as it is. Built once Magic.points
-    // crosses 150 — including mid-run, matching the same live-unlock pattern
+    // crosses 500 (or immediately, by identity, for Ana — see below) —
+    // including mid-run, matching the same live-unlock pattern
     // as the in-dungeon ✨ ability button — and flashes a few times only the
     // very first time it appears (Store.loadLevelUpBadgeFlashed()), then
     // just sits there statically on every later appearance.
@@ -547,7 +548,7 @@ class BackRoomScene: SKScene {
             var maxY = magicBubbleNode.position.y + tailorBubbleSize.height / 2
 
             // Reserve the ✨ badge's space unconditionally, not just when it
-            // already exists: Magic.points can cross 150 mid-run (the same
+            // already exists: Magic.points can cross 500 mid-run (the same
             // live-unlock moment the in-dungeon ✨ ability button handles),
             // and this panel is only drawn once at scene setup — if the
             // badge weren't accounted for up front, it would render outside

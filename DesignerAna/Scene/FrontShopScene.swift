@@ -1054,14 +1054,15 @@ class FrontShopScene: SKScene {
 
         setNavIconsDimmed(false)   // trophy saved — navigation is safe again
 
-        // Phase 7 — the 300-마력 Daphne→Ana handoff. Checked here, right
+        // Phase 7 — the Daphne→Ana handoff, at MagicLevelUpThreshold.levelTwo
+        // (1000 마력 as of Phase 7b's retune, was 300). Checked here, right
         // after the garment is saved, deliberately not in BackRoomScene —
         // firing before the save would let the handoff dialogue conclude
         // with Ana established as tailor and THEN show the trophy, reading
         // as if Ana finished a dress she never touched. May only fire once
         // the relics quest has resolved; otherwise stays dormant, rechecked
         // on every trophy save (see CLAUDE.md's "Ending sequencing").
-        let readyForTailorHandoff = Magic.shared.points >= 300
+        let readyForTailorHandoff = Magic.shared.points >= MagicLevelUpThreshold.levelTwo.rawValue
             && Store.loadRelicQuestComplete()
             && !Store.loadTailorHandoffShown()
             && Store.loadCurrentTailor() == Tailor.defaultID
@@ -1071,6 +1072,21 @@ class FrontShopScene: SKScene {
             presentTailorHandoffScene()
             return
         }
+
+        // Phase 7b (task 6/7) — the v1 ending, 3000 마력 in Ana's era.
+        // Gate condition is done and tested (Magic.hasReachedEnding(_:_:),
+        // MagicTests) and the one-shot flag exists (Store.loadEndingShown/
+        // saveEndingShown), mirroring the handoff gate above exactly. The
+        // actual `if readyForEnding { Store.saveEndingShown();
+        // presentEstelleEpilogueScene(); return }` wiring is deliberately
+        // NOT added here yet — EstelleEpilogueScene doesn't exist until
+        // task 7 builds it, and setting the one-shot flag before a real
+        // scene exists to show would make a player who crosses 3000 today
+        // silently never see the epilogue once task 7 ships. Wire this in
+        // the same commit that adds the scene.
+        // let readyForEnding = Magic.hasReachedEnding(points: Magic.shared.points,
+        //                                              tailorID: Store.loadCurrentTailor())
+        //     && !Store.loadEndingShown()
 
         if triggerCustomerPickerAfterSave {
             triggerCustomerPickerAfterSave = false

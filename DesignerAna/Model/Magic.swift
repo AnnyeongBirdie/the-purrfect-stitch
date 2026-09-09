@@ -6,10 +6,17 @@
 import Foundation
 
 /// Daphne's two hand-picked wizard-apprentice growth thresholds — not a
-/// generic XP curve. See CLAUDE.md's "150 마력" / "300 마력" plans.
+/// generic XP curve. See CLAUDE.md's "150 마력" / "300 마력" plans (values
+/// retuned to 500/1000 in Phase 7b — 150/300 were a testing convenience,
+/// reachable in a short playtest, not a real progression curve). They stay
+/// hers: Ana's era runs on this same shared `Magic.shared` counter rather
+/// than resetting or getting her own currency (a deliberate v1 shortcut —
+/// see CLAUDE.md's Currency & economy), so these thresholds also gate her
+/// ✨ ability's mid-run VFX in principle, though in practice she starts at
+/// `levelTwo`'s value already and can never cross either from below.
 enum MagicLevelUpThreshold: Int {
-    case levelOne = 150
-    case levelTwo = 300
+    case levelOne = 500
+    case levelTwo = 1000
 }
 
 final class Magic {
@@ -31,8 +38,10 @@ final class Magic {
     /// later call can cross it again, so no extra persisted "shown" flag is
     /// needed the way other one-shot scenes (relicDeductionShown,
     /// tailorHandoffShown) require. A single call can only ever cross one
-    /// threshold — real reward sizes (≤50) can't jump the 150-point gap
-    /// between levelOne and levelTwo in one add.
+    /// threshold — real reward sizes (≤50) can't jump the 500-point gap
+    /// between levelOne and levelTwo in one add. (The `#if DEBUG` triple-tap
+    /// shortcut grants 250 at once as of Phase 7b — still can't jump a
+    /// 500-point gap either, so this invariant holds for it too.)
     @discardableResult
     func add(_ amount: Int) -> MagicLevelUpThreshold? {
         guard amount > 0 else { return nil }
@@ -45,5 +54,22 @@ final class Magic {
             return .levelOne
         }
         return nil
+    }
+
+    /// v1's final ending gate (Phase 7b, task 6) — reached at 3000 마력 in
+    /// Ana's era. Ana doesn't get her own currency in v1: she continues this
+    /// same shared counter from her 1000-마력 handoff onward (Daphne 0→1000,
+    /// handoff, Ana 1000→3000), so unlike `add(_:)`'s threshold-crossing
+    /// report, this can't be "the call that crossed 3000" — she starts at
+    /// 1000, already past both `MagicLevelUpThreshold` cases, and no later
+    /// call can ever report crossing anything again. Checked as a plain
+    /// `>=` comparison against the live totals instead, gated on tailor
+    /// identity so Daphne (who could in principle keep accumulating past
+    /// 3000 herself if the player stalls the relics quest past her own
+    /// handoff point) can never trigger it.
+    static let endingThreshold = 3000
+
+    static func hasReachedEnding(points: Int, tailorID: String) -> Bool {
+        tailorID == Tailor.anaID && points >= endingThreshold
     }
 }

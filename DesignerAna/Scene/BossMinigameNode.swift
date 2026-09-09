@@ -52,10 +52,11 @@ class BossMinigameNode: SKNode {
     private var chestNode: SKSpriteNode?
     private var instructionLabel: SKLabelNode!
     private var jumpButton: SKShapeNode!
-    // 150+ 마력 ability — nil (no button at all) if not yet unlocked when
-    // this dungeon run started. Also checked live: Magic.shared.add(_:)
-    // reports the exact call that crosses 150, so the ability can unlock
-    // mid-run (see playLevelUpVFX) instead of waiting for the next dungeon.
+    // ✨ ability (500+ 마력 for Daphne, unlocked from the start for Ana) —
+    // nil (no button at all) if not yet unlocked when this dungeon run
+    // started. Also checked live: Magic.shared.add(_:) reports the exact
+    // call that crosses 500, so the ability can unlock mid-run (see
+    // playLevelUpVFX) instead of waiting for the next dungeon.
     private var magicLightButton: SKShapeNode?
     private var leftArrowButton: SKShapeNode!
     private var rightArrowButton: SKShapeNode!
@@ -451,7 +452,7 @@ class BossMinigameNode: SKNode {
         addChild(btn)
     }
 
-    // animated: true when this is called mid-run right after crossing 150
+    // animated: true when this is called mid-run right after crossing 500
     // (see playLevelUpVFX) — pops the button in with a little overshoot so
     // its appearance reads as tied to that moment, rather than a plain
     // static button players would only notice going into the next dungeon.
@@ -768,7 +769,7 @@ class BossMinigameNode: SKNode {
         }
     }
 
-    // MARK: - Magic light (150+ 마력 ability)
+    // MARK: - Magic light (✨ ability, 500+ 마력 for Daphne)
     // Tester-loved visual from PrincessAnaScene's relic handoff (warm-gold
     // layered glow), reused as Daphne's ranged spell against the boss. Unlike
     // the mini dungeons' instant-kill version, the boss needs a two-step:
@@ -1167,13 +1168,16 @@ class BossMinigameNode: SKNode {
             onCompletion()
             return
         }
-        // Triple-tap the upper-left of the arena — adds 50 마력 through the
-        // real Magic.add(_:) path (not a bypass), so the 150/300 level-up
+        // Triple-tap the upper-left of the arena — adds 250 마력 through the
+        // real Magic.add(_:) path (not a bypass), so the 500/1000 level-up
         // VFX fires exactly like a genuine reward would. Added for testing
-        // the level-up VFX without grinding or reinstalling.
+        // the level-up VFX without grinding or reinstalling. Raised from 50
+        // in Phase 7b when the thresholds retuned 150/300 → 500/1000, so
+        // playtesting stays exactly as fast with nothing to revert before
+        // shipping.
         if touch.tapCount >= 3, loc.x < -sceneW * 0.35, loc.y > sceneH * 0.35 {
-            handleLevelUp(Magic.shared.add(50))
-            print("DEBUG: +50 마력 (now \(Magic.shared.points))")
+            handleLevelUp(Magic.shared.add(250))
+            print("DEBUG: +250 마력 (now \(Magic.shared.points))")
             return
         }
         #endif
@@ -1589,11 +1593,14 @@ class BossMinigameNode: SKNode {
         }
     }
 
-    // MARK: - Level-up VFX (150 / 300 마력 thresholds — see Magic.add(_:))
+    // MARK: - Level-up VFX (500 / 1000 마력 thresholds — see Magic.add(_:))
+    // Daphne-only in practice: Ana's era starts at 1000 (Magic.add(_:) only
+    // reports a crossing, and she's already past both from her first add
+    // onward), and her ✨ ability is unlocked by identity, not by this VFX.
 
     // Single dispatch point for every Magic.add(_:) call site: plays the
-    // matching VFX size and, only for the first (150) threshold, pops the
-    // ✨ ability button in (300 doesn't unlock a new button — it's already
+    // matching VFX size and, only for the first (500) threshold, pops the
+    // ✨ ability button in (1000 doesn't unlock a new button — it's already
     // unlocked — so it only gets the bigger VFX).
     private func handleLevelUp(_ threshold: MagicLevelUpThreshold?) {
         switch threshold {
@@ -1624,10 +1631,10 @@ class BossMinigameNode: SKNode {
     // scales it per-tailor from heroIdentity.renderedHeight (Phase 7b).
     private var heroFootOffset: CGFloat = 42
 
-    // Same composition as the 150 VFX, scaled up further for 300 — a bigger,
-    // longer-held version reads as "the second, larger threshold" without
-    // introducing a new shape (owner direction: reuse the confirmed pillar
-    // design rather than design a new effect from scratch for 300).
+    // Same composition as the 500 VFX, scaled up further for 1000 — a
+    // bigger, longer-held version reads as "the second, larger threshold"
+    // without introducing a new shape (owner direction: reuse the confirmed
+    // pillar design rather than design a new effect from scratch for 1000).
     private func playLevelUpVFX(at heroPosition: CGPoint, threshold: MagicLevelUpThreshold = .levelOne) {
         let big = threshold == .levelTwo
         let position = CGPoint(x: heroPosition.x, y: heroPosition.y - heroFootOffset)
