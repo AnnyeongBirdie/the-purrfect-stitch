@@ -11,7 +11,7 @@
 //  speaker always shares an existing slot with another character instead of
 //  getting a centered portrait of her own):
 //    left  → 마법사 오로라  (Aurora / WizardCat)
-//    right → 가게 주인 폴라레스  (Polaris / Shopkeeper) and 재봉사 다프네
+//    right → 가게 주인 폴라리스  (Polaris / Shopkeeper) and 재봉사 다프네
 //            (Daphne — hidden until beat 10) share this slot, swapped via
 //            hideSpeaker/revealSpeaker
 //
@@ -48,23 +48,23 @@ class DaphneBecomesTailorScene: SKScene {
         // 0
         Beat(speaker: "마법사 오로라",    text: "폴라리스 안녕, 옷을 주문하러 왔어."),
         // 1
-        Beat(speaker: "가게 주인 폴라레스", text: "언니, 지금은 그럴 수 없어요."),
+        Beat(speaker: "가게 주인 폴라리스", text: "언니, 지금은 그럴 수 없어요."),
         // 2
         Beat(speaker: "마법사 오로라",    text: "아니 왜, 무슨 일이 있니?"),
         // 3
-        Beat(speaker: "가게 주인 폴라레스", text: "가게 지하에 몬스터들이 나타나서 옷감, 실, 단추… 아무것도 꺼낼 수가 없어요. \n재봉사가 더 이상 못하겠다고 그만 뒀다고요."),
+        Beat(speaker: "가게 주인 폴라리스", text: "가게 지하에 몬스터들이 나타나서 옷감, 실, 단추… 아무것도 꺼낼 수가 없어요. \n재봉사가 더 이상 못하겠다고 그만 뒀다고요."),
         // 4
         Beat(speaker: "마법사 오로라",    text: "아… 불쌍한 나의 동생."),
         // 5
-        Beat(speaker: "가게 주인 폴라레스", text: "언니가 마법으로 해결해주세요. 이럴 땐 나도 마법을 할 수 있다면 얼마나 좋을까…"),
+        Beat(speaker: "가게 주인 폴라리스", text: "언니가 마법으로 해결해주세요. 이럴 땐 나도 마법을 할 수 있다면 얼마나 좋을까…"),
         // 6
         Beat(speaker: "마법사 오로라",    text: "나에게 더 좋은 수가 있어!"),
         // 7
-        Beat(speaker: "가게 주인 폴라레스", text: "그게 뭔데요?"),
+        Beat(speaker: "가게 주인 폴라리스", text: "그게 뭔데요?"),
         // 8
         Beat(speaker: "마법사 오로라",    text: "내 지각쟁이 조수를 보내줄게. 아직 배울 게 많지만 내 밑에서 배워서 마법을 제법 쓸 줄 알아.\n여기서 일하면서 몬스터들도 다루고 마력도 키워서 돌아오라고 시킬게."),
         // 9
-        Beat(speaker: "가게 주인 폴라레스", text: "언니의 조수가 과연 여기서 일을 하고 싶을까요?"),
+        Beat(speaker: "가게 주인 폴라리스", text: "언니의 조수가 과연 여기서 일을 하고 싶을까요?"),
         // 10 — Daphne entrance fires on the next tap after this beat is shown
         Beat(speaker: "마법사 오로라",    text: "그건 걱정마, 그 아이가 늦는 이유는 맨날 네 가게 앞에서 옷 구경해서 그런단다. \n다프네, 이리 오렴!"),
         // 11 — shown after Daphne's entrance completes
@@ -74,7 +74,7 @@ class DaphneBecomesTailorScene: SKScene {
         // 13
         Beat(speaker: "재봉사 다프네",    text: "아 하하하… 네…"),
         // 14
-        Beat(speaker: "가게 주인 폴라레스", text: "좋아요! 만나서 반가워요, 다프네."),
+        Beat(speaker: "가게 주인 폴라리스", text: "좋아요! 만나서 반가워요, 다프네."),
         // 15 — outro fires on next tap
         Beat(speaker: "재봉사 다프네",    text: "잘 부탁드립니다, 폴라리스 부인."),
     ]
@@ -171,7 +171,7 @@ class DaphneBecomesTailorScene: SKScene {
                     nameColor: UIColor(red: 0.37, green: 0.78, blue: 0.72, alpha: 1.0)
                 ),
                 SpeakerConfig(
-                    name: "가게 주인 폴라레스",
+                    name: "가게 주인 폴라리스",
                     portraitAsset: "Portrait_Polaris",
                     slot: .right,
                     // Polaris — soft rose
@@ -191,7 +191,7 @@ class DaphneBecomesTailorScene: SKScene {
 
         // Reveal Aurora and Polaris at scene start; Daphne stays hidden.
         // (Active speaker deliberately not set here — Aurora entrance callback sets it.)
-        hud.revealSpeakers(["마법사 오로라", "가게 주인 폴라레스"], activeSpeaker: "가게 주인 폴라레스")
+        hud.revealSpeakers(["마법사 오로라", "가게 주인 폴라리스"], activeSpeaker: "가게 주인 폴라리스")
     }
 
     // MARK: - Aurora entrance (purple sparkles + fade-in)
@@ -217,7 +217,7 @@ class DaphneBecomesTailorScene: SKScene {
         daphneSprite.run(.fadeIn(withDuration: 0.8)) { [weak self] in
             guard let self else { return }
             // Daphne shares the right slot with Polaris — swap Polaris out, Daphne in.
-            self.hud.hideSpeaker(named: "가게 주인 폴라레스")
+            self.hud.hideSpeaker(named: "가게 주인 폴라리스")
             self.hud.revealSpeaker(named: "재봉사 다프네")
             self.waitingForDaphne = false
             self.beatIndex = 11
@@ -268,10 +268,10 @@ class DaphneBecomesTailorScene: SKScene {
             daphneSprite.xScale *= -1
             // Swap Daphne out, Polaris back in the right slot.
             hud.hideSpeaker(named: "재봉사 다프네")
-            hud.revealSpeaker(named: "가게 주인 폴라레스")
+            hud.revealSpeaker(named: "가게 주인 폴라리스")
         case 15:
             // Daphne has the last word — swap back.
-            hud.hideSpeaker(named: "가게 주인 폴라레스")
+            hud.hideSpeaker(named: "가게 주인 폴라리스")
             hud.revealSpeaker(named: "재봉사 다프네")
         default:
             break

@@ -29,7 +29,7 @@
 //  portrait idea — don't trust that comment, trust the SpeakerConfig slots):
 //    left  → 마법사 오로라 (Aurora), then 아나 공주 (Ana) reuses the same
 //            slot once Aurora has left
-//    right → 가게 주인 폴라레스 (Polaris) and 재봉사 다프네 (Daphne) share
+//    right → 가게 주인 폴라리스 (Polaris) and 재봉사 다프네 (Daphne) share
 //            this slot, swapped depending on who's part of the active
 //            exchange — Polaris while she isn't, Daphne while she is
 //
@@ -53,25 +53,25 @@ class TailorHandoffScene: SKScene {
         // 0
         Beat(speaker: "마법사 오로라", text: "다프네, 마력이 정말 많이 늘었더구나. 대견하다."),
         // 1
-        Beat(speaker: "가게 주인 폴라레스", text: "다프네, 그동안 손님들 응대하느라 애 많이 썼어요. 정말 고마웠어요."),
+        Beat(speaker: "가게 주인 폴라리스", text: "다프네, 그동안 손님들 응대하느라 애 많이 썼어요. 정말 고마웠어요."),
         // 2 — Daphne swaps into the shared right slot (Polaris swaps out)
         Beat(speaker: "재봉사 다프네", text: "선생님, 저 이제 다시 견습 마법사로 돌아가도 될까요? 아직 배우고 싶은 게 많아요."),
         // 3 — teleport-out fires on the next tap after this beat is shown
         Beat(speaker: "마법사 오로라", text: "물론이지. 자, 우리 다시 돌아가자꾸나."),
         // 4 — shown after the teleport completes (Polaris swaps back in)
-        Beat(speaker: "가게 주인 폴라레스", text: "언니, 잘 가요! 다프네도 잘 지내렴!"),
+        Beat(speaker: "가게 주인 폴라리스", text: "언니, 잘 가요! 다프네도 잘 지내렴!"),
         // 5 — Ana's entrance fires on the next tap after this beat is shown
-        Beat(speaker: "가게 주인 폴라레스", text: "...그나저나, 몬스터 소굴이 되어버린 지하는 이제 어떻게 하지?"),
+        Beat(speaker: "가게 주인 폴라리스", text: "...그나저나, 몬스터 소굴이 되어버린 지하는 이제 어떻게 하지?"),
         // 6 — shown after Ana's entrance completes
-        Beat(speaker: "가게 주인 폴라레스", text: "어머, 아나 공주님 아니세요? 직접 주문을 하러 오시다니, 하인을 보내신 게 아니고요?"),
+        Beat(speaker: "가게 주인 폴라리스", text: "어머, 아나 공주님 아니세요? 직접 주문을 하러 오시다니, 하인을 보내신 게 아니고요?"),
         // 7
         Beat(speaker: "아나 공주", text: "저는 제 어린 친구 다프네 때문에 왔어요. 그리고... 사라진 저희 언니, 에스텔 공주님 때문이기도 하고요."),
         // 8
-        Beat(speaker: "가게 주인 폴라레스", text: "다프네는 다시 마법 공부를 하러 돌아갔답니다. 그래서 지금 이 던전을 다룰 재봉사가 없어요."),
+        Beat(speaker: "가게 주인 폴라리스", text: "다프네는 다시 마법 공부를 하러 돌아갔답니다. 그래서 지금 이 던전을 다룰 재봉사가 없어요."),
         // 9
         Beat(speaker: "아나 공주", text: "제 요정 대모님, 플로라님께 배운 마법이 있어요. 그 마법을 이곳에서 쓸 테니, 대신 던전을 자유롭게 드나들게 해주시겠어요? 언니를 찾고 싶어요."),
         // 10 — outro fires on next tap
-        Beat(speaker: "가게 주인 폴라레스", text: "좋아요, 아주 좋은 거래로군요."),
+        Beat(speaker: "가게 주인 폴라리스", text: "좋아요, 아주 좋은 거래로군요."),
     ]
 
     // MARK: - State
@@ -176,7 +176,7 @@ class TailorHandoffScene: SKScene {
                     nameColor: UIColor(red: 0.37, green: 0.78, blue: 0.72, alpha: 1.0)
                 ),
                 SpeakerConfig(
-                    name: "가게 주인 폴라레스",
+                    name: "가게 주인 폴라리스",
                     portraitAsset: "Portrait_Polaris",
                     slot: .right,
                     nameColor: UIColor(red: 0.91, green: 0.63, blue: 0.63, alpha: 1.0)
@@ -200,7 +200,7 @@ class TailorHandoffScene: SKScene {
 
         // Only Aurora and Polaris start revealed — Daphne shares Polaris's
         // slot and is swapped in only once she actually speaks (beat 2).
-        hud.revealSpeakers(["마법사 오로라", "가게 주인 폴라레스"], activeSpeaker: "마법사 오로라")
+        hud.revealSpeakers(["마법사 오로라", "가게 주인 폴라리스"], activeSpeaker: "마법사 오로라")
         hud.show(speaker: beats[0].speaker, text: beats[0].text)
     }
 
@@ -221,7 +221,7 @@ class TailorHandoffScene: SKScene {
             self.waitingForTeleport = false
             self.beatIndex = 4
             // Polaris swaps back into the right slot now that Daphne's gone.
-            self.hud.revealSpeaker(named: "가게 주인 폴라레스")
+            self.hud.revealSpeaker(named: "가게 주인 폴라리스")
             self.hud.show(speaker: self.beats[4].speaker, text: self.beats[4].text)
         }
     }
@@ -274,7 +274,7 @@ class TailorHandoffScene: SKScene {
 
         if beatIndex == 2 {
             // Daphne swaps into the shared right slot for her line.
-            hud.hideSpeaker(named: "가게 주인 폴라레스")
+            hud.hideSpeaker(named: "가게 주인 폴라리스")
             hud.revealSpeaker(named: "재봉사 다프네")
         }
 

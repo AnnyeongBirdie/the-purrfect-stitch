@@ -299,7 +299,7 @@ class SettingsScene: SKScene {
         title.verticalAlignmentMode = .center
         panel.addChild(title)
 
-        for (i, line) in ["지금까지 모은 옷과 냥은 사라져요.", "(재단사의 마력과 이야기책은 그대로 남아요.)"].enumerated() {
+        for (i, line) in ["지금까지 모은 옷과 냥은 사라져요.", "(재봉사의 마력과 이야기책은 그대로 남아요.)"].enumerated() {
             let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
             lbl.text = line
             lbl.fontSize = 13
