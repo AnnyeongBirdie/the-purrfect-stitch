@@ -886,6 +886,29 @@ class BossMinigameNode: SKNode {
 
         boss.addChild(halo)   // rides along automatically if the boss moves
         magicSleepHaloNode = halo
+
+        // Owner request 2026-09-09: magic sleep used to insta-kill on the
+        // first stomp (see the old bossAsleep branch in hitBoss(), removed).
+        // The spell's value is skipping the wait for the boss to attack
+        // itself tired — not a shortcut past the normal 3-stomp requirement.
+        // Reusing openVulnerabilityWindow() here means the stomp gets
+        // handled by hitBoss()'s regular isVulnerable path (one HP per
+        // stomp, same as any other window) and gets the same 💤 sleep
+        // indicator the natural tired-out window already shows — which
+        // doubles as the fix for "not clear whether you need to stomp him."
+        openVulnerabilityWindow(duration: 3.0) { [weak self] in
+            self?.wakeFromMagicSleep()
+        }
+    }
+
+    /// Vulnerability window opened by magic sleep closed without a kill —
+    /// clear the sleep-specific state and resume the normal attack cycle.
+    private func wakeFromMagicSleep() {
+        guard !bossDefeated else { return }
+        bossAsleep = false
+        magicSleepHaloNode?.removeFromParent()
+        magicSleepHaloNode = nil
+        scheduleNextAttack()
     }
 
     // MARK: - Boss damage
@@ -893,19 +916,10 @@ class BossMinigameNode: SKNode {
     private func hitBoss() {
         guard !bossDefeated else { return }
 
-        if bossAsleep {
-            // Magic sleep bypasses the normal telegraph gate — one hit ends it.
-            magicSleepHaloNode?.removeFromParent()
-            magicSleepHaloNode = nil
-            bossAsleep = false
-            bossHP = 0
-            SoundManager.shared.play("sfx_boss_hit.mp3")
-            updateHPDots()
-            spawnSparkles(at: boss.position, color: .white)
-            defeatBoss()
-            return
-        }
-
+        // Magic sleep (applySleepHalo()) opens the same vulnerability
+        // window as a natural tired-out cycle, so a stomp while asleep
+        // falls through to the normal isVulnerable path below — one HP
+        // per stomp, same 3-stomp requirement as any other window.
         guard isVulnerable, !isInvulnerable else {
             // Shield flash + clank when hit outside the vulnerability window.
             flashAura(.white)
@@ -945,6 +959,8 @@ class BossMinigameNode: SKNode {
         bossDefeated = true
         isVulnerable = false
         attackRunning = false
+        bossAsleep = false
+        magicSleepHaloNode = nil   // child of `boss`, removed along with it below
 
         removeAllActions()
         boss.removeAllActions()
