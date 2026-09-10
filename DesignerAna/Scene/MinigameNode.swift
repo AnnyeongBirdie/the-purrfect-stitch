@@ -1166,6 +1166,11 @@ class MinigameNode: SKNode {
 
     private func castMagicLight(at monster: SKSpriteNode) {
         castingMagicLight = true
+        // Owner request 2026-09-10: using magic to defeat a monster now
+        // costs 10 마력 — see Magic.spend(_:) for the floor-at-0 / never-
+        // blocks-the-cast reasoning.
+        Magic.shared.spend(10)
+        onMagicChanged?()
         let light = makeMagicLightNode()
         light.position = CGPoint(x: hero.position.x, y: hero.position.y + 10)
         light.zPosition = 4

@@ -862,6 +862,10 @@ class BossMinigameNode: SKNode {
 
     private func castMagicLightAtBoss() {
         castingMagicLight = true
+        // Owner request 2026-09-10: using magic to put the boss to sleep
+        // now costs 10 마력 too — same as MinigameNode's identical cast.
+        Magic.shared.spend(10)
+        onMagicChanged?()
         let light = makeMagicLightNode()
         light.position = CGPoint(x: hero.position.x, y: hero.position.y + 10)
         light.zPosition = 4

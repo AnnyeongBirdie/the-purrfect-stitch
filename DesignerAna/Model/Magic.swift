@@ -25,7 +25,11 @@ final class Magic {
         points = Store.loadMagicPoints() ?? 0
     }
 
-    /// Monotonically-accumulating 마력 (cat wizarding XP).
+    /// Mostly-accumulating 마력 (cat wizarding XP) — accrues via `add(_:)`
+    /// from dungeon rewards, and can now also be spent via `spend(_:)` when
+    /// the ✨ ability is used (owner request 2026-09-10: using magic to put
+    /// a monster to sleep costs 10 마력). No longer strictly monotonic as
+    /// the name once implied — see `spend(_:)`'s doc comment.
     /// Tailor-side, not customer-side — survives 새 손님 resets.
     var points: Int {
         didSet { Store.saveMagicPoints(points) }
@@ -63,6 +67,25 @@ final class Magic {
             return .levelOne
         }
         return nil
+    }
+
+    /// Deducts 마력 for using the ✨ ability — owner request 2026-09-10:
+    /// casting magic to put a monster to sleep now costs 10 마력, so the
+    /// resource is no longer purely monotonic (see `points`'s doc comment).
+    /// Floors at 0 rather than going negative — a negative 마력 display
+    /// would be confusing for this game's 8-year-old audience, and there's
+    /// no gameplay reason to punish overspending beyond "you have none
+    /// left." The ✨ ability itself is never blocked for lack of magic
+    /// (MinigameNode/BossMinigameNode don't gate the cast on affordability)
+    /// — an un-telegraphed "why didn't my attack work" failure would cut
+    /// against this project's established habit of always giving clear,
+    /// visible feedback for every mechanic. Gated the same way `add(_:)`
+    /// is: once the game is complete, points are frozen for the completion
+    /// badge/HUD, so spending stops applying rather than perturbing the
+    /// shown final total.
+    func spend(_ amount: Int) {
+        guard amount > 0, !Store.loadGameComplete() else { return }
+        points = max(0, points - amount)
     }
 
     /// v1's final ending gate (Phase 7b, task 6) — reached at 3000 마력 in

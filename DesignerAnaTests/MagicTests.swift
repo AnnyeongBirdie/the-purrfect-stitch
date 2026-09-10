@@ -110,4 +110,33 @@ final class MagicTests: XCTestCase {
         Magic.shared.add(50)
         XCTAssertEqual(Magic.shared.points, 3050)
     }
+
+    // MARK: - spend(_:) — the ✨ ability's 10-마력 cost (2026-09-10)
+
+    func testSpendDeductsPoints() {
+        Magic.shared.points = 100
+        Magic.shared.spend(10)
+        XCTAssertEqual(Magic.shared.points, 90)
+    }
+
+    func testSpendFloorsAtZeroRatherThanGoingNegative() {
+        Magic.shared.points = 5
+        Magic.shared.spend(10)
+        XCTAssertEqual(Magic.shared.points, 0, "Spending more than the current total must floor at 0, not go negative")
+    }
+
+    func testSpendWithZeroOrNegativeAmountIsANoOp() {
+        Magic.shared.points = 50
+        Magic.shared.spend(0)
+        Magic.shared.spend(-10)
+        XCTAssertEqual(Magic.shared.points, 50, "A non-positive amount must not mutate points")
+    }
+
+    func testSpendIsANoOpOnceGameIsComplete() {
+        Magic.shared.points = 3000
+        Store.saveGameComplete()
+
+        Magic.shared.spend(10)
+        XCTAssertEqual(Magic.shared.points, 3000, "points must not change once the game is complete — the frozen HUD keeps showing the final total")
+    }
 }
