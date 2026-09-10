@@ -23,15 +23,11 @@
 //  lines have the same gap and it is still outstanding; do not create a
 //  second one, least of all on the game's final scene.
 //
-//  ⚠️ ART STATUS as of 2026-09-09 — three placeholder assets, clearly
-//  labeled in-game, waiting on real art:
-//    - PalaceGuard (full-body sprite)
-//    - Portrait_Estelle_Human (bust-up portrait)
-//    - Portrait_Guard (bust-up portrait)
-//  Real, final art already wired in: TailorDetective_Dungeon,
-//  Gyeongbokgung_Palace, Gwanghwamun_Square (backdrops) and Estelle_Human
-//  (full-body sprite). Swapping a placeholder for the real asset later
-//  needs no code change — just replace the PNG inside that imageset.
+//  All art is real and final as of 2026-09-10 — the last three placeholders
+//  (PalaceGuard, Portrait_Estelle_Human, Portrait_Guard) were swapped for
+//  the delivered art with no code change, same as every other asset here
+//  (TailorDetective_Dungeon, Gyeongbokgung_Palace, Gwanghwamun_Square,
+//  Estelle_Human).
 //
 //  Story (see CLAUDE.md Phase 7b task 7 for the full beat spec):
 //    Act 1 — Ana's hideout (TailorDetective_Dungeon). Her magic peaks, a
@@ -204,7 +200,6 @@ class EstelleEpilogueScene: SKScene {
         estelleSprite = estelle
 
         // Palace guard — hidden until he speaks, partway through Act 2.
-        // ⚠️ PalaceGuard is a placeholder asset — see file header.
         let guard_ = SKSpriteNode(imageNamed: "PalaceGuard")
         if guard_.size.height > 0 { guard_.setScale(humanH / guard_.size.height) }
         guard_.xScale  *= -1   // face left toward Estelle
@@ -232,13 +227,13 @@ class EstelleEpilogueScene: SKScene {
                 ),
                 SpeakerConfig(
                     name: "에스텔 공주",
-                    portraitAsset: "Portrait_Estelle_Human",   // ⚠️ placeholder — see file header
+                    portraitAsset: "Portrait_Estelle_Human",
                     slot: .left,     // reuses Ana's vacated slot once the POV shifts (Act 2+)
                     nameColor: UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1.0)
                 ),
                 SpeakerConfig(
                     name: "궁궐 경비원",
-                    portraitAsset: "Portrait_Guard",   // ⚠️ placeholder — see file header
+                    portraitAsset: "Portrait_Guard",
                     slot: .right,
                     nameColor: UIColor(red: 0.35, green: 0.45, blue: 0.60, alpha: 1.0)
                 ),

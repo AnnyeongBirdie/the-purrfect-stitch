@@ -456,14 +456,16 @@ class StorybookScene: SKScene {
                         replayPortraitAsset: "Portrait_Ana"
                     ) : lockedStoryPage(),
 
-                    // 5 — EstelleEpilogueScene, the v1 ending (task 7). New
-                    // entry; unlocks once the game is actually complete —
-                    // this is what task 8's frozen-HUD free play looks like
-                    // from the storybook side. Title is a proposal —
-                    // owner's call. Thumbnail is the closing backdrop
-                    // (Gwanghwamun_Square) with Ana's portrait badge — she
-                    // opens the scene, and unlike Estelle's/the guard's,
-                    // her portrait is real art, not a placeholder.
+                    // 5 — EstelleEpilogueScene, the v1 ending (task 7).
+                    // Unlocks once the game is actually complete — this is
+                    // what task 8's frozen-HUD free play looks like from the
+                    // storybook side. Title is a proposal — owner's call.
+                    // Thumbnail is the closing backdrop (Gwanghwamun_Square)
+                    // with Estelle's own portrait badge — she's the scene's
+                    // actual subject (Acts 2-3 are entirely hers), now that
+                    // real art for her exists (updated 2026-09-10; this used
+                    // to badge Ana instead, since Estelle's portrait was
+                    // still a placeholder at the time).
                     storyChapterPageUnlocked(pageIndex: 5, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
@@ -476,7 +478,7 @@ class StorybookScene: SKScene {
                             "에스텔 공주를 보여줘요.\n\n" +
                             "하지만 그 문은... 들어갈 수 있는 문이 아니었어요. 🌸",
                         replaySceneName: "EstelleEpilogueScene",
-                        replayPortraitAsset: "Portrait_Ana"
+                        replayPortraitAsset: "Portrait_Estelle_Human"
                     ) : lockedStoryPage(),
                 ]
             ),
