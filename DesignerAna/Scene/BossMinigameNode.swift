@@ -581,12 +581,24 @@ class BossMinigameNode: SKNode {
             pad.removeAllActions()
             pad.fillColor = UIColor.red.withAlphaComponent(0.95)
 
-            // Boss drops onto pad
+            // Boss drops onto pad. Translucent while sliding to/from the pad —
+            // owner report 2026-09-10: her sprite could slide straight through
+            // the tailor's position with zero consequence, which read as a
+            // bug rather than intentional. There's no fair way to make this
+            // leg of the move a real hazard: it's a 0.15s slide with no
+            // telegraph of its own (the 2s red-pad warning above tells the
+            // player to watch the PAD, not her transit path), so turning
+            // contact lethal here would be an unfair, un-signaled hit. Going
+            // translucent instead reframes it visually as a "swoop" that
+            // isn't really there yet — she only becomes solid (and
+            // dangerous) once she's actually landed on the pad.
+            self.boss.alpha = 0.4
             let dropTarget = CGPoint(x: padX, y: self.bossAnchor.y)
             let drop = SKAction.move(to: dropTarget, duration: 0.15)
             drop.timingMode = .easeIn
             self.boss.run(drop) { [weak self] in
                 guard let self else { return }
+                self.boss.alpha = 1.0
                 // Heavy thud as the boss lands.
                 SoundManager.shared.play("sfx_boss_slam_impact.mp3")
                 self.spawnSparkles(at: pad.position, color: .red)
@@ -597,7 +609,9 @@ class BossMinigameNode: SKNode {
                 pad.removeFromParent()
                 self.openVulnerabilityWindow(duration: 3.0) { [weak self] in
                     guard let self else { return }
+                    self.boss.alpha = 0.4
                     self.boss.run(.move(to: self.bossAnchor, duration: 0.4)) { [weak self] in
+                        self?.boss.alpha = 1.0
                         self?.scheduleNextAttack()
                     }
                 }
