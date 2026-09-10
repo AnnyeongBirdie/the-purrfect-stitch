@@ -153,9 +153,27 @@ class BackRoomScene: SKScene {
     // Scaled down by Tailor.haloScale for shorter tailors (Daphne, 0.70)
     // so it reads as "glowing from within" rather than sticking out past a
     // narrower body — owner feedback after seeing it on-device with Daphne.
+    //
+    // Bug found 2026-09-10 (owner report + screenshot): despite the comment
+    // above, the 70pt base width was never actually verified against Ana's
+    // own silhouette on-device — Ana only recently became playable as the
+    // working tailor. Measured her real proportions (Python/PIL, tracing
+    // SecondPrincessCat.png's opaque-pixel extent row by row): her upper
+    // body (neck/shoulders) is only ~31pt wide on-screen at BackRoomScene's
+    // render scale, well under the unscaled 70pt pill — so the halo's
+    // fill+stroke (not just its soft glow) was visibly peeking out past her
+    // narrow shoulders instead of staying hidden behind her body, reading
+    // as a rigid "frame" rather than an ambient glow. The halo's 200pt
+    // height, centered on her sprite, spans roughly her neck to her lower
+    // dress, so the width needs to clear her narrowest point anywhere in
+    // that range, not just one spot — 26pt leaves a safety margin under the
+    // measured ~31pt minimum. Daphne's silhouette (a simple A-line dress,
+    // arm extended) is far wider than her own 49pt scaled halo throughout
+    // that same span, which is why this never surfaced for her.
     private var haloBaseSize: CGSize {
         let scale = Tailor.haloScale(for: tailorIdentity)
-        return CGSize(width: 70 * scale, height: 200 * scale)
+        let width: CGFloat = tailorIdentity.id == Tailor.anaID ? 26 : 70 * scale
+        return CGSize(width: width, height: 200 * scale)
     }
 
     // Each tailor renders at their own intended on-screen height
