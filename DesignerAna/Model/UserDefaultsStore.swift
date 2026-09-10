@@ -26,6 +26,7 @@ enum UserDefaultsKey {
     static let hasSeenOpening       = "storybook.hasSeenOpening"
     static let gameComplete         = "game.complete"
     static let gameCompleteBadgeFlashed = "game.completeBadgeFlashed"
+    static let kingQueenSceneShown  = "royalParents.sceneShown"
 }
 
 enum Store {
@@ -197,6 +198,20 @@ enum Store {
     }
     static func saveTailorHandoffShown() {
         defaults.set(true, forKey: UserDefaultsKey.tailorHandoffShown)
+    }
+
+    /// Gates the King/Queen narrative interlude (task 8 — 1500 마력 in
+    /// Ana's era) so it fires only once, mirroring tailorHandoffShown's
+    /// one-shot pattern exactly. Checked in FrontShopScene.handleSaveTrophy()
+    /// alongside the handoff/ending gates, since it sits between them
+    /// (1000 < 1500 < 3000) — same reasoning as both: firing before the
+    /// wardrobe save would let the scene conclude and THEN show the
+    /// trophy, reading as if the tailor finished a dress she never touched.
+    static func loadKingQueenSceneShown() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.kingQueenSceneShown)
+    }
+    static func saveKingQueenSceneShown() {
+        defaults.set(true, forKey: UserDefaultsKey.kingQueenSceneShown)
     }
 
     /// Gates the v1 final ending (Phase 7b, task 6/7 — Ana's Estelle

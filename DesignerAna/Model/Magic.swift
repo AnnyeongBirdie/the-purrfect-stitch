@@ -104,4 +104,15 @@ final class Magic {
     static func hasReachedEnding(points: Int, tailorID: String) -> Bool {
         tailorID == Tailor.anaID && points >= endingThreshold
     }
+
+    /// Task 8's King/Queen narrative interlude — reached at 1500 마력 in
+    /// Ana's era, between her 1000-마력 handoff and the 3000-마력 ending.
+    /// Not a `MagicLevelUpThreshold` case (same reasoning as
+    /// `endingThreshold`): Ana starts at 1000, already past `levelTwo`, so
+    /// a threshold-crossing report can't represent this — checked as a
+    /// plain `>=` against the live total at the trophy-save gate instead
+    /// (FrontShopScene.handleSaveTrophy()), which also handles firing the
+    /// scene even if 1500 was actually crossed mid-dungeon rather than at
+    /// the exact moment of a chest reward or paw pickup.
+    static let kingQueenSceneThreshold = 1500
 }

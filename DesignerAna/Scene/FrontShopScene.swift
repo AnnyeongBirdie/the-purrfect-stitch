@@ -1094,6 +1094,25 @@ class FrontShopScene: SKScene {
             return
         }
 
+        // Task 8 — the King/Queen interlude, 1500 마력 in Ana's era. Sits
+        // between the handoff gate above (1000) and the ending gate below
+        // (3000), same reasoning as both: firing before the save would let
+        // the scene conclude and THEN show the trophy. Owner spec: "make
+        // the scene play after garment is finished and the trophy is
+        // saved even if Ana reaches 1500 mid dungeon" — checking here,
+        // on every trophy save, is exactly what makes that true — the
+        // scene fires on the very next save after 1500 is crossed,
+        // whenever that happened.
+        let readyForKingQueenScene = Magic.shared.points >= Magic.kingQueenSceneThreshold
+            && !Store.loadKingQueenSceneShown()
+            && Store.loadCurrentTailor() == Tailor.anaID
+
+        if readyForKingQueenScene {
+            Store.saveKingQueenSceneShown()
+            presentKingQueenScene()
+            return
+        }
+
         // Phase 7b (task 6/7) — the v1 ending, 3000 마력 in Ana's era.
         // Mirrors the handoff gate immediately above exactly, including why
         // it lives here rather than in BackRoomScene: firing before the
@@ -1130,6 +1149,14 @@ class FrontShopScene: SKScene {
     private func presentEstelleEpilogueScene() {
         guard let view = self.view else { return }
         let scene = EstelleEpilogueScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
+    }
+
+    private func presentKingQueenScene() {
+        guard let view = self.view else { return }
+        let scene = KingQueenScene(size: self.size)
         scene.scaleMode = self.scaleMode
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)
