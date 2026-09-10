@@ -340,12 +340,35 @@ class MinigameNode: SKNode {
 
         // Foot offsets scale with the same ratio, off the same Daphne-tuned
         // base values (40 / 42) — see groundFootOffset/heroFootOffset decls.
-        // Still on-device estimates, not a measured transparent-padding
-        // value (no such row exists for the hero sprite the way
-        // Monster/Boss/BossAdd have) — verify by screenshot per tailor.
         let heightRatio = heroIdentity.renderedHeight / daphneRenderedHeight
-        groundFootOffset = 40 * heightRatio
-        heroFootOffset = 42 * heightRatio
+        if heroIdentity.id == Tailor.anaID {
+            // Bug found 2026-09-10 (owner report + screenshot): Ana's feet
+            // sank visibly into the floor/platforms. heightRatio-scaling
+            // Daphne's hand-tuned 40/42 assumes her art has the same
+            // transparent-bottom-padding *fraction* as Daphne's — it
+            // doesn't. Measured directly (Python/PIL, thresholded alpha
+            // bbox, stable across thresholds 50-230): SecondPrincessCat.png
+            // has ~5.2% of its own canvas height as bottom padding, versus
+            // Tailor.png's ~7.7% — a real difference in the source art, not
+            // a scaling artifact. Computed her offset directly from that
+            // measurement instead of the shared ratio:
+            //   footOffset = targetHeight * (0.5 - bottomPaddingFraction)
+            // (targetHeight is already her on-screen rendered height in
+            // this arena, computed just above — halving it gives her
+            // rendered half-height, and subtracting the padding fraction's
+            // share of that same height gives the rendered distance from
+            // her center to her actual visible feet.) Still an on-device
+            // estimate in the sense that CLAUDE.md's Monster/Boss/BossAdd
+            // table is — measured from the art, not yet confirmed against
+            // a live screenshot the way that table's entries were.
+            let anaBottomPaddingFraction: CGFloat = 0.0521
+            let footOffset = targetHeight * (0.5 - anaBottomPaddingFraction)
+            groundFootOffset = footOffset
+            heroFootOffset = footOffset
+        } else {
+            groundFootOffset = 40 * heightRatio
+            heroFootOffset = 42 * heightRatio
+        }
 
         heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 70)
         hero.position = heroStartPosition

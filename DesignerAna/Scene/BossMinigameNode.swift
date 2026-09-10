@@ -301,12 +301,23 @@ class BossMinigameNode: SKNode {
 
         // Foot offsets scale with the same ratio, off the same Daphne-tuned
         // base values (40 / 42) — see groundFootOffset/heroFootOffset decls.
-        // Still on-device estimates, not a measured transparent-padding
-        // value (no such row exists for the hero sprite the way
-        // Monster/Boss/BossAdd have) — verify by screenshot per tailor.
         let heightRatio = heroIdentity.renderedHeight / daphneRenderedHeight
-        groundFootOffset = 40 * heightRatio
-        heroFootOffset = 42 * heightRatio
+        if heroIdentity.id == Tailor.anaID {
+            // Same fix as MinigameNode's identical bug (see its comment for
+            // the full measurement) — Ana's real transparent-bottom-padding
+            // fraction (~5.2% of SecondPrincessCat.png's own canvas height)
+            // is smaller than Daphne's (~7.7%), so heightRatio-scaling
+            // Daphne's hand-tuned 40/42 undershot Ana's actual foot
+            // position here too. Computed directly from the same measured
+            // fraction, using this arena's own targetHeight.
+            let anaBottomPaddingFraction: CGFloat = 0.0521
+            let footOffset = targetHeight * (0.5 - anaBottomPaddingFraction)
+            groundFootOffset = footOffset
+            heroFootOffset = footOffset
+        } else {
+            groundFootOffset = 40 * heightRatio
+            heroFootOffset = 42 * heightRatio
+        }
 
         heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 70)
         hero.position = heroStartPosition
