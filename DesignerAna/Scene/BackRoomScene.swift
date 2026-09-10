@@ -1097,10 +1097,19 @@ class BackRoomScene: SKScene {
         let haloSize = haloBaseSize
         let scale = Tailor.haloScale(for: tailorIdentity)
         let halo = SKShapeNode(rectOf: haloSize, cornerRadius: haloSize.width / 2)
-        halo.fillColor = color.withAlphaComponent(0.45)
+        // Owner report 2026-09-10: after narrowing Ana's halo width (26pt,
+        // to keep its solid frame hidden behind her ~31pt-wide shoulders —
+        // see haloBaseSize), the whole effect read as "barely visible."
+        // A narrower shape blurs to a fainter glow at the same glowWidth,
+        // so Ana gets a brighter fill and a wider glow radius to compensate
+        // — still soft/blurred, not a hard edge, matching her own
+        // distinction between "the frame" (fixed) and "the glowy part"
+        // (meant to stay visible, now more so).
+        let isAna = tailorIdentity.id == Tailor.anaID
+        halo.fillColor = color.withAlphaComponent(isAna ? 0.60 : 0.45)
         halo.strokeColor = color.withAlphaComponent(0.85)
         halo.lineWidth = 3 * scale
-        halo.glowWidth = 24 * scale
+        halo.glowWidth = (isAna ? 44 : 24) * scale
         halo.position = CGPoint(x: tailor.position.x, y: tailor.position.y)
         halo.zPosition = 8
         halo.name = "tailorHalo"
