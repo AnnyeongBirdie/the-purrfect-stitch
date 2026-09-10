@@ -39,6 +39,7 @@ class FrontShopScene: SKScene {
     private var relaunchDialogNode: SKNode?
 
     private var safeBottom: CGFloat = 0
+    private var progressTracker: ProgressTrackerHUD?
 
 
     override func didMove(to view: SKView) {
@@ -49,6 +50,7 @@ class FrontShopScene: SKScene {
         setupDialogueUI()
         fixCharacterLayout()
         setupNavIcons()
+        setupProgressTracker()
         if !suppressEntryBell {
             SoundManager.shared.play("sfx_shop_bell.mp3")
         }
@@ -112,6 +114,21 @@ class FrontShopScene: SKScene {
             btn.addChild(label)
             addChild(btn)
         }
+    }
+
+    // Owner request 2026-09-10: an always-visible overall progress tracker,
+    // spanning both Daphne's and Ana's arcs. Top-center, in the narrow gap
+    // above the speech bubble (bubble top edge sits at frame.maxY-22.5;
+    // see setupDialogueUI's bubbleHeight/position) so it doesn't collide
+    // with existing UI. See ProgressTrackerHUD's own header for the full
+    // scoping rationale (core gameplay loop only, not narrative/meta scenes).
+    private func setupProgressTracker() {
+        let tracker = ProgressTrackerHUD()
+        tracker.configure()
+        tracker.position = CGPoint(x: 0, y: frame.maxY - 12)
+        tracker.zPosition = 95
+        addChild(tracker)
+        progressTracker = tracker
     }
 
     /// Dim or restore the four nav icons. They are dimmed while a finished

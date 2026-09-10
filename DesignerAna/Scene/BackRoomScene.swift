@@ -64,6 +64,7 @@ class BackRoomScene: SKScene {
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
     private var magicLabel: SKLabelNode?
+    private var progressTracker: ProgressTrackerHUD?
     // Tailor/Customer Status HUD panels (Phase 7 redesign, shipped 2026-09-06).
     // The bubbles themselves are kept as properties (not just their labels)
     // so the panel backgrounds and the ✨ badge can be positioned relative
@@ -109,6 +110,7 @@ class BackRoomScene: SKScene {
         setupStatusPanels()
         setupStationFireflies()
         setupQuitButton()
+        setupProgressTracker()
         applyResumeStateIfNeeded()
         saveActiveOrderSnapshot()
         // setupSelfieKeepsake() disabled 2026-09-06 — owner decided this wall
@@ -453,6 +455,35 @@ class BackRoomScene: SKScene {
         magicLabel?.text  = "🐾 \(Magic.shared.points)마력"
         updateLevelUpBadge()
         updateGameCompleteBadge()
+        progressTracker?.refresh()
+    }
+
+    // Owner request 2026-09-10: an always-visible overall progress tracker,
+    // spanning both Daphne's and Ana's arcs. See ProgressTrackerHUD's own
+    // header for the full scoping rationale. Top-center, clear of both
+    // Status HUD panels (which sit further down and to each side — see
+    // "Back room HUD layout convention"). zPosition 58 — same reasoning as
+    // setStatusHUDBoosted() below: above the minigame overlay (50, whose
+    // tallest persistent content sits at effective 57) so it stays visible
+    // during a dungeon run, but below the exit-dialog overlay (60) so that
+    // dialog's dim still darkens it like everything else, matching how the
+    // Status HUD panels themselves are boosted only while a minigame runs.
+    // Unlike those panels, this tracker only ever needs to render above the
+    // minigame — it isn't part of the back room's own base-state layout
+    // fighting for a lower slot — so a single fixed zPosition works without
+    // needing the boosted/unboosted toggle those panels use.
+    private func setupProgressTracker() {
+        let tracker = ProgressTrackerHUD()
+        tracker.configure()
+        // 8pt top inset matches the Status HUD panels' own convention.
+        // Because this same node is visible above the minigame overlay too
+        // (see zPosition note above), it also sits close to MinigameNode's
+        // instructionLabel (y = sceneH*0.42, i.e. 0.08*sceneH below this
+        // tracker) — tight but clear, not yet confirmed on-device.
+        tracker.position = CGPoint(x: 0, y: size.height / 2 - 8)
+        tracker.zPosition = 58
+        addChild(tracker)
+        progressTracker = tracker
     }
 
     // ✨ level-up badge — sits beside the 🐾 bubble rather than literally
