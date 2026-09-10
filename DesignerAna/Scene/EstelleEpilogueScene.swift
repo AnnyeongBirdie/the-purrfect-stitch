@@ -65,7 +65,9 @@ class EstelleEpilogueScene: SKScene {
     /// re-saving the relics-quest-complete flag.
     var isReplayMode = false
     /// Page index within the unified story chapter (4) to return to.
-    var replayReturnPage = 5
+    /// 6 as of 2026-09-10 — was 5 until KingQueenScene (task 8) was
+    /// inserted before this page in the chapter.
+    var replayReturnPage = 6
 
     // MARK: - Beat data
 

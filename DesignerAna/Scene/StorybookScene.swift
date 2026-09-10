@@ -64,12 +64,14 @@ class StorybookScene: SKScene {
                                           hasSeenOpening: Bool,
                                           relicQuestComplete: Bool,
                                           tailorHandoffShown: Bool,
+                                          kingQueenSceneShown: Bool,
                                           gameComplete: Bool) -> Bool {
         switch pageIndex {
         case 0: return hasSeenOpening
         case 1, 2, 3: return relicQuestComplete
         case 4: return tailorHandoffShown
-        case 5: return gameComplete
+        case 5: return kingQueenSceneShown
+        case 6: return gameComplete
         default: return false
         }
     }
@@ -97,12 +99,13 @@ class StorybookScene: SKScene {
     // ── Content ───────────────────────────────────────────────────────────────
 
     private let chapters: [Chapter] = {
-        // Captured once so the unified story chapter's six pages (below)
+        // Captured once so the unified story chapter's seven pages (below)
         // can route through the pure, tested storyChapterPageUnlocked(_:)
         // rather than each re-reading Store directly.
         let hasSeenOpening     = Store.loadHasSeenOpening()
         let relicQuestComplete = Store.loadRelicQuestComplete()
         let tailorHandoffShown = Store.loadTailorHandoffShown()
+        let kingQueenShown     = Store.loadKingQueenSceneShown()
         let gameComplete       = Store.loadGameComplete()
 
         return [
@@ -356,12 +359,8 @@ class StorybookScene: SKScene {
             // SettingsScene.transitionToFrontShop()), and every other page
             // unlocks in the order the player naturally reaches it in play.
             // Chapter title/emoji are proposals — owner's call to rename.
-            //
-            // ⚠️ Only 5 of the eventual 6 pages exist here. Page 5 (the
-            // Estelle epilogue, task 7) is not added until EstelleEpilogueScene
-            // exists — the owner is still producing its art. Add it, plus its
-            // own unlock condition (the task 8 game-complete flag), in the
-            // same commit that builds that scene.
+            // All seven pages exist as of 2026-09-10 (KingQueenScene, task 8,
+            // was the last to land).
             Chapter(
                 title:    "이야기 장면",
                 tocEmoji: "📜",
@@ -373,6 +372,7 @@ class StorybookScene: SKScene {
                     storyChapterPageUnlocked(pageIndex: 0, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "Tailorshop_Background",
                         illustrationEmoji: nil,
@@ -395,6 +395,7 @@ class StorybookScene: SKScene {
                     storyChapterPageUnlocked(pageIndex: 1, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "WizardAssistant_Dungeon",
                         illustrationEmoji: nil,
@@ -411,6 +412,7 @@ class StorybookScene: SKScene {
                     storyChapterPageUnlocked(pageIndex: 2, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "Wizard_Chamber",
                         illustrationEmoji: nil,
@@ -426,6 +428,7 @@ class StorybookScene: SKScene {
                     storyChapterPageUnlocked(pageIndex: 3, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "PrincessAna_Room",
                         illustrationEmoji: nil,
@@ -444,6 +447,7 @@ class StorybookScene: SKScene {
                     storyChapterPageUnlocked(pageIndex: 4, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "Tailorshop_Background",
                         illustrationEmoji: nil,
@@ -456,7 +460,30 @@ class StorybookScene: SKScene {
                         replayPortraitAsset: "Portrait_Ana"
                     ) : lockedStoryPage(),
 
-                    // 5 — EstelleEpilogueScene, the v1 ending (task 7).
+                    // 5 — KingQueenScene (task 8). New entry, inserted
+                    // between the handoff (page 4, ~1000 마력) and the
+                    // epilogue (now page 6, 3000 마력) since that's exactly
+                    // where it falls chronologically — it fires at 1500
+                    // 마력, partway through Ana's era. Unlocks once the
+                    // scene has actually played, same one-shot pattern as
+                    // every other page here.
+                    storyChapterPageUnlocked(pageIndex: 5, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
+                        illustrationAsset: "PrincessAna_Room",
+                        illustrationEmoji: nil,
+                        pageTitle: "부모님의 저녁 대화",
+                        pageBody:
+                            "아나 공주의 방에서, 왕과 왕비님이 두 딸의 " +
+                            "요즘 근황을 이야기하는 장면이에요.\n\n" +
+                            "딸들이 어디서 무얼 하는지, 부모님은 알고 계실까요? 👑",
+                        replaySceneName: "KingQueenScene",
+                        replayPortraitAsset: "Portrait_Queen"
+                    ) : lockedStoryPage(),
+
+                    // 6 — EstelleEpilogueScene, the v1 ending (task 7).
                     // Unlocks once the game is actually complete — this is
                     // what task 8's frozen-HUD free play looks like from the
                     // storybook side. Title is a proposal — owner's call.
@@ -465,10 +492,15 @@ class StorybookScene: SKScene {
                     // actual subject (Acts 2-3 are entirely hers), now that
                     // real art for her exists (updated 2026-09-10; this used
                     // to badge Ana instead, since Estelle's portrait was
-                    // still a placeholder at the time).
-                    storyChapterPageUnlocked(pageIndex: 5, hasSeenOpening: hasSeenOpening,
+                    // still a placeholder at the time). ⚠️ Page index moved
+                    // 5→6 the same day the King/Queen page (above) was
+                    // inserted before it — see StorybookScenePageUnlockTests
+                    // and EstelleEpilogueScene.replayReturnPage, both updated
+                    // in the same commit.
+                    storyChapterPageUnlocked(pageIndex: 6, hasSeenOpening: hasSeenOpening,
                                               relicQuestComplete: relicQuestComplete,
                                               tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
                                               gameComplete: gameComplete) ? Page(
                         illustrationAsset: "Gwanghwamun_Square",
                         illustrationEmoji: nil,
@@ -1125,7 +1157,7 @@ class StorybookScene: SKScene {
         // Chapter index 4 = the unified story chapter (task 9). Page indices
         // match the order of the pages in that chapter: 0 = the opening,
         // 1 = RelicDeduction, 2 = Aurora, 3 = Princess Ana, 4 = TailorHandoff,
-        // 5 = the Estelle epilogue (task 7).
+        // 5 = KingQueenScene (task 8), 6 = the Estelle epilogue (task 7).
         switch sceneName {
         case "DaphneBecomesTailorScene":
             let scene = DaphneBecomesTailorScene()
@@ -1162,11 +1194,18 @@ class StorybookScene: SKScene {
             scene.replayReturnPage = 4
             view.presentScene(scene, transition: t)
 
+        case "KingQueenScene":
+            let scene = KingQueenScene()
+            scene.scaleMode        = .resizeFill
+            scene.isReplayMode     = true
+            scene.replayReturnPage = 5
+            view.presentScene(scene, transition: t)
+
         case "EstelleEpilogueScene":
             let scene = EstelleEpilogueScene()
             scene.scaleMode        = .resizeFill
             scene.isReplayMode     = true
-            scene.replayReturnPage = 5
+            scene.replayReturnPage = 6
             view.presentScene(scene, transition: t)
 
         default:
