@@ -6,11 +6,14 @@
 //  Spans both Daphne's and Ana's arcs on one bar, since 마력 already runs
 //  continuously 0→3000 across the whole v1 story (Daphne 0→1000 at her
 //  handoff, Ana 1000→3000 at the ending gate — one shared, monotonic-ish
-//  counter; see Magic.swift and CLAUDE.md's Currency & economy). Tick
-//  marks sit at the two MagicLevelUpThreshold fractions, since those ARE
-//  the story's milestones (✨ ability unlock, 🤝 the tailor handoff) —
-//  exact positions, not estimates. Reaching Magic.endingThreshold (or the
-//  gameComplete flag going true) switches the display to a finished state.
+//  counter; see Magic.swift and CLAUDE.md's Currency & economy). Reaching
+//  Magic.endingThreshold (or the gameComplete flag going true) switches
+//  the display to a finished state.
+//
+//  Milestone tick marks (at the MagicLevelUpThreshold fractions) were
+//  tried and removed the same day (owner feedback: with only two ticks,
+//  both landing in the first third of the bar, the back two-thirds looked
+//  oddly bare) — see git history if reviving this idea.
 //
 //  Shared across FrontShopScene, BackRoomScene, MinigameNode, and
 //  BossMinigameNode — the core gameplay loop. Deliberately NOT shown in
@@ -37,14 +40,6 @@ final class ProgressTrackerHUD: SKNode {
     private var barWidth: CGFloat = 110
     private let barHeight: CGFloat = 8
 
-    // (fraction along the bar, tick color) for each named milestone.
-    private var milestoneFractions: [CGFloat] {
-        [
-            CGFloat(MagicLevelUpThreshold.levelOne.rawValue) / CGFloat(Magic.endingThreshold),
-            CGFloat(MagicLevelUpThreshold.levelTwo.rawValue) / CGFloat(Magic.endingThreshold),
-        ]
-    }
-
     private let goldFill = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 1.0)
     private let completeFill = UIColor(red: 0.95, green: 0.70, blue: 0.15, alpha: 1.0)
 
@@ -63,15 +58,6 @@ final class ProgressTrackerHUD: SKNode {
         fillNode.zPosition = 1
         addChild(fillNode)
         self.fill = fillNode
-
-        for m in milestoneFractions {
-            let tick = SKShapeNode(rectOf: CGSize(width: 2, height: barHeight + 4))
-            tick.fillColor = UIColor.white.withAlphaComponent(0.75)
-            tick.strokeColor = .clear
-            tick.position = CGPoint(x: -barWidth / 2 + barWidth * m, y: 0)
-            tick.zPosition = 2
-            addChild(tick)
-        }
 
         let icon = SKLabelNode(text: "📖")
         icon.fontSize = 13
