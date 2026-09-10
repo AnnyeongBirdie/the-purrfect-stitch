@@ -138,14 +138,20 @@ class BossMinigameNode: SKNode {
     private var portraitNode: SKSpriteNode?
     private var portraitCollected = false
     private var onRelicCollected: ((DungeonItem) -> Void)?
+    // Owner report 2026-09-10: the Status HUD's 🐾 counter only updated on
+    // return to the back room even though the panel is now visible
+    // mid-dungeon — see MinigameNode's identical property for the full note.
+    private var onMagicChanged: (() -> Void)?
 
     // MARK: - Init
 
     init(order: Order?,
          onRelicCollected: ((DungeonItem) -> Void)? = nil,
+         onMagicChanged: (() -> Void)? = nil,
          onCompletion: @escaping () -> Void) {
         self.order = order
         self.onRelicCollected = onRelicCollected
+        self.onMagicChanged = onMagicChanged
         self.onCompletion = onCompletion
         super.init()
     }
@@ -1076,6 +1082,7 @@ class BossMinigameNode: SKNode {
 
         // 마력 reward awarded and displayed
         handleLevelUp(Magic.shared.add(bossReward))
+        onMagicChanged?()
         let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         coinPop.text = "+\(bossReward)마력"
         coinPop.fontSize = 32
@@ -1201,6 +1208,7 @@ class BossMinigameNode: SKNode {
         // shipping.
         if touch.tapCount >= 3, loc.x < -sceneW * 0.35, loc.y > sceneH * 0.35 {
             handleLevelUp(Magic.shared.add(250))
+            onMagicChanged?()
             print("DEBUG: +250 마력 (now \(Magic.shared.points))")
             return
         }
@@ -1476,14 +1484,21 @@ class BossMinigameNode: SKNode {
             }
         }
 
-        // Breadcrumb paw collection
+        // Breadcrumb paw collection. Same fix as MinigameNode's identical
+        // bug (see its comment for the full diagnosis) — Ana's larger
+        // groundFootOffset pushed her center-to-ground-paw gap past the old
+        // fixed 45pt tolerance, so her ground-level paws silently never
+        // registered. Comparing against her feet instead removes the
+        // per-tailor height dependency.
         if !isDead, !isCompleting {
+            let heroFeetY = hero.position.y - groundFootOffset
             for paw in children where paw.name == "breadcrumb" {
                 if abs(hero.position.x - paw.position.x) < 28,
-                   abs(hero.position.y - paw.position.y) < 45 {
+                   abs(heroFeetY - paw.position.y) < 30 {
                     let pawPos = paw.position
                     paw.removeFromParent()
                     handleLevelUp(Magic.shared.add(1))
+                    onMagicChanged?()
                     let pop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
                     pop.text = "+1마력"
                     pop.fontSize = 16

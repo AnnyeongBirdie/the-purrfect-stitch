@@ -949,6 +949,9 @@ class BackRoomScene: SKScene {
             config: config,
             onRelicCollected: { [weak self] _ in
                 self?.updateRelicHUD()
+            },
+            onMagicChanged: { [weak self] in
+                self?.updateHUDCounters()
             }
         ) { [weak self] completedStation in
             self?.handleMinigameCompletion(for: completedStation)
@@ -970,6 +973,9 @@ class BackRoomScene: SKScene {
             order: order,
             onRelicCollected: { [weak self] _ in
                 self?.updateRelicHUD()
+            },
+            onMagicChanged: { [weak self] in
+                self?.updateHUDCounters()
             }
         ) { [weak self] in
             self?.handleBossCompletion()

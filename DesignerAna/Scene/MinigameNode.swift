@@ -116,13 +116,21 @@ class MinigameNode: SKNode {
     private var relicNode: SKSpriteNode?
     private var relicCollected = false
     private var onRelicCollected: ((DungeonItem) -> Void)?
+    // Owner report 2026-09-10: the Status HUD's 🐾 counter only updated on
+    // return to the back room (updateHUDCounters(), called from the
+    // minigame-completion handlers) even though the panel itself is now
+    // visible mid-dungeon — paw pickups and the chest reward didn't push
+    // live. Mirrors onRelicCollected's existing pattern exactly.
+    private var onMagicChanged: (() -> Void)?
 
     // MARK: - Init
     init(config: MinigameConfig,
          onRelicCollected: ((DungeonItem) -> Void)? = nil,
+         onMagicChanged: (() -> Void)? = nil,
          onCompletion: @escaping (MinigameStation) -> Void) {
         self.config = config
         self.onRelicCollected = onRelicCollected
+        self.onMagicChanged = onMagicChanged
         self.onCompletion = onCompletion
         super.init()
     }
@@ -674,6 +682,7 @@ class MinigameNode: SKNode {
         // revert before shipping.
         if touch.tapCount >= 3, location.x < -sceneW * 0.35, location.y > sceneH * 0.35 {
             handleLevelUp(Magic.shared.add(250))
+            onMagicChanged?()
             print("DEBUG: +250 마력 (now \(Magic.shared.points))")
             return
         }
@@ -927,14 +936,39 @@ class MinigameNode: SKNode {
             collectRelic(relic, from: rn.position)
         }
 
-        // Breadcrumb paw collection — disappear on contact, award 1 마력 each
+        // Breadcrumb paw collection — disappear on contact, award 1 마력 each.
+        //
+        // Bug found 2026-09-10 (owner report): Ana couldn't collect paws
+        // sitting at ground level, only ones on platforms reached by
+        // jumping. Root cause was the same class as the sweep-projectile
+        // hitbox bug fixed earlier — this compared the paw's Y (which sits
+        // right at whatever surface it's placed on: breadcrumbPositions()
+        // always adds a small, fixed "+ paw half-height" to a surface's own
+        // Y) against hero.position.y, her sprite CENTER, using one fixed
+        // tolerance (45). landingY's formula (floorCenterY + 13 +
+        // groundFootOffset) means the center-to-ground-surface gap IS
+        // groundFootOffset, which scales with heightRatio per tailor —
+        // Daphne's is 40 (gap 35, inside the old 45pt tolerance) but Ana's
+        // is ~57 (gap ~52, outside it), so only Ana's ground-level paws
+        // silently failed to register — platform paws happened to still
+        // fall inside tolerance because standing on a platform changes the
+        // math (rect.maxY + groundFootOffset vs. the paw's own rect.maxY +
+        // 17), and airborne "head/body" contact during a jump's arc could
+        // transiently land within 45pt of a paw by chance. Comparing
+        // against the hero's FEET (hero.position.y - groundFootOffset,
+        // the same formula this file already uses for platform landing)
+        // removes the per-tailor height term entirely — a paw sitting on
+        // a surface is always ~5-17pt above where her feet land on that
+        // same surface, regardless of who's playing.
         if !isDead, !isCompleting {
+            let heroFeetY = hero.position.y - groundFootOffset
             for paw in children where paw.name == "breadcrumb" {
                 if abs(hero.position.x - paw.position.x) < 28,
-                   abs(hero.position.y - paw.position.y) < 45 {
+                   abs(heroFeetY - paw.position.y) < 30 {
                     let pawPos = paw.position
                     paw.removeFromParent()
                     handleLevelUp(Magic.shared.add(1))
+                    onMagicChanged?()
                     // +1마력 pop-up
                     let pop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
                     pop.text = "+1마력"
@@ -1273,6 +1307,7 @@ class MinigameNode: SKNode {
 
         // 마력 reward awarded and displayed
         handleLevelUp(Magic.shared.add(config.completionReward))
+        onMagicChanged?()
         let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         coinPop.text = "+\(config.completionReward)마력"
         coinPop.fontSize = 28
