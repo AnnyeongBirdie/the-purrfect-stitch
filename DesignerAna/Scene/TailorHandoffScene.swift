@@ -241,8 +241,15 @@ class TailorHandoffScene: SKScene {
 
     // MARK: - Ana entrance
 
+    // Owner note 2026-09-10: Ana is making a social visit to see her friend
+    // Daphne, not travelling by magic — she hasn't accrued enough magic yet
+    // to open a "see-portal" or "walkthrough-portal" (see GAME_VOCABULARY.md).
+    // She enters like any other visitor, so the shop bell rings for her the
+    // same way it does for a new customer (FrontShopScene), rather than any
+    // magic-arrival effect.
     private func enterAna() {
         waitingForAna = true
+        SoundManager.shared.play("sfx_shop_bell.mp3")
         anaSprite.run(.fadeIn(withDuration: 0.8)) { [weak self] in
             guard let self else { return }
             self.hud.revealSpeaker(named: "아나 공주")
