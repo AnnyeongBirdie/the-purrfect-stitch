@@ -1636,6 +1636,28 @@ class MinigameNode: SKNode {
                 .removeFromParent()
             ]))
         }
+
+        // Rising "레벨업 ⬆️" label above her head — owner request 2026-09-10,
+        // matching the existing +1마력 pickup popup's rise-and-fade language
+        // so it reads as the same family of feedback, just for a bigger
+        // moment. heroPosition + heroFootOffset approximates head height
+        // (heroFootOffset is center-to-feet; a humanoid sprite is roughly
+        // symmetric top-to-bottom around its center, so the same distance
+        // upward lands near the top of her head).
+        let levelUpLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        levelUpLabel.text = "레벨업 ⬆️"
+        levelUpLabel.fontSize = big ? 26 : 22
+        levelUpLabel.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+        levelUpLabel.position = CGPoint(x: heroPosition.x, y: heroPosition.y + heroFootOffset + 20)
+        levelUpLabel.zPosition = 6
+        addChild(levelUpLabel)
+        let labelRiseDuration: TimeInterval = big ? 1.4 : 1.0
+        let labelRise = SKAction.moveBy(x: 0, y: big ? 70 : 50, duration: labelRiseDuration)
+        labelRise.timingMode = .easeOut
+        levelUpLabel.run(.sequence([
+            .group([labelRise, .fadeOut(withDuration: labelRiseDuration)]),
+            .removeFromParent()
+        ]))
     }
 
     // MARK: - Sparkles
