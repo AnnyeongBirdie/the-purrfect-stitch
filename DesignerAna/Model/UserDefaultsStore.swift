@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os.log
 
 enum UserDefaultsKey {
     static let walletBalance        = "wallet.balance"
@@ -319,3 +320,69 @@ enum Store {
         clearSelectedCustomer()
     }
 }
+
+// MARK: - Progression invariants (DEBUG only)
+
+#if DEBUG
+extension Store {
+
+    private static let progressLog = OSLog(subsystem: "com.annyeongbirdie.thepurrfectstitch",
+                                           category: "Progress")
+
+    /// Consistency check over the story-progression flags.
+    ///
+    /// These flags encode one ordered progression -- collect four relics, finish
+    /// the quest, hand the shop to Ana, reach the ending -- but they are stored
+    /// as independent values, so nothing structurally prevents a combination the
+    /// game's own logic treats as impossible. Added 2026-09-10 after exactly such
+    /// a combination reached a device playtest: Ana as the working tailor with an
+    /// empty relic set, which makes uncollected relics respawn in her dungeons.
+    /// It arrived through the then-unguarded SettingsScene debug shortcut (now
+    /// corner-gated), and because collecting the respawned relic repairs the
+    /// state, the corruption was both silent and self-healing -- so it could not
+    /// be reproduced. This turns that whole class of state into a loud failure at
+    /// the moment gameplay first trusts it.
+    ///
+    /// ⚠️ Every check here is keyed on `tailorHandoffShown`, never on
+    /// `currentTailor` alone. BackRoomScene's `#if DEBUG` roster-cycle shortcut
+    /// deliberately sets the tailor independently of the story flags, so
+    /// "currentTailor is Ana" is not on its own a violation while that shortcut
+    /// exists -- asserting on it would fire on every use of the fastest route to
+    /// Ana and train the alarm to be ignored. Once the debug shortcuts come out
+    /// (step 1 of the economy calibration pass), the stricter predicate becomes
+    /// available and this comment is the note to revisit it.
+    ///
+    /// Compiled out of release builds entirely. If a trap mid-playtest proves
+    /// disruptive during the outstanding on-device verification pass, drop the
+    /// `assertionFailure` and keep the `os_log` -- the log line alone still
+    /// records the violation, with the same message.
+    static func assertProgressInvariants(_ context: String) {
+        let relics       = loadCollectedRelics()
+        let relicTotal   = DungeonItem.allCases.count
+        let questDone    = loadRelicQuestComplete()
+        let handoffShown = loadTailorHandoffShown()
+        let gameDone     = loadGameComplete()
+
+        var violations: [String] = []
+
+        if questDone && relics.count != relicTotal {
+            violations.append("relicQuestComplete is set but \(relics.count)/\(relicTotal) relics are collected")
+        }
+        if handoffShown && !questDone {
+            violations.append("tailorHandoffShown is set but relicQuestComplete is not")
+        }
+        if handoffShown && relics.count != relicTotal {
+            violations.append("the handoff to Ana has happened but \(relics.count)/\(relicTotal) relics are collected -- uncollected relics will respawn in her dungeons")
+        }
+        if gameDone && !handoffShown {
+            violations.append("gameComplete is set but tailorHandoffShown is not")
+        }
+
+        guard !violations.isEmpty else { return }
+
+        let message = "Progression invariant violated at \(context): " + violations.joined(separator: "; ")
+        os_log("%{public}@", log: progressLog, type: .fault, message)
+        assertionFailure(message)
+    }
+}
+#endif

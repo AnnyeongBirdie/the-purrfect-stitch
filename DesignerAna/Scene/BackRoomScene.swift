@@ -97,6 +97,14 @@ class BackRoomScene: SKScene {
         view.isMultipleTouchEnabled = true
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
+        #if DEBUG
+        // Checked here because this scene is the gateway to every dungeon, so
+        // it is where an inconsistent progression state first turns into
+        // something visible (the wrong tailor, or relics respawning). No-op in
+        // release builds. See Store.assertProgressInvariants(_:).
+        Store.assertProgressInvariants("BackRoomScene.didMove")
+        #endif
+
         setupBackground()
         setupTailor()
         setupFabricCabinetZone()

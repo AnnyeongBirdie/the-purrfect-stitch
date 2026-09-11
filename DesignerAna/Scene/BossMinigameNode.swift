@@ -1065,7 +1065,11 @@ class BossMinigameNode: SKNode {
     private let bossReward = 50
 
     private func openChest() {
-        // Safety net: collect portrait now if the auto-collect timer hasn't fired yet.
+        // Safety net: the portrait is a walk-over pickup on the upper platform
+        // (see the proximity check in update()), so a hero who reaches the chest
+        // without detouring would otherwise leave it behind. Collect it now.
+        // There is no timer involved -- an earlier version of this comment said
+        // there was, describing a mechanism that has never existed in either file.
         if !portraitCollected, portraitNode != nil {
             collectPortrait()
         }
