@@ -343,40 +343,28 @@ extension Store {
     /// be reproduced. This turns that whole class of state into a loud failure at
     /// the moment gameplay first trusts it.
     ///
-    /// ⚠️ Every check here is keyed on `tailorHandoffShown`, never on
-    /// `currentTailor` alone. BackRoomScene's `#if DEBUG` roster-cycle shortcut
-    /// deliberately sets the tailor independently of the story flags, so
-    /// "currentTailor is Ana" is not on its own a violation while that shortcut
-    /// exists -- asserting on it would fire on every use of the fastest route to
-    /// Ana and train the alarm to be ignored. Once the debug shortcuts come out
-    /// (step 1 of the economy calibration pass), the stricter predicate becomes
-    /// available and this comment is the note to revisit it.
+    /// Every check here was keyed on `tailorHandoffShown`, never on
+    /// `currentTailor` alone, because BackRoomScene's `#if DEBUG` roster-cycle
+    /// shortcut deliberately set the tailor independently of the story flags --
+    /// asserting on "currentTailor is Ana" would have fired on every use of the
+    /// fastest route to Ana and trained the alarm to be ignored. That shortcut
+    /// was removed 2026-09-11 (step 1 of the economy calibration pass), so the
+    /// stricter predicate is now live: `currentTailor` and `tailorHandoffShown`
+    /// must agree with no debug escape hatch left to excuse a mismatch.
+    ///
+    /// 2026-09-11: the actual rule set moved to `GameProgress.violations(_:)`,
+    /// a pure function over a plain `Snapshot` rather than live `UserDefaults`
+    /// reads -- this is now just the DEBUG-only wiring (build the snapshot,
+    /// log, trap) around that shared derivation, so the same rules are
+    /// unit-testable independent of this file's `#if DEBUG` gate.
     ///
     /// Compiled out of release builds entirely. If a trap mid-playtest proves
     /// disruptive during the outstanding on-device verification pass, drop the
     /// `assertionFailure` and keep the `os_log` -- the log line alone still
     /// records the violation, with the same message.
     static func assertProgressInvariants(_ context: String) {
-        let relics       = loadCollectedRelics()
-        let relicTotal   = DungeonItem.allCases.count
-        let questDone    = loadRelicQuestComplete()
-        let handoffShown = loadTailorHandoffShown()
-        let gameDone     = loadGameComplete()
-
-        var violations: [String] = []
-
-        if questDone && relics.count != relicTotal {
-            violations.append("relicQuestComplete is set but \(relics.count)/\(relicTotal) relics are collected")
-        }
-        if handoffShown && !questDone {
-            violations.append("tailorHandoffShown is set but relicQuestComplete is not")
-        }
-        if handoffShown && relics.count != relicTotal {
-            violations.append("the handoff to Ana has happened but \(relics.count)/\(relicTotal) relics are collected -- uncollected relics will respawn in her dungeons")
-        }
-        if gameDone && !handoffShown {
-            violations.append("gameComplete is set but tailorHandoffShown is not")
-        }
+        let snapshot = GameProgress.currentSnapshot()
+        let violations = GameProgress.violations(snapshot)
 
         guard !violations.isEmpty else { return }
 

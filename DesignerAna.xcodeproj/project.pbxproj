@@ -14,6 +14,7 @@
 		A2270677048F27CD2CD95F85 /* CodablePersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 713DDB58898AA69CB7736D6B /* CodablePersistenceTests.swift */; };
 		A6F7B3F5F5DBE5A8620BF684 /* FrontShopStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */; };
 		B6CA082021EBAA454A26887C /* TailorIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */; };
+		1F8FCDB6222C33822FBD2B86 /* GameProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776BFBABB8E1A9017F29125C /* GameProgressTests.swift */; };
 		C0FEFCC97C18A26E6EE55299 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1840DB1FE95F8E8741EEF7A8 /* Foundation.framework */; };
 		1C893C9F60D64E278C4B2DF9 /* RiddleContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C9BCF9D0774C8CA8B487C7 /* RiddleContentTests.swift */; };
 		F073BA70956867EA3EAFD836 /* StorybookScenePageUnlockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 837C7D7CDA772B51913E7139 /* StorybookScenePageUnlockTests.swift */; };
@@ -40,6 +41,7 @@
 		A59F4302178E16862A8E8F52 /* StoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StoreTests.swift; sourceTree = "<group>"; };
 		BEDB55BCCD115DA53365D1BB /* GarmentNamingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GarmentNamingTests.swift; sourceTree = "<group>"; };
 		C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TailorIdentityTests.swift; sourceTree = "<group>"; };
+		776BFBABB8E1A9017F29125C /* GameProgressTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameProgressTests.swift; sourceTree = "<group>"; };
 		DB6634DC7A8C38A9511F934A /* FrontShopStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FrontShopStateTests.swift; sourceTree = "<group>"; };
 		38C9BCF9D0774C8CA8B487C7 /* RiddleContentTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RiddleContentTests.swift; sourceTree = "<group>"; };
 		837C7D7CDA772B51913E7139 /* StorybookScenePageUnlockTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorybookScenePageUnlockTests.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 				A59F4302178E16862A8E8F52 /* StoreTests.swift */,
 				837C7D7CDA772B51913E7139 /* StorybookScenePageUnlockTests.swift */,
 				C4158689E866E7F1561CA567 /* TailorIdentityTests.swift */,
+				776BFBABB8E1A9017F29125C /* GameProgressTests.swift */,
 			);
 			name = DesignerAnaTests;
 			path = DesignerAnaTests;
@@ -242,6 +245,7 @@
 				B6CA082021EBAA454A26887C /* TailorIdentityTests.swift in Sources */,
 				1C893C9F60D64E278C4B2DF9 /* RiddleContentTests.swift in Sources */,
 				F073BA70956867EA3EAFD836 /* StorybookScenePageUnlockTests.swift in Sources */,
+				1F8FCDB6222C33822FBD2B86 /* GameProgressTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

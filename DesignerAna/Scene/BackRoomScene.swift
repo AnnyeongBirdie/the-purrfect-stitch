@@ -741,25 +741,6 @@ class BackRoomScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
-        #if DEBUG
-        // Temporary dev shortcut: triple-tap the bottom-right corner to cycle
-        // the current tailor, so Ana's BackRoomScene presence can be tested
-        // before the real Daphne/Aurora/Polaris/Ana handoff scene exists.
-        // Bottom-right is clear of the HUD (tailor HUD top-left, customer HUD
-        // top-right, quit button center). Remove before shipping — see
-        // CLAUDE.md's "Known gaps" debug-shortcut checklist.
-        if touch.tapCount >= 3, location.x > size.width * 0.30, location.y < -size.height * 0.30 {
-            let ids = Tailor.all.map { $0.id }
-            let currentIndex = ids.firstIndex(of: Store.loadCurrentTailor()) ?? 0
-            let nextID = ids[(currentIndex + 1) % ids.count]
-            Store.saveCurrentTailor(nextID)
-            tailor.removeFromParent()
-            setupTailor()
-            print("DEBUG: switched current tailor to \(nextID)")
-            return
-        }
-        #endif
-
         // Exit dialog intercepts all taps when visible
         if exitDialogNode != nil {
             handleExitDialogTap(at: location)
@@ -1059,9 +1040,10 @@ class BackRoomScene: SKScene {
 
         // Phase 5 — RelicDeductionScene fires once when all four relics have
         // been collected and the deduction scene hasn't been shown yet.
-        let allRelicsCollected = Store.loadCollectedRelics().count == DungeonItem.allCases.count
-
-        if allRelicsCollected && !Store.loadRelicDeductionShown() {
+        // See GameProgress.relicDeductionShouldFire(_:) for why this
+        // derivation lives there rather than inline, alongside the three
+        // story gates checked in FrontShopScene.handleSaveTrophy().
+        if GameProgress.relicDeductionShouldFire(GameProgress.currentSnapshot()) {
             Store.saveRelicDeductionShown()
             presentRelicDeductionScene()
         } else {

@@ -1075,56 +1075,34 @@ class FrontShopScene: SKScene {
 
         setNavIconsDimmed(false)   // trophy saved — navigation is safe again
 
-        // Phase 7 — the Daphne→Ana handoff, at MagicLevelUpThreshold.levelTwo
-        // (1000 마력 as of Phase 7b's retune, was 300). Checked here, right
-        // after the garment is saved, deliberately not in BackRoomScene —
-        // firing before the save would let the handoff dialogue conclude
-        // with Ana established as tailor and THEN show the trophy, reading
-        // as if Ana finished a dress she never touched. May only fire once
-        // the relics quest has resolved; otherwise stays dormant, rechecked
-        // on every trophy save (see CLAUDE.md's "Ending sequencing").
-        let readyForTailorHandoff = Magic.shared.points >= MagicLevelUpThreshold.levelTwo.rawValue
-            && Store.loadRelicQuestComplete()
-            && !Store.loadTailorHandoffShown()
-            && Store.loadCurrentTailor() == Tailor.defaultID
-
-        if readyForTailorHandoff {
+        // Three one-shot story gates — the Daphne→Ana handoff (1000 마력),
+        // the King/Queen interlude (1500 마력), and the v1 ending (3000
+        // 마력) — checked here, right after the garment is saved,
+        // deliberately not in BackRoomScene: firing any of them before the
+        // save would let its dialogue conclude and THEN show the trophy,
+        // reading as if the outgoing tailor finished a dress she never
+        // touched. Each stays dormant until its own preconditions hold,
+        // rechecked on every trophy save (see CLAUDE.md's "Ending
+        // sequencing"), so a threshold crossed mid-dungeon still fires on
+        // the very next save. `GameProgress.nextStoryGate(_:)` holds the
+        // three conditions and their priority order in one place — see
+        // that type for the reasoning a session found worth writing down
+        // once (2026-09-11).
+        switch GameProgress.nextStoryGate(GameProgress.currentSnapshot()) {
+        case .tailorHandoff:
             Store.saveTailorHandoffShown()
             presentTailorHandoffScene()
             return
-        }
-
-        // Task 8 — the King/Queen interlude, 1500 마력 in Ana's era. Sits
-        // between the handoff gate above (1000) and the ending gate below
-        // (3000), same reasoning as both: firing before the save would let
-        // the scene conclude and THEN show the trophy. Owner spec: "make
-        // the scene play after garment is finished and the trophy is
-        // saved even if Ana reaches 1500 mid dungeon" — checking here,
-        // on every trophy save, is exactly what makes that true — the
-        // scene fires on the very next save after 1500 is crossed,
-        // whenever that happened.
-        let readyForKingQueenScene = Magic.shared.points >= Magic.kingQueenSceneThreshold
-            && !Store.loadKingQueenSceneShown()
-            && Store.loadCurrentTailor() == Tailor.anaID
-
-        if readyForKingQueenScene {
+        case .kingQueenScene:
             Store.saveKingQueenSceneShown()
             presentKingQueenScene()
             return
-        }
-
-        // Phase 7b (task 6/7) — the v1 ending, 3000 마력 in Ana's era.
-        // Mirrors the handoff gate immediately above exactly, including why
-        // it lives here rather than in BackRoomScene: firing before the
-        // save would let the epilogue conclude and THEN show the trophy.
-        let readyForEnding = Magic.hasReachedEnding(points: Magic.shared.points,
-                                                      tailorID: Store.loadCurrentTailor())
-            && !Store.loadEndingShown()
-
-        if readyForEnding {
+        case .ending:
             Store.saveEndingShown()
             presentEstelleEpilogueScene()
             return
+        case nil:
+            break
         }
 
         if triggerCustomerPickerAfterSave {

@@ -1223,30 +1223,6 @@ class BossMinigameNode: SKNode {
         // and node-local coords are identical — no conversion needed.
         let loc = touch.location(in: scene)
 
-        #if DEBUG
-        if touch.tapCount >= 3, loc.x > sceneW * 0.35, loc.y > sceneH * 0.35 {
-            removeAllActions()
-            boss.removeAllActions()
-            stopBossAttackSFX()
-            isCompleting = true
-            onCompletion()
-            return
-        }
-        // Triple-tap the upper-left of the arena — adds 250 마력 through the
-        // real Magic.add(_:) path (not a bypass), so the 500/1000 level-up
-        // VFX fires exactly like a genuine reward would. Added for testing
-        // the level-up VFX without grinding or reinstalling. Raised from 50
-        // in Phase 7b when the thresholds retuned 150/300 → 500/1000, so
-        // playtesting stays exactly as fast with nothing to revert before
-        // shipping.
-        if touch.tapCount >= 3, loc.x < -sceneW * 0.35, loc.y > sceneH * 0.35 {
-            handleLevelUp(Magic.shared.add(250))
-            onMagicChanged?()
-            print("DEBUG: +250 마력 (now \(Magic.shared.points))")
-            return
-        }
-        #endif
-
         if jumpButton.contains(loc) {
             jumpButtonTouch = touch
             setPressed(jumpButton, true)

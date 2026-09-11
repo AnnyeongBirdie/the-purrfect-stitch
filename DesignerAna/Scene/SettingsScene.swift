@@ -431,31 +431,6 @@ class SettingsScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
-        #if DEBUG
-        // Corner-gated to the BOTTOM-LEFT, matching every other debug shortcut
-        // in this codebase (MinigameNode/BossMinigameNode use the two upper
-        // corners, BackRoomScene the bottom-right). The panel sits at
-        // x: size.width * 0.16 and the close button at the right edge, so this
-        // corner holds no interactive element in either mode.
-        //
-        // It previously fired on ANY triple-tap anywhere in the scene, which
-        // put it squarely inside ordinary play: this is the customer picker,
-        // and tapping a carousel arrow three times quickly to reach a cat
-        // pushes tapCount to 3. It then wiped the relic set with no dialog and
-        // no on-screen change (the relic HUD lives in BackRoomScene), while
-        // leaving currentTailor untouched -- producing Ana as the working
-        // tailor with an empty relic set, so uncollected relics respawned in
-        // her dungeons. Reported from device testing 2026-09-10; it healed
-        // itself on the next pickup, which is why it could never be reproduced.
-        if touch.tapCount >= 3,
-           location.x < -size.width * 0.35,
-           location.y < -size.height * 0.35 {
-            Store.saveCollectedRelics([])
-            Store.clearRelicQuestState()
-            print("DEBUG: relics + quest flags cleared")
-        }
-        #endif
-
         for node in nodes(at: location) {
             guard let name = node.name else { continue }
 
