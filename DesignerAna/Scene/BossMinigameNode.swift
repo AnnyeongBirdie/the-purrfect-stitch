@@ -28,13 +28,18 @@ class BossMinigameNode: SKNode {
 
     // MARK: - Nodes
     private var hero: SKSpriteNode!
+    // Which character is playing as the tailor this run — Daphne today,
+    // possibly Ana. Read once in buildHero() and reused for her scale, foot
+    // offsets, ability gate, and ✨ spell palette (Phase 7b).
+    private var heroIdentity: TailorIdentity!
     private var boss: SKSpriteNode!
     private var bossAura: SKShapeNode!     // state-feedback halo behind the boss
     private var sleepIndicatorNode: SKNode?    // 💤 sleep indicator shown during the vulnerability window
 
-    // Magic sleep (150+ 마력 ability) — distinct from the 💤 telegraph
-    // window above: a warm-gold halo (same visual as PrincessAnaScene's
-    // relic handoff) that bypasses the normal 3-hit cycle entirely.
+    // Magic sleep (✨ ability) — distinct from the 💤 telegraph window
+    // above: a per-tailor colored halo (Daphne's warm gold, same visual as
+    // PrincessAnaScene's relic handoff; Ana's green/mint — see
+    // heroIdentity.magicPalette) that bypasses the normal 3-hit cycle entirely.
     private var bossAsleep = false
     private var castingMagicLight = false
     // Keyboard play (dev/testing convenience) — held state, since keys have
@@ -47,10 +52,11 @@ class BossMinigameNode: SKNode {
     private var chestNode: SKSpriteNode?
     private var instructionLabel: SKLabelNode!
     private var jumpButton: SKShapeNode!
-    // 150+ 마력 ability — nil (no button at all) if not yet unlocked when
-    // this dungeon run started. Also checked live: Magic.shared.add(_:)
-    // reports the exact call that crosses 150, so the ability can unlock
-    // mid-run (see playLevelUpVFX) instead of waiting for the next dungeon.
+    // ✨ ability (500+ 마력 for Daphne, unlocked from the start for Ana) —
+    // nil (no button at all) if not yet unlocked when this dungeon run
+    // started. Also checked live: Magic.shared.add(_:) reports the exact
+    // call that crosses 500, so the ability can unlock mid-run (see
+    // playLevelUpVFX) instead of waiting for the next dungeon.
     private var magicLightButton: SKShapeNode?
     private var leftArrowButton: SKShapeNode!
     private var rightArrowButton: SKShapeNode!
@@ -84,6 +90,14 @@ class BossMinigameNode: SKNode {
     private var chestOpened = false
     private var isCompleting = false
     private var isDead = false
+    // Freezes update()'s hero/collision simulation for the duration of the
+    // level-up VFX (owner report 2026-09-09: "if she's in motion already,"
+    // the hero walks straight out of the pillar). boss.isPaused and
+    // physicsWorld.speed handle freezing the boss's own attack animations
+    // and physics-driven hazards (sweep projectiles) — see
+    // freezeDuringLevelUp(). The VFX's own SKActions are unaffected since
+    // they run on `self`, not `boss`.
+    private var isLevelingUp = false
 
     // MARK: - Layout
     private var sceneW: CGFloat = 0
@@ -103,6 +117,10 @@ class BossMinigameNode: SKNode {
     private var jumpVelocity: CGFloat = 0
     private var inDescent = false
     private var heroVelY: CGFloat = 0         // kinematic vertical velocity (pts/sec)
+    // Vertical distance from hero.position (sprite center) down to her feet —
+    // used for floor/platform landing in update(). Set in buildHero() from
+    // heroIdentity; see the derivation comment there.
+    private var groundFootOffset: CGFloat = 40
     private let proximityRange: CGFloat = 80
 
     // MARK: - Theming (derived from order.fabricColor)
@@ -120,14 +138,20 @@ class BossMinigameNode: SKNode {
     private var portraitNode: SKSpriteNode?
     private var portraitCollected = false
     private var onRelicCollected: ((DungeonItem) -> Void)?
+    // Owner report 2026-09-10: the Status HUD's 🐾 counter only updated on
+    // return to the back room even though the panel is now visible
+    // mid-dungeon — see MinigameNode's identical property for the full note.
+    private var onMagicChanged: (() -> Void)?
 
     // MARK: - Init
 
     init(order: Order?,
          onRelicCollected: ((DungeonItem) -> Void)? = nil,
+         onMagicChanged: (() -> Void)? = nil,
          onCompletion: @escaping () -> Void) {
         self.order = order
         self.onRelicCollected = onRelicCollected
+        self.onMagicChanged = onMagicChanged
         self.onCompletion = onCompletion
         super.init()
     }
@@ -253,8 +277,48 @@ class BossMinigameNode: SKNode {
     // MARK: - Hero
 
     private func buildHero() {
-        hero = SKSpriteNode(imageNamed: "Tailor")
-        hero.setScale(0.15)
+        heroIdentity = Tailor.identity(for: Store.loadCurrentTailor())
+        hero = SKSpriteNode(imageNamed: heroIdentity.spriteAssetName)
+
+        // 0.15 was tuned by eye against Daphne's "Tailor" art: a
+        // 2x-registered 1060×1572px PNG, so texture.size() returns 786pt and
+        // 0.15 renders her ~118pt tall in this arena. Express that as a
+        // fraction of her own TailorIdentity.renderedHeight (176pt) instead
+        // of keeping 0.15 as a flat constant, so any other tailor renders at
+        // the same *relative* size here as in BackRoomScene — not, e.g., Ana
+        // at 2x Daphne's apparent height because SecondPrincessCat registers
+        // at the 1x asset-catalog slot (loads at full pixel size in points)
+        // while Tailor registers at 2x. Same gotcha as Phase 6b's
+        // customer-NPC scale bug — see CLAUDE.md.
+        let daphneRenderedHeight = Tailor.identity(for: Tailor.defaultID).renderedHeight
+        let bossHeightFraction: CGFloat = 0.6697   // 117.9 / 176.06, Daphne-tuned
+        let targetHeight = heroIdentity.renderedHeight * bossHeightFraction
+        if let textureHeight = hero.texture?.size().height, textureHeight > 0 {
+            hero.setScale(targetHeight / textureHeight)
+        } else {
+            hero.setScale(0.15)
+        }
+
+        // Foot offsets scale with the same ratio, off the same Daphne-tuned
+        // base values (40 / 42) — see groundFootOffset/heroFootOffset decls.
+        let heightRatio = heroIdentity.renderedHeight / daphneRenderedHeight
+        if heroIdentity.id == Tailor.anaID {
+            // Same fix as MinigameNode's identical bug (see its comment for
+            // the full measurement) — Ana's real transparent-bottom-padding
+            // fraction (~5.2% of SecondPrincessCat.png's own canvas height)
+            // is smaller than Daphne's (~7.7%), so heightRatio-scaling
+            // Daphne's hand-tuned 40/42 undershot Ana's actual foot
+            // position here too. Computed directly from the same measured
+            // fraction, using this arena's own targetHeight.
+            let anaBottomPaddingFraction: CGFloat = 0.0521
+            let footOffset = targetHeight * (0.5 - anaBottomPaddingFraction)
+            groundFootOffset = footOffset
+            heroFootOffset = footOffset
+        } else {
+            groundFootOffset = 40 * heightRatio
+            heroFootOffset = 42 * heightRatio
+        }
+
         heroStartPosition = CGPoint(x: -sceneW * 0.38, y: floorCenterY + 70)
         hero.position = heroStartPosition
         hero.zPosition = 3
@@ -413,12 +477,18 @@ class BossMinigameNode: SKNode {
         addChild(btn)
     }
 
-    // animated: true when this is called mid-run right after crossing 150
+    // animated: true when this is called mid-run right after crossing 500
     // (see playLevelUpVFX) — pops the button in with a little overshoot so
     // its appearance reads as tied to that moment, rather than a plain
     // static button players would only notice going into the next dungeon.
     private func buildMagicLightButton(animated: Bool = false) {
-        guard Magic.shared.points >= 150 else { return }
+        // Ana arrives already knowing her fairy magic — no level-up gate for
+        // her era. Gated on identity, not on her point total: she happens to
+        // start at 1000 (past Daphne's retuned thresholds) anyway, but
+        // relying on that would be accidental correctness that breaks the
+        // moment a number moves (Phase 7b).
+        guard heroIdentity.id == Tailor.anaID
+           || Magic.shared.points >= MagicLevelUpThreshold.levelOne.rawValue else { return }
 
         let btn = SKShapeNode(circleOfRadius: 30)
         // Sits just above the jump button, same D-pad cluster on the right.
@@ -522,12 +592,24 @@ class BossMinigameNode: SKNode {
             pad.removeAllActions()
             pad.fillColor = UIColor.red.withAlphaComponent(0.95)
 
-            // Boss drops onto pad
+            // Boss drops onto pad. Translucent while sliding to/from the pad —
+            // owner report 2026-09-10: her sprite could slide straight through
+            // the tailor's position with zero consequence, which read as a
+            // bug rather than intentional. There's no fair way to make this
+            // leg of the move a real hazard: it's a 0.15s slide with no
+            // telegraph of its own (the 2s red-pad warning above tells the
+            // player to watch the PAD, not her transit path), so turning
+            // contact lethal here would be an unfair, un-signaled hit. Going
+            // translucent instead reframes it visually as a "swoop" that
+            // isn't really there yet — she only becomes solid (and
+            // dangerous) once she's actually landed on the pad.
+            self.boss.alpha = 0.4
             let dropTarget = CGPoint(x: padX, y: self.bossAnchor.y)
             let drop = SKAction.move(to: dropTarget, duration: 0.15)
             drop.timingMode = .easeIn
             self.boss.run(drop) { [weak self] in
                 guard let self else { return }
+                self.boss.alpha = 1.0
                 // Heavy thud as the boss lands.
                 SoundManager.shared.play("sfx_boss_slam_impact.mp3")
                 self.spawnSparkles(at: pad.position, color: .red)
@@ -538,7 +620,9 @@ class BossMinigameNode: SKNode {
                 pad.removeFromParent()
                 self.openVulnerabilityWindow(duration: 3.0) { [weak self] in
                     guard let self else { return }
+                    self.boss.alpha = 0.4
                     self.boss.run(.move(to: self.bossAnchor, duration: 0.4)) { [weak self] in
+                        self?.boss.alpha = 1.0
                         self?.scheduleNextAttack()
                     }
                 }
@@ -724,7 +808,7 @@ class BossMinigameNode: SKNode {
         }
     }
 
-    // MARK: - Magic light (150+ 마력 ability)
+    // MARK: - Magic light (✨ ability, 500+ 마력 for Daphne)
     // Tester-loved visual from PrincessAnaScene's relic handoff (warm-gold
     // layered glow), reused as Daphne's ranged spell against the boss. Unlike
     // the mini dungeons' instant-kill version, the boss needs a two-step:
@@ -734,29 +818,69 @@ class BossMinigameNode: SKNode {
     private func makeMagicLightNode() -> SKNode {
         // Bigger + softer than the first pass — small and fast read as a
         // bullet; this should read as a drifting energy orb instead.
+        // Colors are per-tailor (Daphne's gold vs. Ana's green/mint) — see
+        // heroIdentity.magicPalette / TailorIdentity.swift.
+        let palette = heroIdentity.magicPalette
         let container = SKNode()
         let outerGlow = SKShapeNode(circleOfRadius: 32)
-        outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.28)
+        outerGlow.fillColor   = palette.orbOuter
         outerGlow.strokeColor = .clear
         container.addChild(outerGlow)
 
         let innerGlow = SKShapeNode(circleOfRadius: 16)
-        innerGlow.fillColor   = UIColor(red: 1.00, green: 0.97, blue: 0.80, alpha: 0.90)
+        innerGlow.fillColor   = palette.orbInner
         innerGlow.strokeColor = .clear
         container.addChild(innerGlow)
         return container
     }
 
+    // Continuously-spawned trailing particles behind a moving node — ported
+    // from PrincessAnaScene.animateSelfieGift() for tailors whose
+    // magicPalette.hasCometTrail is true (Ana; "think of Tinker Bell" per
+    // owner direction). Daphne's cast has no trail, matching her existing
+    // plain travelling-orb look.
+    private func makeCometTrailAction(duration: TimeInterval, following node: SKNode) -> SKAction {
+        let color = heroIdentity.magicPalette.trailColor
+        let tickInterval: TimeInterval = 0.025
+        let spawnParticle = SKAction.run { [weak self, weak node] in
+            guard let self, let node else { return }
+            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 5...9))
+            particle.fillColor = color
+            particle.strokeColor = UIColor.white.withAlphaComponent(0.7)
+            particle.lineWidth = 1
+            particle.position = node.position
+            particle.zPosition = 3.5   // behind the orb (4), above the floor
+            self.addChild(particle)
+            particle.run(.sequence([
+                .group([.fadeOut(withDuration: 0.6), .scale(to: 0.15, duration: 0.6)]),
+                .removeFromParent()
+            ]))
+        }
+        let ticks = max(1, Int(duration / tickInterval))
+        return .repeat(.sequence([spawnParticle, .wait(forDuration: tickInterval)]), count: ticks)
+    }
+
     private func castMagicLightAtBoss() {
         castingMagicLight = true
+        // Owner request 2026-09-10: using magic to put the boss to sleep
+        // now costs 10 마력 too — same as MinigameNode's identical cast.
+        Magic.shared.spend(10)
+        onMagicChanged?()
         let light = makeMagicLightNode()
         light.position = CGPoint(x: hero.position.x, y: hero.position.y + 10)
         light.zPosition = 4
         addChild(light)
 
-        let travel = SKAction.move(to: boss.position, duration: 0.6)
+        let travelDuration: TimeInterval = 0.6
+        let travel = SKAction.move(to: boss.position, duration: travelDuration)
         travel.timingMode = .easeInEaseOut
-        light.run(.sequence([travel, .removeFromParent()])) { [weak self] in
+
+        var flight: [SKAction] = [travel]
+        if heroIdentity.magicPalette.hasCometTrail {
+            flight.append(makeCometTrailAction(duration: travelDuration, following: light))
+        }
+
+        light.run(.sequence([.group(flight), .removeFromParent()])) { [weak self] in
             self?.castingMagicLight = false
             self?.applySleepHalo()
         }
@@ -783,17 +907,18 @@ class BossMinigameNode: SKNode {
         children.filter { $0.name == "sweepProjectile" || $0.name == "slamPad" }
                 .forEach { $0.removeFromParent() }
 
+        let palette = heroIdentity.magicPalette
         let halo = SKNode()
         halo.zPosition = 4
 
         let outerGlow = SKShapeNode(circleOfRadius: 100)
-        outerGlow.fillColor   = UIColor(red: 1.00, green: 0.88, blue: 0.45, alpha: 0.16)
+        outerGlow.fillColor   = palette.haloOuter
         outerGlow.strokeColor = .clear
         halo.addChild(outerGlow)
 
         let midGlow = SKShapeNode(circleOfRadius: 75)
-        midGlow.fillColor   = UIColor(red: 1.00, green: 0.84, blue: 0.31, alpha: 0.30)
-        midGlow.strokeColor = UIColor(red: 1.00, green: 0.95, blue: 0.65, alpha: 0.65)
+        midGlow.fillColor   = palette.haloMidFill
+        midGlow.strokeColor = palette.haloMidStroke
         midGlow.lineWidth   = 2.5
         halo.addChild(midGlow)
 
@@ -804,6 +929,29 @@ class BossMinigameNode: SKNode {
 
         boss.addChild(halo)   // rides along automatically if the boss moves
         magicSleepHaloNode = halo
+
+        // Owner request 2026-09-09: magic sleep used to insta-kill on the
+        // first stomp (see the old bossAsleep branch in hitBoss(), removed).
+        // The spell's value is skipping the wait for the boss to attack
+        // itself tired — not a shortcut past the normal 3-stomp requirement.
+        // Reusing openVulnerabilityWindow() here means the stomp gets
+        // handled by hitBoss()'s regular isVulnerable path (one HP per
+        // stomp, same as any other window) and gets the same 💤 sleep
+        // indicator the natural tired-out window already shows — which
+        // doubles as the fix for "not clear whether you need to stomp him."
+        openVulnerabilityWindow(duration: 3.0) { [weak self] in
+            self?.wakeFromMagicSleep()
+        }
+    }
+
+    /// Vulnerability window opened by magic sleep closed without a kill —
+    /// clear the sleep-specific state and resume the normal attack cycle.
+    private func wakeFromMagicSleep() {
+        guard !bossDefeated else { return }
+        bossAsleep = false
+        magicSleepHaloNode?.removeFromParent()
+        magicSleepHaloNode = nil
+        scheduleNextAttack()
     }
 
     // MARK: - Boss damage
@@ -811,19 +959,10 @@ class BossMinigameNode: SKNode {
     private func hitBoss() {
         guard !bossDefeated else { return }
 
-        if bossAsleep {
-            // Magic sleep bypasses the normal telegraph gate — one hit ends it.
-            magicSleepHaloNode?.removeFromParent()
-            magicSleepHaloNode = nil
-            bossAsleep = false
-            bossHP = 0
-            SoundManager.shared.play("sfx_boss_hit.mp3")
-            updateHPDots()
-            spawnSparkles(at: boss.position, color: .white)
-            defeatBoss()
-            return
-        }
-
+        // Magic sleep (applySleepHalo()) opens the same vulnerability
+        // window as a natural tired-out cycle, so a stomp while asleep
+        // falls through to the normal isVulnerable path below — one HP
+        // per stomp, same 3-stomp requirement as any other window.
         guard isVulnerable, !isInvulnerable else {
             // Shield flash + clank when hit outside the vulnerability window.
             flashAura(.white)
@@ -863,6 +1002,8 @@ class BossMinigameNode: SKNode {
         bossDefeated = true
         isVulnerable = false
         attackRunning = false
+        bossAsleep = false
+        magicSleepHaloNode = nil   // child of `boss`, removed along with it below
 
         removeAllActions()
         boss.removeAllActions()
@@ -924,7 +1065,11 @@ class BossMinigameNode: SKNode {
     private let bossReward = 50
 
     private func openChest() {
-        // Safety net: collect portrait now if the auto-collect timer hasn't fired yet.
+        // Safety net: the portrait is a walk-over pickup on the upper platform
+        // (see the proximity check in update()), so a hero who reaches the chest
+        // without detouring would otherwise leave it behind. Collect it now.
+        // There is no timer involved -- an earlier version of this comment said
+        // there was, describing a mechanism that has never existed in either file.
         if !portraitCollected, portraitNode != nil {
             collectPortrait()
         }
@@ -970,6 +1115,7 @@ class BossMinigameNode: SKNode {
 
         // 마력 reward awarded and displayed
         handleLevelUp(Magic.shared.add(bossReward))
+        onMagicChanged?()
         let coinPop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         coinPop.text = "+\(bossReward)마력"
         coinPop.fontSize = 32
@@ -1086,13 +1232,17 @@ class BossMinigameNode: SKNode {
             onCompletion()
             return
         }
-        // Triple-tap the upper-left of the arena — adds 50 마력 through the
-        // real Magic.add(_:) path (not a bypass), so the 150/300 level-up
+        // Triple-tap the upper-left of the arena — adds 250 마력 through the
+        // real Magic.add(_:) path (not a bypass), so the 500/1000 level-up
         // VFX fires exactly like a genuine reward would. Added for testing
-        // the level-up VFX without grinding or reinstalling.
+        // the level-up VFX without grinding or reinstalling. Raised from 50
+        // in Phase 7b when the thresholds retuned 150/300 → 500/1000, so
+        // playtesting stays exactly as fast with nothing to revert before
+        // shipping.
         if touch.tapCount >= 3, loc.x < -sceneW * 0.35, loc.y > sceneH * 0.35 {
-            handleLevelUp(Magic.shared.add(50))
-            print("DEBUG: +50 마력 (now \(Magic.shared.points))")
+            handleLevelUp(Magic.shared.add(250))
+            onMagicChanged?()
+            print("DEBUG: +250 마력 (now \(Magic.shared.points))")
             return
         }
         #endif
@@ -1248,7 +1398,7 @@ class BossMinigameNode: SKNode {
         guard lastUpdateTime > 0 else { lastUpdateTime = currentTime; return }
         let dt = currentTime - lastUpdateTime
         lastUpdateTime = currentTime
-        guard !isDead, !isCompleting else { return }
+        guard !isDead, !isCompleting, !isLevelingUp else { return }
 
         // Hero horizontal movement
         if moveDirection != 0 {
@@ -1266,13 +1416,12 @@ class BossMinigameNode: SKNode {
 
         // Surface under the hero: the floor, or a platform she is descending
         // onto from above (one-way — she jumps up through them).
-        let footOffset: CGFloat = 40              // hero sprite half-height — retune when Tailor sprite changes
-        var landingY = floorCenterY + 15 + footOffset  // floor visual surface + half-height (boss arena floor sits 2pt higher than regular dungeon)
+        var landingY = floorCenterY + 15 + groundFootOffset  // floor visual surface + half-height (boss arena floor sits 2pt higher than regular dungeon)
         if heroVelY <= 0 {
-            let prevFeet = hero.position.y - footOffset
+            let prevFeet = hero.position.y - groundFootOffset
             for rect in platformRects where hero.position.x >= rect.minX - 10
                                           && hero.position.x <= rect.maxX + 10 {
-                let standY = rect.maxY + footOffset + 4  // +2 matches boss arena visual surface offset
+                let standY = rect.maxY + groundFootOffset + 4  // +2 matches boss arena visual surface offset
                 if standY > landingY, prevFeet >= rect.maxY - 1 {
                     landingY = standY
                 }
@@ -1342,24 +1491,47 @@ class BossMinigameNode: SKNode {
         // Sweep-projectile contact — checked here by hand. The kinematic hero
         // does not reliably trip the physics contact delegate, so the sweep
         // (a physics-body hazard) is tested for overlap directly.
+        //
+        // Bug found 2026-09-09 (owner report, both tailors): this used to
+        // compare the projectile's Y against hero.position.y — the hero's
+        // sprite CENTER, not her feet. The projectile sits at a fixed
+        // floor-relative height (floorTop + 16, in executeSweepAttack()),
+        // but the hero's center-when-standing is groundFootOffset above her
+        // feet, and groundFootOffset scales per tailor (heightRatio — Ana
+        // renders taller than Daphne, see setup() above). For Daphne the
+        // old center-to-center gap while standing was exactly 30, tying
+        // the old `< 30` cutoff and failing to register; for Ana (taller)
+        // the gap is even larger, missing outright. Comparing against the
+        // hero's FEET (hero.position.y - groundFootOffset) instead removes
+        // the height dependency entirely — the feet sit at a constant
+        // floor-relative Y for every tailor by design — so the same small
+        // tolerance now works for both.
         if !isDead, !isCompleting, !bossAsleep {
+            let heroFeetY = hero.position.y - groundFootOffset
             for proj in children where proj.name == "sweepProjectile" {
                 if abs(hero.position.x - proj.position.x) < 42,
-                   abs(hero.position.y - proj.position.y) < 30 {
+                   abs(heroFeetY - proj.position.y) < 20 {
                     handleDeath()
                     break
                 }
             }
         }
 
-        // Breadcrumb paw collection
+        // Breadcrumb paw collection. Same fix as MinigameNode's identical
+        // bug (see its comment for the full diagnosis) — Ana's larger
+        // groundFootOffset pushed her center-to-ground-paw gap past the old
+        // fixed 45pt tolerance, so her ground-level paws silently never
+        // registered. Comparing against her feet instead removes the
+        // per-tailor height dependency.
         if !isDead, !isCompleting {
+            let heroFeetY = hero.position.y - groundFootOffset
             for paw in children where paw.name == "breadcrumb" {
                 if abs(hero.position.x - paw.position.x) < 28,
-                   abs(hero.position.y - paw.position.y) < 45 {
+                   abs(heroFeetY - paw.position.y) < 30 {
                     let pawPos = paw.position
                     paw.removeFromParent()
                     handleLevelUp(Magic.shared.add(1))
+                    onMagicChanged?()
                     let pop = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
                     pop.text = "+1마력"
                     pop.fontSize = 16
@@ -1509,21 +1681,52 @@ class BossMinigameNode: SKNode {
         }
     }
 
-    // MARK: - Level-up VFX (150 / 300 마력 thresholds — see Magic.add(_:))
+    // MARK: - Level-up VFX (500 / 1000 마력 thresholds — see Magic.add(_:))
+    // Daphne-only in practice: Ana's era starts at 1000 (Magic.add(_:) only
+    // reports a crossing, and she's already past both from her first add
+    // onward), and her ✨ ability is unlocked by identity, not by this VFX.
 
     // Single dispatch point for every Magic.add(_:) call site: plays the
-    // matching VFX size and, only for the first (150) threshold, pops the
-    // ✨ ability button in (300 doesn't unlock a new button — it's already
+    // matching VFX size and, only for the first (500) threshold, pops the
+    // ✨ ability button in (1000 doesn't unlock a new button — it's already
     // unlocked — so it only gets the bigger VFX).
     private func handleLevelUp(_ threshold: MagicLevelUpThreshold?) {
         switch threshold {
         case .levelOne:
+            freezeDuringLevelUp(threshold: .levelOne)
             playLevelUpVFX(at: hero.position, threshold: .levelOne)
             buildMagicLightButton(animated: true)
         case .levelTwo:
+            freezeDuringLevelUp(threshold: .levelTwo)
             playLevelUpVFX(at: hero.position, threshold: .levelTwo)
         case nil:
             break
+        }
+    }
+
+    // ⚠️ riseDuration/holdDuration here must stay in sync with the same
+    // constants inside playLevelUpVFX() below — see MinigameNode's copy of
+    // this same function for why they're duplicated rather than threaded
+    // through as a return value.
+    //
+    // boss.isPaused freezes the boss's own in-flight attack animations
+    // (the slam pad drop, the summon pulse — both run via boss.run(...),
+    // not self.run(...), so this doesn't touch the VFX added to `self`).
+    // physicsWorld.speed = 0 freezes a sweep projectile already in flight
+    // (it moves via a constant-velocity SKPhysicsBody, not update()).
+    private func freezeDuringLevelUp(threshold: MagicLevelUpThreshold) {
+        let big = threshold == .levelTwo
+        let riseDuration: TimeInterval = big ? 0.6 : 0.4
+        let holdDuration: TimeInterval = big ? 1.0 : 0.5
+        let totalDuration = riseDuration + holdDuration + 0.4   // + fadeOut
+
+        isLevelingUp = true
+        boss.isPaused = true
+        scene?.physicsWorld.speed = 0
+        run(.sequence([.wait(forDuration: totalDuration)])) { [weak self] in
+            self?.isLevelingUp = false
+            self?.boss.isPaused = false
+            self?.scene?.physicsWorld.speed = 1
         }
     }
 
@@ -1540,13 +1743,14 @@ class BossMinigameNode: SKNode {
     // her feet. 22 (half her physics body's height) landed at her knees per
     // owner feedback on device — bumped further down; still an estimate,
     // since the hero sprite has no documented transparent-padding value the
-    // way Monster/Boss/BossAdd do.
-    private let heroFootOffset: CGFloat = 42
+    // way Monster/Boss/BossAdd do. 42 is Daphne's tuned value; buildHero()
+    // scales it per-tailor from heroIdentity.renderedHeight (Phase 7b).
+    private var heroFootOffset: CGFloat = 42
 
-    // Same composition as the 150 VFX, scaled up further for 300 — a bigger,
-    // longer-held version reads as "the second, larger threshold" without
-    // introducing a new shape (owner direction: reuse the confirmed pillar
-    // design rather than design a new effect from scratch for 300).
+    // Same composition as the 500 VFX, scaled up further for 1000 — a
+    // bigger, longer-held version reads as "the second, larger threshold"
+    // without introducing a new shape (owner direction: reuse the confirmed
+    // pillar design rather than design a new effect from scratch for 1000).
     private func playLevelUpVFX(at heroPosition: CGPoint, threshold: MagicLevelUpThreshold = .levelOne) {
         let big = threshold == .levelTwo
         let position = CGPoint(x: heroPosition.x, y: heroPosition.y - heroFootOffset)
@@ -1629,6 +1833,24 @@ class BossMinigameNode: SKNode {
                 .removeFromParent()
             ]))
         }
+
+        // Rising "레벨업 ⬆️" label above her head — owner request 2026-09-10,
+        // matching MinigameNode's identical addition and the existing
+        // +1마력 pickup popup's rise-and-fade language.
+        let levelUpLabel = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        levelUpLabel.text = "레벨업 ⬆️"
+        levelUpLabel.fontSize = big ? 26 : 22
+        levelUpLabel.fontColor = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
+        levelUpLabel.position = CGPoint(x: heroPosition.x, y: heroPosition.y + heroFootOffset + 20)
+        levelUpLabel.zPosition = 6
+        addChild(levelUpLabel)
+        let labelRiseDuration: TimeInterval = big ? 1.4 : 1.0
+        let labelRise = SKAction.moveBy(x: 0, y: big ? 70 : 50, duration: labelRiseDuration)
+        labelRise.timingMode = .easeOut
+        levelUpLabel.run(.sequence([
+            .group([labelRise, .fadeOut(withDuration: labelRiseDuration)]),
+            .removeFromParent()
+        ]))
     }
 
     // MARK: - Sparkles

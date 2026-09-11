@@ -2,8 +2,12 @@
 //  RiddleScene.swift
 //  DesignerAna
 //
-//  Riddle economy: shopkeeper quizzes the player, up to 3 questions per visit,
-//  +15냥 per correct answer.
+//  Riddle economy: shopkeeper quizzes the player, up to 10 questions per
+//  round, +5냥 per correct answer (retuned 2026-09-09 from 3 questions/15냥
+//  after an owner playthrough — 1 round now covers 바지/셔츠, 2 rounds
+//  covers 드레스; see Order.swift's deposit amounts). Retry is capped at
+//  one extra try per question (not unlimited) so a wrong answer doesn't
+//  turn into "press buttons until something works" — see handleAnswer(_:).
 //
 //  Layout (landscape):
 //    Left half  → shopkeeper sprite
@@ -21,6 +25,10 @@ class RiddleScene: SKScene {
     private var sessionCount = 0       // riddles answered correctly this visit
     private var currentRiddle: Riddle?
     private var answering    = false   // prevents double-tap during feedback
+    /// Wrong-answer count for the CURRENT riddle only — reset in nextRiddle().
+    /// One retry allowed; the second wrong answer reveals the correct choice
+    /// and moves on, rather than letting the player retry indefinitely.
+    private var wrongAttempts = 0
 
     // ── UI ──────────────────────────────────────────────────────────────────
     private var bubbleNode: SKShapeNode!
@@ -105,7 +113,7 @@ class RiddleScene: SKScene {
     // MARK: - Riddle flow
 
     private func nextRiddle() {
-        guard sessionCount < 3 else {
+        guard sessionCount < 10 else {
             showSessionComplete()
             return
         }
@@ -114,6 +122,7 @@ class RiddleScene: SKScene {
         bankIndex    += 1
         currentRiddle = riddle
         answering     = false
+        wrongAttempts = 0
         fillBubble(riddle: riddle, number: sessionCount + 1)
     }
 
@@ -128,7 +137,7 @@ class RiddleScene: SKScene {
         let headerY = hh - 22
 
         let counter = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        counter.text                    = "\(number)/3"
+        counter.text                    = "\(number)/10"
         counter.fontSize                = 17
         counter.fontColor               = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
         counter.horizontalAlignmentMode = .left
@@ -255,7 +264,12 @@ class RiddleScene: SKScene {
             sessionCount += 1
             showCorrectFeedback(reward: riddle.reward)
         } else {
-            showWrongFeedback()
+            wrongAttempts += 1
+            if wrongAttempts >= 2 {
+                showAnswerReveal(riddle: riddle)
+            } else {
+                showWrongFeedback()
+            }
         }
     }
 
@@ -328,6 +342,38 @@ class RiddleScene: SKScene {
             .wait(forDuration: 1.0),
             .fadeOut(withDuration: 0.20),
             .removeFromParent(),
+        ]))
+    }
+
+    // Second wrong answer on the same riddle — no more retries. Flashes the
+    // correct choice green so she sees it directly (a full per-question
+    // "why" explanation would need a new field across all 200 riddles.json
+    // entries, out of scope tonight — this at least stops the "press
+    // buttons until one works" pattern the retry cap exists to prevent),
+    // then moves on. No reward — never answered it correctly.
+    private func showAnswerReveal(riddle: Riddle) {
+        if let correctIndex = riddle.choices.firstIndex(of: riddle.answer),
+           let correctBtn = bubbleNode.childNode(withName: "choice_\(correctIndex)") as? SKShapeNode {
+            correctBtn.run(.sequence([
+                .run { correctBtn.fillColor = UIColor(red: 0.18, green: 0.68, blue: 0.32, alpha: 1.0) },
+            ]))
+        }
+
+        let hint = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        hint.text                    = "정답은 \(riddle.answer)였어요!"
+        hint.fontSize                = 17
+        hint.fontColor               = UIColor(red: 0.14, green: 0.50, blue: 0.24, alpha: 1.0)
+        hint.horizontalAlignmentMode = .center
+        hint.verticalAlignmentMode   = .center
+        hint.position                = CGPoint(x: 0, y: -bubbleH / 2 + 20)
+        hint.zPosition               = 10
+        hint.alpha                   = 0
+        bubbleNode.addChild(hint)
+        hint.run(.fadeIn(withDuration: 0.15))
+
+        run(.sequence([
+            .wait(forDuration: 1.6),
+            .run { [weak self] in self?.nextRiddle() },
         ]))
     }
 

@@ -32,7 +32,6 @@ final class StoreTests: XCTestCase {
         }
         UserDefaults.standard.removeObject(forKey: "order.active")
         UserDefaults.standard.removeObject(forKey: "relics.deductionShown")
-        UserDefaults.standard.removeObject(forKey: "relics.choiceFirst")
         UserDefaults.standard.removeObject(forKey: "relics.questComplete")
         UserDefaults.standard.removeObject(forKey: "tailor.handoffShown")
         UserDefaults.standard.removeObject(forKey: "storybook.opened")
@@ -123,13 +122,6 @@ final class StoreTests: XCTestCase {
         XCTAssertFalse(Store.loadLevelUpBadgeFlashed())
         Store.saveLevelUpBadgeFlashed()
         XCTAssertTrue(Store.loadLevelUpBadgeFlashed())
-    }
-
-    func testRelicChoiceFirstOnlyRecordsTheFirstCall() {
-        Store.saveRelicChoiceFirst("A")
-        Store.saveRelicChoiceFirst("B")
-        XCTAssertEqual(Store.loadRelicChoiceFirst(), "A",
-                        "A later call must not overwrite the first-recorded choice")
     }
 
     // MARK: - Per-customer migration

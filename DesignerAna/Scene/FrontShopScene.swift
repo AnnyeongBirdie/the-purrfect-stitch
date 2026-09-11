@@ -39,6 +39,7 @@ class FrontShopScene: SKScene {
     private var relaunchDialogNode: SKNode?
 
     private var safeBottom: CGFloat = 0
+    private var progressTracker: ProgressTrackerHUD?
 
 
     override func didMove(to view: SKView) {
@@ -49,6 +50,7 @@ class FrontShopScene: SKScene {
         setupDialogueUI()
         fixCharacterLayout()
         setupNavIcons()
+        setupProgressTracker()
         if !suppressEntryBell {
             SoundManager.shared.play("sfx_shop_bell.mp3")
         }
@@ -112,6 +114,21 @@ class FrontShopScene: SKScene {
             btn.addChild(label)
             addChild(btn)
         }
+    }
+
+    // Owner request 2026-09-10: an always-visible overall progress tracker,
+    // spanning both Daphne's and Ana's arcs. Top-center, in the narrow gap
+    // above the speech bubble (bubble top edge sits at frame.maxY-22.5;
+    // see setupDialogueUI's bubbleHeight/position) so it doesn't collide
+    // with existing UI. See ProgressTrackerHUD's own header for the full
+    // scoping rationale (core gameplay loop only, not narrative/meta scenes).
+    private func setupProgressTracker() {
+        let tracker = ProgressTrackerHUD()
+        tracker.configure()
+        tracker.position = CGPoint(x: 0, y: frame.maxY - 12)
+        tracker.zPosition = 95
+        addChild(tracker)
+        progressTracker = tracker
     }
 
     /// Dim or restore the four nav icons. They are dimmed while a finished
@@ -223,16 +240,20 @@ class FrontShopScene: SKScene {
         let clothingType: ClothingType
         let deposit: Int
 
+        // Deposits retuned 2026-09-09 (owner playthrough) alongside the
+        // riddle economy (5냥/question, 10 questions/round = 50냥 max per
+        // round): 바지/셔츠 at 45 fit inside one round (50 > 45); 드레스 at
+        // 60 needs two rounds (100 > 60). Was 50/30/40.
         switch nodeName {
         case "dressButton":
             clothingType = .dress
-            deposit = 50
+            deposit = 60
         case "shirtButton":
             clothingType = .shirt
-            deposit = 30
+            deposit = 45
         case "pantsButton":
             clothingType = .pants
-            deposit = 40
+            deposit = 45
         default:
             return
         }
@@ -1054,14 +1075,15 @@ class FrontShopScene: SKScene {
 
         setNavIconsDimmed(false)   // trophy saved — navigation is safe again
 
-        // Phase 7 — the 300-마력 Daphne→Ana handoff. Checked here, right
+        // Phase 7 — the Daphne→Ana handoff, at MagicLevelUpThreshold.levelTwo
+        // (1000 마력 as of Phase 7b's retune, was 300). Checked here, right
         // after the garment is saved, deliberately not in BackRoomScene —
         // firing before the save would let the handoff dialogue conclude
         // with Ana established as tailor and THEN show the trophy, reading
         // as if Ana finished a dress she never touched. May only fire once
         // the relics quest has resolved; otherwise stays dormant, rechecked
         // on every trophy save (see CLAUDE.md's "Ending sequencing").
-        let readyForTailorHandoff = Magic.shared.points >= 300
+        let readyForTailorHandoff = Magic.shared.points >= MagicLevelUpThreshold.levelTwo.rawValue
             && Store.loadRelicQuestComplete()
             && !Store.loadTailorHandoffShown()
             && Store.loadCurrentTailor() == Tailor.defaultID
@@ -1069,6 +1091,39 @@ class FrontShopScene: SKScene {
         if readyForTailorHandoff {
             Store.saveTailorHandoffShown()
             presentTailorHandoffScene()
+            return
+        }
+
+        // Task 8 — the King/Queen interlude, 1500 마력 in Ana's era. Sits
+        // between the handoff gate above (1000) and the ending gate below
+        // (3000), same reasoning as both: firing before the save would let
+        // the scene conclude and THEN show the trophy. Owner spec: "make
+        // the scene play after garment is finished and the trophy is
+        // saved even if Ana reaches 1500 mid dungeon" — checking here,
+        // on every trophy save, is exactly what makes that true — the
+        // scene fires on the very next save after 1500 is crossed,
+        // whenever that happened.
+        let readyForKingQueenScene = Magic.shared.points >= Magic.kingQueenSceneThreshold
+            && !Store.loadKingQueenSceneShown()
+            && Store.loadCurrentTailor() == Tailor.anaID
+
+        if readyForKingQueenScene {
+            Store.saveKingQueenSceneShown()
+            presentKingQueenScene()
+            return
+        }
+
+        // Phase 7b (task 6/7) — the v1 ending, 3000 마력 in Ana's era.
+        // Mirrors the handoff gate immediately above exactly, including why
+        // it lives here rather than in BackRoomScene: firing before the
+        // save would let the epilogue conclude and THEN show the trophy.
+        let readyForEnding = Magic.hasReachedEnding(points: Magic.shared.points,
+                                                      tailorID: Store.loadCurrentTailor())
+            && !Store.loadEndingShown()
+
+        if readyForEnding {
+            Store.saveEndingShown()
+            presentEstelleEpilogueScene()
             return
         }
 
@@ -1086,6 +1141,22 @@ class FrontShopScene: SKScene {
     private func presentTailorHandoffScene() {
         guard let view = self.view else { return }
         let scene = TailorHandoffScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
+    }
+
+    private func presentEstelleEpilogueScene() {
+        guard let view = self.view else { return }
+        let scene = EstelleEpilogueScene(size: self.size)
+        scene.scaleMode = self.scaleMode
+        let transition = SKTransition.crossFade(withDuration: 0.6)
+        view.presentScene(scene, transition: transition)
+    }
+
+    private func presentKingQueenScene() {
+        guard let view = self.view else { return }
+        let scene = KingQueenScene(size: self.size)
         scene.scaleMode = self.scaleMode
         let transition = SKTransition.crossFade(withDuration: 0.6)
         view.presentScene(scene, transition: transition)

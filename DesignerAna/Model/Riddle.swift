@@ -42,7 +42,7 @@ struct Riddle: Codable {
     var category: RiddleCategory
 
     // Allow the JSON to omit "reward"/"category" and default sensibly.
-    init(question: String, choices: [String], answer: String, reward: Int = 15, category: RiddleCategory = .addSub) {
+    init(question: String, choices: [String], answer: String, reward: Int = 5, category: RiddleCategory = .addSub) {
         self.question = question
         self.choices  = choices
         self.answer   = answer

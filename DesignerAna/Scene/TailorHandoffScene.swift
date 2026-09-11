@@ -39,6 +39,19 @@ import UIKit
 
 class TailorHandoffScene: SKScene {
 
+    // MARK: - Navigation (set by StorybookScene for a replay)
+
+    /// When true (launched from StorybookScene), returns to StorybookScene
+    /// on exit instead of switching the active tailor and presenting the
+    /// customer picker. This scene had no storybook entry at all before
+    /// Phase 7b's task 9 gave it one — replaying it must not re-trigger the
+    /// real handoff's gameplay side effects (Store.saveCurrentTailor,
+    /// the picker), the same way PrincessAnaScene's replay path skips
+    /// re-saving the relics-quest-complete flag.
+    var isReplayMode = false
+    /// Page index within the unified story chapter (4) to return to.
+    var replayReturnPage = 4
+
     // MARK: - Beat data
 
     private struct Beat {
@@ -228,8 +241,15 @@ class TailorHandoffScene: SKScene {
 
     // MARK: - Ana entrance
 
+    // Owner note 2026-09-10: Ana is making a social visit to see her friend
+    // Daphne, not travelling by magic — she hasn't accrued enough magic yet
+    // to open a "see-portal" or "walkthrough-portal" (see GAME_VOCABULARY.md).
+    // She enters like any other visitor, so the shop bell rings for her the
+    // same way it does for a new customer (FrontShopScene), rather than any
+    // magic-arrival effect.
     private func enterAna() {
         waitingForAna = true
+        SoundManager.shared.play("sfx_shop_bell.mp3")
         anaSprite.run(.fadeIn(withDuration: 0.8)) { [weak self] in
             guard let self else { return }
             self.hud.revealSpeaker(named: "아나 공주")
@@ -295,6 +315,17 @@ class TailorHandoffScene: SKScene {
     private func startOutro() {
         exiting = true
         guard let view = self.view else { return }
+
+        if isReplayMode {
+            // Return to the exact storybook page without re-triggering the
+            // real handoff's side effects.
+            let storybook = StorybookScene(size: size)
+            storybook.replayReturnChapter = 4
+            storybook.replayReturnPage    = replayReturnPage
+            storybook.scaleMode = .resizeFill
+            view.presentScene(storybook, transition: SKTransition.crossFade(withDuration: 0.6))
+            return
+        }
 
         // The garment was already saved to the wardrobe before this scene
         // was presented (see FrontShopScene.handleSaveTrophy) — this scene

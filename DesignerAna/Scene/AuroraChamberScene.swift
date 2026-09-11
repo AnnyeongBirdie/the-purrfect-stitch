@@ -2,8 +2,12 @@
 //  AuroraChamberScene.swift
 //  DesignerAna
 //
-//  Phase 5 — Path A. Aurora (WizardCat) greets the tailor, poses a riddle,
-//  then transitions them to Princess Ana's room.
+//  Phase 5 — Aurora (WizardCat) greets the tailor, poses a riddle, then
+//  transitions them to Princess Ana's room. A mandatory stop on the way to
+//  the castle (RelicDeductionScene, renamed from TailorChoiceScene
+//  2026-09-09 once the old A/B branch that could skip this scene was
+//  removed) — Aurora is the one who tells Daphne she can come back once
+//  she levels up, so a player must hear this scene.
 //
 
 import SpriteKit
@@ -11,14 +15,17 @@ import UIKit
 
 class AuroraChamberScene: SKScene {
 
-    // MARK: - Public properties forwarded from TailorChoiceScene
+    // MARK: - Public properties forwarded from RelicDeductionScene
 
     var completedOrder: Order?
-    /// Forwarded from TailorChoiceScene; causes the scene to return to
+    /// Forwarded from RelicDeductionScene; causes the scene to return to
     /// StorybookScene on exit instead of chaining to PrincessAnaScene.
     var isReplayMode = false
     /// Page index within the replay chapter (4) to return to. Set by StorybookScene.
-    var replayReturnPage = 1
+    /// Page 2 as of Phase 7b's storybook restructure (task 9) — page 0 is
+    /// now the opening (DaphneBecomesTailorScene), which didn't share this
+    /// chapter before.
+    var replayReturnPage = 2
 
     // MARK: - Beat data
 
@@ -56,6 +63,10 @@ class AuroraChamberScene: SKScene {
     private var riddleChoicesVisible = false
     private var teleporting = false
     private var currentRiddle: Riddle = RiddleBank.load().randomElement() ?? RiddleBank.load()[0]
+    // Owner request 2026-09-09: the gate used to be a single riddle;
+    // increased to 3 with a counter shown in the question text.
+    private var riddleNumber = 1
+    private let totalRiddles = 3
 
     // MARK: - HUD
 
@@ -71,14 +82,15 @@ class AuroraChamberScene: SKScene {
     // Pure and internal (not private) specifically so it's unit-testable —
     // this exact branch was a shipped bug once (see CLAUDE.md's "Dialogue
     // bug found + fixed" note): the "come back when you're stronger" line
-    // is flatly contradicted if the player already reached 300 마력 before
+    // is flatly contradicted if the player already reached the handoff
+    // threshold (levelTwo — 1000 as of Phase 7b's retune, was 300) before
     // finishing the relics-quest chain (this scene fires before
-    // Store.saveRelicQuestComplete(), so the 300-마력 handoff stays dormant
-    // per the locked gate, but only briefly — it fires on the very next
-    // order completion once this chain ends). At mp >= 300, swap to an
-    // acknowledging line instead of the "not ready yet" one.
+    // Store.saveRelicQuestComplete(), so the handoff stays dormant per the
+    // locked gate, but only briefly — it fires on the very next order
+    // completion once this chain ends). At or past that threshold, swap to
+    // an acknowledging line instead of the "not ready yet" one.
     static func closingLine(forMagicPoints mp: Int) -> String {
-        mp >= 300
+        mp >= MagicLevelUpThreshold.levelTwo.rawValue
             ? "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼이나 올랐다니, 이미 충분히 강해졌구나. 곧 다시 만나게 될 것 같은 예감이 드는구나."
             : "마법 실력도 녹슬지 않았고! 마력도 \(mp)만큼 올랐구나. 좀 더 강해지면 공부를 마치러 돌아오렴."
     }
@@ -173,7 +185,7 @@ class AuroraChamberScene: SKScene {
 
         case 5:
             // Show riddle question as Aurora's dialogue; next tap reveals choices.
-            hud.show(speaker: "마법사 오로라", text: currentRiddle.question)
+            hud.show(speaker: "마법사 오로라", text: riddleQuestionText())
 
         case 6...9:
             // beats[5-8] — offset by 1 due to injected riddle
@@ -197,6 +209,18 @@ class AuroraChamberScene: SKScene {
 
     // MARK: - Riddle answer handling
 
+    private func riddleQuestionText() -> String {
+        "수수께끼 \(riddleNumber)/\(totalRiddles)\n\n\(currentRiddle.question)"
+    }
+
+    // Avoids immediately repeating the same question when a new riddle is
+    // drawn between rounds 1-3.
+    private static func nextRiddle(excluding previous: Riddle) -> Riddle {
+        let bank = RiddleBank.load()
+        let candidates = bank.filter { $0.question != previous.question }
+        return candidates.randomElement() ?? bank.randomElement() ?? previous
+    }
+
     private func handleAnswer(_ name: String) {
         guard let indexStr = name.split(separator: "_").last,
               let idx = Int(indexStr),
@@ -212,18 +236,60 @@ class AuroraChamberScene: SKScene {
                 guard let self else { return }
                 self.hud.hideChoices()
                 self.riddleChoicesVisible = false
-                self.beatIndex = 6
-                self.hud.show(speaker: self.beats[5].speaker, text: self.beats[5].text)
+
+                if self.riddleNumber < self.totalRiddles {
+                    // More riddles to go — draw a new one and stay on beat 5.
+                    self.riddleNumber += 1
+                    self.currentRiddle = Self.nextRiddle(excluding: self.currentRiddle)
+                    self.hud.show(speaker: "마법사 오로라", text: self.riddleQuestionText())
+                } else {
+                    self.beatIndex = 6
+                    self.hud.show(speaker: self.beats[5].speaker, text: self.beats[5].text)
+                }
             }
         }
     }
 
     // MARK: - Transition to Princess Ana's room
 
+    // Owner request 2026-09-09: "add teleport out magic effect and Daphne
+    // disappearing fade out effect at the end." Aurora is the one sending
+    // Daphne away (beat 8: "자, 내가 마법으로 보내줄게!") — only Daphne
+    // teleports, Aurora stays in her chamber — so the effect targets just
+    // the tailor sprite. Same purple sparkle-burst language as Aurora's own
+    // teleport-in (DaphneBecomesTailorScene.runAuroraEntrance()) and the
+    // Aurora/Daphne teleport-out in TailorHandoffScene.performTeleportOut().
     private func startTeleport() {
-        // Using a simple fade transition.
         teleporting = true
-        run(.wait(forDuration: 0.4)) { [weak self] in self?.exitToNextScene() }
+        let auroraColor = UIColor(red: 0.60, green: 0.30, blue: 0.90, alpha: 1.0)
+        spawnSparkles(at: tailorSprite.position, color: auroraColor)
+        hud.hideSpeaker(named: "재봉사 다프네")
+
+        tailorSprite.run(.fadeOut(withDuration: 0.8)) { [weak self] in
+            self?.exitToNextScene()
+        }
+    }
+
+    private func spawnSparkles(at position: CGPoint, color: UIColor) {
+        for i in 0..<10 {
+            let spark = SKShapeNode(circleOfRadius: 4)
+            spark.fillColor   = color
+            spark.strokeColor = .clear
+            spark.position    = position
+            spark.zPosition   = 20
+            addChild(spark)
+            let angle  = CGFloat(i) / 10 * .pi * 2
+            let radius = CGFloat.random(in: 35...65)
+            let target = CGPoint(
+                x: position.x + cos(angle) * radius,
+                y: position.y + sin(angle) * radius
+            )
+            spark.run(.sequence([
+                .move(to: target, duration: 0.40),
+                .fadeOut(withDuration: 0.25),
+                .removeFromParent()
+            ]))
+        }
     }
 
     private func exitToNextScene() {
@@ -232,6 +298,9 @@ class AuroraChamberScene: SKScene {
         if isReplayMode {
             // Replay mode: return to the exact storybook page instead of chaining.
             let storybook = StorybookScene(size: size)
+            // Chapter index 4 is the unified story chapter — unchanged by the
+            // Phase 7b page-index migration (task 9), which only shifted page
+            // numbers within it. See CLAUDE.md's page-index migration table.
             storybook.replayReturnChapter = 4
             storybook.replayReturnPage    = replayReturnPage
             storybook.scaleMode = .resizeFill

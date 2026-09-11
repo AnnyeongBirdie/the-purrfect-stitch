@@ -64,6 +64,7 @@ class BackRoomScene: SKScene {
     private var activeBossMinigame: BossMinigameNode?
     private var walletLabel: SKLabelNode?
     private var magicLabel: SKLabelNode?
+    private var progressTracker: ProgressTrackerHUD?
     // Tailor/Customer Status HUD panels (Phase 7 redesign, shipped 2026-09-06).
     // The bubbles themselves are kept as properties (not just their labels)
     // so the panel backgrounds and the ✨ badge can be positioned relative
@@ -71,6 +72,12 @@ class BackRoomScene: SKScene {
     private var magicBubbleNode: SKShapeNode?
     private var walletBubbleNode: SKShapeNode?
     private var levelUpBadgeNode: SKShapeNode?
+    private var gameCompleteBadgeNode: SKShapeNode?
+    // Panel backgrounds built by setupStatusPanels() — kept as properties
+    // (added 2026-09-09) so their zPosition can be boosted while a dungeon
+    // minigame is on screen; see setStatusHUDBoosted(_:) below.
+    private var tailorPanelNode: SKShapeNode?
+    private var customerPanelNode: SKShapeNode?
     private var instructionShadowLabel: SKLabelNode!
 
     // (earnedMinigameRewards removed — Economy refactor #2; dungeons now credit Magic directly)
@@ -90,6 +97,14 @@ class BackRoomScene: SKScene {
         view.isMultipleTouchEnabled = true
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
+        #if DEBUG
+        // Checked here because this scene is the gateway to every dungeon, so
+        // it is where an inconsistent progression state first turns into
+        // something visible (the wrong tailor, or relics respawning). No-op in
+        // release builds. See Store.assertProgressInvariants(_:).
+        Store.assertProgressInvariants("BackRoomScene.didMove")
+        #endif
+
         setupBackground()
         setupTailor()
         setupFabricCabinetZone()
@@ -103,6 +118,7 @@ class BackRoomScene: SKScene {
         setupStatusPanels()
         setupStationFireflies()
         setupQuitButton()
+        setupProgressTracker()
         applyResumeStateIfNeeded()
         saveActiveOrderSnapshot()
         // setupSelfieKeepsake() disabled 2026-09-06 — owner decided this wall
@@ -147,9 +163,27 @@ class BackRoomScene: SKScene {
     // Scaled down by Tailor.haloScale for shorter tailors (Daphne, 0.70)
     // so it reads as "glowing from within" rather than sticking out past a
     // narrower body — owner feedback after seeing it on-device with Daphne.
+    //
+    // Bug found 2026-09-10 (owner report + screenshot): despite the comment
+    // above, the 70pt base width was never actually verified against Ana's
+    // own silhouette on-device — Ana only recently became playable as the
+    // working tailor. Measured her real proportions (Python/PIL, tracing
+    // SecondPrincessCat.png's opaque-pixel extent row by row): her upper
+    // body (neck/shoulders) is only ~31pt wide on-screen at BackRoomScene's
+    // render scale, well under the unscaled 70pt pill — so the halo's
+    // fill+stroke (not just its soft glow) was visibly peeking out past her
+    // narrow shoulders instead of staying hidden behind her body, reading
+    // as a rigid "frame" rather than an ambient glow. The halo's 200pt
+    // height, centered on her sprite, spans roughly her neck to her lower
+    // dress, so the width needs to clear her narrowest point anywhere in
+    // that range, not just one spot — 26pt leaves a safety margin under the
+    // measured ~31pt minimum. Daphne's silhouette (a simple A-line dress,
+    // arm extended) is far wider than her own 49pt scaled halo throughout
+    // that same span, which is why this never surfaced for her.
     private var haloBaseSize: CGSize {
         let scale = Tailor.haloScale(for: tailorIdentity)
-        return CGSize(width: 70 * scale, height: 200 * scale)
+        let width: CGFloat = tailorIdentity.id == Tailor.anaID ? 26 : 70 * scale
+        return CGSize(width: width, height: 200 * scale)
     }
 
     // Each tailor renders at their own intended on-screen height
@@ -421,12 +455,43 @@ class BackRoomScene: SKScene {
         magicLabel = magicLbl
 
         updateLevelUpBadge()
+        updateGameCompleteBadge()
     }
 
     private func updateHUDCounters() {
         walletLabel?.text = "💰 \(Wallet.shared.balance)냥"
         magicLabel?.text  = "🐾 \(Magic.shared.points)마력"
         updateLevelUpBadge()
+        updateGameCompleteBadge()
+        progressTracker?.refresh()
+    }
+
+    // Owner request 2026-09-10: an always-visible overall progress tracker,
+    // spanning both Daphne's and Ana's arcs. See ProgressTrackerHUD's own
+    // header for the full scoping rationale. Top-center, clear of both
+    // Status HUD panels (which sit further down and to each side — see
+    // "Back room HUD layout convention"). zPosition 58 — same reasoning as
+    // setStatusHUDBoosted() below: above the minigame overlay (50, whose
+    // tallest persistent content sits at effective 57) so it stays visible
+    // during a dungeon run, but below the exit-dialog overlay (60) so that
+    // dialog's dim still darkens it like everything else, matching how the
+    // Status HUD panels themselves are boosted only while a minigame runs.
+    // Unlike those panels, this tracker only ever needs to render above the
+    // minigame — it isn't part of the back room's own base-state layout
+    // fighting for a lower slot — so a single fixed zPosition works without
+    // needing the boosted/unboosted toggle those panels use.
+    private func setupProgressTracker() {
+        let tracker = ProgressTrackerHUD()
+        tracker.configure()
+        // 8pt top inset matches the Status HUD panels' own convention.
+        // Because this same node is visible above the minigame overlay too
+        // (see zPosition note above), it also sits close to MinigameNode's
+        // instructionLabel (y = sceneH*0.42, i.e. 0.08*sceneH below this
+        // tracker) — tight but clear, not yet confirmed on-device.
+        tracker.position = CGPoint(x: 0, y: size.height / 2 - 8)
+        tracker.zPosition = 58
+        addChild(tracker)
+        progressTracker = tracker
     }
 
     // ✨ level-up badge — sits beside the 🐾 bubble rather than literally
@@ -434,12 +499,18 @@ class BackRoomScene: SKScene {
     // there isn't a clean way to fit a third row there without pushing the
     // relic row further down, which the three-file relicRowTopInset sync
     // above already has to account for once as it is. Built once Magic.points
-    // crosses 150 — including mid-run, matching the same live-unlock pattern
+    // crosses 500 (or immediately, by identity, for Ana — see below) —
+    // including mid-run, matching the same live-unlock pattern
     // as the in-dungeon ✨ ability button — and flashes a few times only the
     // very first time it appears (Store.loadLevelUpBadgeFlashed()), then
     // just sits there statically on every later appearance.
     private func updateLevelUpBadge() {
-        guard levelUpBadgeNode == nil, Magic.shared.points >= 150, let magicBubbleNode else { return }
+        // Ana arrives already knowing her fairy magic — no level-up gate for
+        // her era. Gated on identity, not on her point total (Phase 7b) —
+        // see the matching gate in MinigameNode/BossMinigameNode.
+        let unlocked = tailorIdentity.id == Tailor.anaID
+                    || Magic.shared.points >= MagicLevelUpThreshold.levelOne.rawValue
+        guard levelUpBadgeNode == nil, unlocked, let magicBubbleNode else { return }
 
         let badge = SKShapeNode(circleOfRadius: 15)
         badge.fillColor = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 0.95)
@@ -460,6 +531,51 @@ class BackRoomScene: SKScene {
 
         if !Store.loadLevelUpBadgeFlashed() {
             Store.saveLevelUpBadgeFlashed()
+            badge.setScale(0.3)
+            let popIn = SKAction.sequence([
+                .scale(to: 1.3, duration: 0.18),
+                .scale(to: 1.0, duration: 0.10)
+            ])
+            let flash = SKAction.sequence([
+                .scale(to: 1.25, duration: 0.18),
+                .scale(to: 1.0, duration: 0.18)
+            ])
+            badge.run(.sequence([popIn, .repeat(flash, count: 3)]))
+        }
+    }
+
+    // 👑 game-complete badge (Phase 7b, task 8) — the v1 ending has been
+    // reached and 마력 accrual is frozen (see Magic.add(_:)'s early return).
+    // Sits immediately to the right of the ✨ badge, same y, same size —
+    // reuses that badge's visual style/placement approach rather than
+    // inventing a second idiom, per the task spec. A separate node (not a
+    // second state of the ✨ badge) since ✨ keeps meaning "ability
+    // unlocked" independently of whether the game is complete. Not yet
+    // reachable from anywhere — Store.saveGameComplete() is set by the
+    // Estelle epilogue's outro (task 7, not yet built); this only reads
+    // the flag, so it activates automatically once that lands.
+    private func updateGameCompleteBadge() {
+        guard gameCompleteBadgeNode == nil, Store.loadGameComplete(), let magicBubbleNode else { return }
+
+        let badge = SKShapeNode(circleOfRadius: 15)
+        badge.fillColor = UIColor(red: 1.0, green: 0.84, blue: 0.31, alpha: 0.95)
+        badge.strokeColor = UIColor(red: 0.55, green: 0.35, blue: 0.10, alpha: 1.0)
+        badge.lineWidth = 2
+        badge.position = CGPoint(x: magicBubbleNode.position.x + tailorBubbleSize.width / 2 + 8 + 15 + 34,
+                                 y: magicBubbleNode.position.y - 10)
+        badge.zPosition = 20
+        addChild(badge)
+
+        let crown = SKLabelNode(text: "👑")
+        crown.fontSize = 16
+        crown.horizontalAlignmentMode = .center
+        crown.verticalAlignmentMode = .center
+        badge.addChild(crown)
+
+        gameCompleteBadgeNode = badge
+
+        if !Store.loadGameCompleteBadgeFlashed() {
+            Store.saveGameCompleteBadgeFlashed()
             badge.setScale(0.3)
             let popIn = SKAction.sequence([
                 .scale(to: 1.3, duration: 0.18),
@@ -542,7 +658,7 @@ class BackRoomScene: SKScene {
             var maxY = magicBubbleNode.position.y + tailorBubbleSize.height / 2
 
             // Reserve the ✨ badge's space unconditionally, not just when it
-            // already exists: Magic.points can cross 150 mid-run (the same
+            // already exists: Magic.points can cross 500 mid-run (the same
             // live-unlock moment the in-dungeon ✨ ability button handles),
             // and this panel is only drawn once at scene setup — if the
             // badge weren't accounted for up front, it would render outside
@@ -550,6 +666,9 @@ class BackRoomScene: SKScene {
             // instead of at setup.
             let reservedBadgeX = magicBubbleNode.position.x + tailorBubbleSize.width / 2 + 8 + 15
             maxX = max(maxX, reservedBadgeX + 15)
+            // Reserve the 👑 game-complete badge's space too, same
+            // reasoning — it sits 34pt further right of the ✨ badge (task 8).
+            maxX = max(maxX, reservedBadgeX + 34 + 15)
             for slot in relicSlots {
                 minX = min(minX, slot.position.x - 14)
                 maxX = max(maxX, slot.position.x + 14)
@@ -566,6 +685,7 @@ class BackRoomScene: SKScene {
             panel.position = CGPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
             panel.zPosition = 15
             addChild(panel)
+            tailorPanelNode = panel
         }
 
         if let walletBubbleNode {
@@ -578,7 +698,34 @@ class BackRoomScene: SKScene {
             panel.position = walletBubbleNode.position
             panel.zPosition = 15
             addChild(panel)
+            customerPanelNode = panel
         }
+    }
+
+    // Owner report after a device playthrough: "it feels weird not to see
+    // Daphne's Status HUD change as magic points are accrued and relics are
+    // collected" while inside a dungeon. The minigame overlay
+    // (MinigameNode/BossMinigameNode, zPosition 50) is a full-screen node
+    // added on top of BackRoomScene, so it was drawing over the HUD (15/20)
+    // for the entire run — boost the HUD above the minigame's own content
+    // (its tallest persistent element sits at effective zPosition 57; see
+    // MinigameNode/BossMinigameNode for the max local values) while a
+    // dungeon is active, and drop it back down once control returns to the
+    // plain back room. Restoring to the original 15/20 (rather than leaving
+    // it boosted permanently) matters because the exit-dialog overlay
+    // (zPosition 60, only ever shown in the back room, never during a
+    // minigame) is meant to darken the ENTIRE screen including the HUD
+    // corners — a permanently-boosted HUD would poke out above that dim.
+    private func setStatusHUDBoosted(_ boosted: Bool) {
+        let panelZ: CGFloat   = boosted ? 58 : 15
+        let contentZ: CGFloat = boosted ? 59 : 20
+        tailorPanelNode?.zPosition   = panelZ
+        customerPanelNode?.zPosition = panelZ
+        magicBubbleNode?.zPosition   = contentZ
+        walletBubbleNode?.zPosition  = contentZ
+        levelUpBadgeNode?.zPosition  = contentZ
+        gameCompleteBadgeNode?.zPosition = contentZ
+        relicSlots.forEach { $0.zPosition = contentZ }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -859,6 +1006,9 @@ class BackRoomScene: SKScene {
             config: config,
             onRelicCollected: { [weak self] _ in
                 self?.updateRelicHUD()
+            },
+            onMagicChanged: { [weak self] in
+                self?.updateHUDCounters()
             }
         ) { [weak self] completedStation in
             self?.handleMinigameCompletion(for: completedStation)
@@ -868,6 +1018,7 @@ class BackRoomScene: SKScene {
         activeMinigame = minigame
         addChild(minigame)
         minigame.setup(in: scene)
+        setStatusHUDBoosted(true)
     }
 
     private func presentBossMinigame() {
@@ -879,6 +1030,9 @@ class BackRoomScene: SKScene {
             order: order,
             onRelicCollected: { [weak self] _ in
                 self?.updateRelicHUD()
+            },
+            onMagicChanged: { [weak self] in
+                self?.updateHUDCounters()
             }
         ) { [weak self] in
             self?.handleBossCompletion()
@@ -888,11 +1042,13 @@ class BackRoomScene: SKScene {
         activeBossMinigame = boss
         addChild(boss)
         boss.setup(in: scene)
+        setStatusHUDBoosted(true)
     }
 
     private func handleBossCompletion() {
         activeBossMinigame?.removeFromParent()
         activeBossMinigame = nil
+        setStatusHUDBoosted(false)
         scene?.physicsWorld.gravity = .zero
         tailor.isPaused = false
         updateQuitButtonVisibility()
@@ -901,13 +1057,13 @@ class BackRoomScene: SKScene {
         setInstructionText(garmentCompletionText(for: order))
         updateHUDCounters()
 
-        // Phase 5 — TailorChoiceScene fires once when all four relics have been
-        // collected and the deduction scene hasn't been shown yet.
+        // Phase 5 — RelicDeductionScene fires once when all four relics have
+        // been collected and the deduction scene hasn't been shown yet.
         let allRelicsCollected = Store.loadCollectedRelics().count == DungeonItem.allCases.count
 
         if allRelicsCollected && !Store.loadRelicDeductionShown() {
             Store.saveRelicDeductionShown()
-            presentTailorChoiceScene()
+            presentRelicDeductionScene()
         } else {
             placeDressOnMannequin()
         }
@@ -918,9 +1074,9 @@ class BackRoomScene: SKScene {
         // implying Ana finished a dress she never touched.
     }
 
-    private func presentTailorChoiceScene() {
+    private func presentRelicDeductionScene() {
         guard let view = self.view else { return }
-        let scene = TailorChoiceScene()
+        let scene = RelicDeductionScene()
         scene.scaleMode = .resizeFill
         scene.completedOrder = order
         let transition = SKTransition.crossFade(withDuration: 0.6)
@@ -931,6 +1087,7 @@ class BackRoomScene: SKScene {
         // Tear down overlay
         activeMinigame?.removeFromParent()
         activeMinigame = nil
+        setStatusHUDBoosted(false)
 
         // Restore gravity (back room has no physics bodies, so zero is correct)
         scene?.physicsWorld.gravity = .zero
@@ -979,10 +1136,19 @@ class BackRoomScene: SKScene {
         let haloSize = haloBaseSize
         let scale = Tailor.haloScale(for: tailorIdentity)
         let halo = SKShapeNode(rectOf: haloSize, cornerRadius: haloSize.width / 2)
-        halo.fillColor = color.withAlphaComponent(0.45)
+        // Owner report 2026-09-10: after narrowing Ana's halo width (26pt,
+        // to keep its solid frame hidden behind her ~31pt-wide shoulders —
+        // see haloBaseSize), the whole effect read as "barely visible."
+        // A narrower shape blurs to a fainter glow at the same glowWidth,
+        // so Ana gets a brighter fill and a wider glow radius to compensate
+        // — still soft/blurred, not a hard edge, matching her own
+        // distinction between "the frame" (fixed) and "the glowy part"
+        // (meant to stay visible, now more so).
+        let isAna = tailorIdentity.id == Tailor.anaID
+        halo.fillColor = color.withAlphaComponent(isAna ? 0.60 : 0.45)
         halo.strokeColor = color.withAlphaComponent(0.85)
         halo.lineWidth = 3 * scale
-        halo.glowWidth = 24 * scale
+        halo.glowWidth = (isAna ? 44 : 24) * scale
         halo.position = CGPoint(x: tailor.position.x, y: tailor.position.y)
         halo.zPosition = 8
         halo.name = "tailorHalo"

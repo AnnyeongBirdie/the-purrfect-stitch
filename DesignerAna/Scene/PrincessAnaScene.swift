@@ -16,13 +16,19 @@ import UIKit
 
 class PrincessAnaScene: SKScene {
 
-    // MARK: - Public properties forwarded from AuroraChamberScene / TailorChoiceScene
+    // MARK: - Public properties forwarded from AuroraChamberScene
+    // (the only path here since RelicDeductionScene's old A/B branch, which
+    // used to also reach this scene directly, was removed — see
+    // RelicDeductionScene's header comment)
 
     var completedOrder: Order?
     /// When true, startOutro() returns to StorybookScene instead of FrontShopScene.
     var isReplayMode = false
     /// Page index within the replay chapter (4) to return to. Set by StorybookScene.
-    var replayReturnPage = 2
+    /// Page 3 as of Phase 7b's storybook restructure (task 9) — page 0 is
+    /// now the opening (DaphneBecomesTailorScene), which didn't share this
+    /// chapter before.
+    var replayReturnPage = 3
 
     // MARK: - Beat data
 
@@ -86,6 +92,11 @@ class PrincessAnaScene: SKScene {
     private var activeRelicAnimations = 0
     /// Blocks taps while the souvenir selfie-gift animation is in flight.
     private var selfieGiftInFlight = false
+    /// Blocks taps during Daphne's teleport-in entrance at scene start —
+    /// owner request 2026-09-09. Ana's arrives-via-Aurora's-magic delivery
+    /// (see AuroraChamberScene's exit) means beat 0 ("어머! 꼬마
+    /// 재봉사님...") should hold until Daphne has visibly arrived.
+    private var waitingForEntrance = true
 
     // MARK: - HUD
 
@@ -104,6 +115,7 @@ class PrincessAnaScene: SKScene {
         setupBackdrop()
         setupCharacters()
         setupHUD(safeBottom: view.safeAreaInsets.bottom)
+        runDaphneEntrance()
     }
 
     private func setupBackdrop() {
@@ -125,6 +137,7 @@ class PrincessAnaScene: SKScene {
         tailor.xScale *= -1   // face right toward Ana and the Godmother
         tailor.position = CGPoint(x: -size.width * 0.22, y: -size.height * 0.15)
         tailor.zPosition = 5
+        tailor.alpha = 0   // starts invisible — runDaphneEntrance() reveals her
         addChild(tailor)
         tailorSprite = tailor
 
@@ -176,7 +189,97 @@ class PrincessAnaScene: SKScene {
         // Reveal only Tailor and Ana at scene start; Godmother stays hidden until beat 9.
         hud.revealSpeakers(["재봉사 다프네", "아나 공주"], activeSpeaker: "아나 공주")
 
-        hud.show(speaker: "아나 공주", text: beats[0].text)
+        // Beat 0 ("어머! 꼬마 재봉사님...") is deferred to runDaphneEntrance()'s
+        // completion, not shown here — it should only appear once Daphne has
+        // visibly teleported in.
+    }
+
+    // MARK: - Daphne's teleport-in entrance
+    //
+    // Owner request 2026-09-09: "add teleport in magic effect and Daphne
+    // fading in effect in the beginning of scene." Daphne arrives here via
+    // Aurora's magic (AuroraChamberScene's exit: "자, 내가 마법으로
+    // 보내줄게!"), so this reuses Aurora's purple — the same magic-circle +
+    // converging-sparkles + scale-pop language as
+    // DaphneBecomesTailorScene.runAuroraEntrance() (Aurora's own entrance)
+    // and AuroraChamberScene.startTeleport() (Daphne's exit from there) —
+    // one consistent visual vocabulary for "arriving/leaving via Aurora's
+    // wizard magic" across all three scenes.
+    private func runDaphneEntrance() {
+        let auroraColor  = UIColor(red: 0.60, green: 0.30, blue: 0.90, alpha: 1.0)
+        let auroraBright = UIColor(red: 0.80, green: 0.58, blue: 1.0,  alpha: 1.0)
+
+        spawnMagicCircle(
+            at: CGPoint(x: tailorSprite.position.x, y: tailorSprite.position.y - 95),
+            color: auroraColor,
+            brightColor: auroraBright
+        )
+        spawnConvergingSparkles(at: tailorSprite.position, color: auroraBright)
+
+        tailorSprite.xScale *= 0.6
+        tailorSprite.yScale *= 0.6
+        let popIn = SKAction.scale(by: 1.0 / 0.6, duration: 0.55)
+        popIn.timingMode = .easeOut
+
+        tailorSprite.run(.group([.fadeIn(withDuration: 0.5), popIn])) { [weak self] in
+            guard let self else { return }
+            self.waitingForEntrance = false
+            self.hud.show(speaker: "아나 공주", text: self.beats[0].text)
+        }
+    }
+
+    private func spawnMagicCircle(at position: CGPoint, color: UIColor, brightColor: UIColor) {
+        let ring = SKShapeNode(ellipseOf: CGSize(width: 150, height: 46))
+        ring.fillColor   = color.withAlphaComponent(0.25)
+        ring.strokeColor = brightColor.withAlphaComponent(0.9)
+        ring.lineWidth   = 3
+        ring.position    = position
+        ring.zPosition   = 4
+        ring.alpha       = 0
+        ring.setScale(0.1)
+        addChild(ring)
+
+        let appear = SKAction.group([
+            .fadeAlpha(to: 0.9, duration: 0.25),
+            .scale(to: 1.0, duration: 0.35)
+        ])
+        appear.timingMode = .easeOut
+
+        ring.run(.sequence([
+            appear,
+            .wait(forDuration: 0.5),
+            .group([.fadeOut(withDuration: 0.5), .scale(to: 1.3, duration: 0.5)]),
+            .removeFromParent()
+        ]))
+    }
+
+    private func spawnConvergingSparkles(at position: CGPoint, color: UIColor) {
+        for i in 0..<12 {
+            let spark = SKShapeNode(circleOfRadius: 5)
+            spark.fillColor   = color
+            spark.strokeColor = UIColor.white.withAlphaComponent(0.6)
+            spark.lineWidth   = 1
+            spark.zPosition   = 20
+            spark.alpha       = 0
+
+            let angle  = CGFloat(i) / 12 * .pi * 2
+            let radius = CGFloat.random(in: 70...110)
+            spark.position = CGPoint(
+                x: position.x + cos(angle) * radius,
+                y: position.y + sin(angle) * radius
+            )
+            addChild(spark)
+
+            spark.run(.sequence([
+                .fadeIn(withDuration: 0.1),
+                .group([
+                    .move(to: position, duration: 0.45),
+                    .scale(to: 0.3, duration: 0.45)
+                ]),
+                .fadeOut(withDuration: 0.15),
+                .removeFromParent()
+            ]))
+        }
     }
 
     // MARK: - Beat advancement
@@ -482,6 +585,9 @@ class PrincessAnaScene: SKScene {
         if isReplayMode {
             // Return to the exact storybook page without re-saving quest state.
             let storybook = StorybookScene(size: size)
+            // Chapter index 4 is the unified story chapter — unchanged by the
+            // Phase 7b page-index migration (task 9), which only shifted page
+            // numbers within it. See CLAUDE.md's page-index migration table.
             storybook.replayReturnChapter = 4
             storybook.replayReturnPage    = replayReturnPage
             storybook.scaleMode = .resizeFill
@@ -506,7 +612,7 @@ class PrincessAnaScene: SKScene {
     // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !outroStarted else { return }
+        guard !outroStarted, !waitingForEntrance else { return }
         guard touches.first != nil else { return }
 
         // Beat 9 flag: player has read Ana's summons, now trigger godmother entrance.

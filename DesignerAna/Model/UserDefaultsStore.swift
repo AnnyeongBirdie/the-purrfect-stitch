@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os.log
 
 enum UserDefaultsKey {
     static let walletBalance        = "wallet.balance"
@@ -17,12 +18,16 @@ enum UserDefaultsKey {
     static let customerSelected     = "customer.selected"
     static let collectedRelics      = "relics.collected"
     static let relicDeductionShown  = "relics.deductionShown"
-    static let relicChoiceFirst     = "relics.choiceFirst"
     static let relicQuestComplete   = "relics.questComplete"
     static let currentTailor        = "tailor.current"
     static let tailorHandoffShown   = "tailor.handoffShown"
     static let storybookOpened      = "storybook.opened"
     static let levelUpBadgeFlashed  = "magic.levelUpBadgeFlashed"
+    static let endingShown          = "ending.shown"
+    static let hasSeenOpening       = "storybook.hasSeenOpening"
+    static let gameComplete         = "game.complete"
+    static let gameCompleteBadgeFlashed = "game.completeBadgeFlashed"
+    static let kingQueenSceneShown  = "royalParents.sceneShown"
 }
 
 enum Store {
@@ -162,15 +167,6 @@ enum Store {
     static func saveRelicDeductionShown() {
         defaults.set(true, forKey: UserDefaultsKey.relicDeductionShown)
     }
-    static func loadRelicChoiceFirst() -> String? {
-        defaults.string(forKey: UserDefaultsKey.relicChoiceFirst)
-    }
-    static func saveRelicChoiceFirst(_ choice: String) {
-        // Only records the *first* choice — don't overwrite if already set.
-        guard defaults.string(forKey: UserDefaultsKey.relicChoiceFirst) == nil else { return }
-        defaults.set(choice, forKey: UserDefaultsKey.relicChoiceFirst)
-    }
-
     static func loadRelicQuestComplete() -> Bool {
         defaults.bool(forKey: UserDefaultsKey.relicQuestComplete)
     }
@@ -183,7 +179,6 @@ enum Store {
     /// call saveCollectedRelics([]) before this if you also want a fresh relic set.
     static func clearRelicQuestState() {
         defaults.removeObject(forKey: UserDefaultsKey.relicDeductionShown)
-        defaults.removeObject(forKey: UserDefaultsKey.relicChoiceFirst)
         defaults.removeObject(forKey: UserDefaultsKey.relicQuestComplete)
     }
 
@@ -196,13 +191,82 @@ enum Store {
         defaults.set(id, forKey: UserDefaultsKey.currentTailor)
     }
 
-    /// Gates the 300-마력 Daphne→Ana handoff scene so it fires only once,
+    /// Gates the Daphne→Ana handoff scene (MagicLevelUpThreshold.levelTwo —
+    /// 1000 마력 as of Phase 7b's retune, was 300) so it fires only once,
     /// mirroring relicDeductionShown's one-shot pattern.
     static func loadTailorHandoffShown() -> Bool {
         defaults.bool(forKey: UserDefaultsKey.tailorHandoffShown)
     }
     static func saveTailorHandoffShown() {
         defaults.set(true, forKey: UserDefaultsKey.tailorHandoffShown)
+    }
+
+    /// Gates the King/Queen narrative interlude (task 8 — 1500 마력 in
+    /// Ana's era) so it fires only once, mirroring tailorHandoffShown's
+    /// one-shot pattern exactly. Checked in FrontShopScene.handleSaveTrophy()
+    /// alongside the handoff/ending gates, since it sits between them
+    /// (1000 < 1500 < 3000) — same reasoning as both: firing before the
+    /// wardrobe save would let the scene conclude and THEN show the
+    /// trophy, reading as if the tailor finished a dress she never touched.
+    static func loadKingQueenSceneShown() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.kingQueenSceneShown)
+    }
+    static func saveKingQueenSceneShown() {
+        defaults.set(true, forKey: UserDefaultsKey.kingQueenSceneShown)
+    }
+
+    /// Gates the v1 final ending (Phase 7b, task 6/7 — Ana's Estelle
+    /// epilogue at 3000 마력) so it fires only once, mirroring
+    /// tailorHandoffShown's one-shot pattern exactly. Not yet set from
+    /// anywhere — FrontShopScene.handleSaveTrophy() will call
+    /// saveEndingShown() the moment it presents the real epilogue scene
+    /// (task 7), not before; see Magic.hasReachedEnding(points:tailorID:)
+    /// for the pure, tested gate condition this flag pairs with.
+    static func loadEndingShown() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.endingShown)
+    }
+    static func saveEndingShown() {
+        defaults.set(true, forKey: UserDefaultsKey.endingShown)
+    }
+
+    /// Gates the mandatory first-play opening (Phase 7b, task 9c) —
+    /// DaphneBecomesTailorScene plays automatically once, right after the
+    /// first-launch customer picker and before the player ever sees the
+    /// shop. Also doubles as this page's own unlock condition in the new
+    /// unified story chapter (task 9b) — a player who opens the storybook
+    /// before ever picking a customer sees it locked, same as any other
+    /// unreached story page. Mirrors tailorHandoffShown's one-shot pattern.
+    static func loadHasSeenOpening() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.hasSeenOpening)
+    }
+    static func saveHasSeenOpening() {
+        defaults.set(true, forKey: UserDefaultsKey.hasSeenOpening)
+    }
+
+    /// The v1 ending has actually been reached and free play has begun
+    /// (Phase 7b, task 8) — distinct from `endingShown` (Magic.swift), which
+    /// only guards presenting the epilogue scene once. This flag is set
+    /// *after* the epilogue's own outro (task 7's "save → epilogue → game
+    /// complete" sequence), not at the moment it's presented, mirroring how
+    /// PrincessAnaScene sets relicQuestComplete in its own outro rather than
+    /// at RelicDeductionScene's start. Read by Magic.add(_:), which becomes a
+    /// full no-op once this is true — the single seam that stops 마력
+    /// accrual, so no call site needs to learn about the end state — and by
+    /// BackRoomScene's frozen-HUD completion badge.
+    static func loadGameComplete() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.gameComplete)
+    }
+    static func saveGameComplete() {
+        defaults.set(true, forKey: UserDefaultsKey.gameComplete)
+    }
+
+    /// Gates the frozen-HUD completion badge's attention-getting flash —
+    /// same one-shot pattern as levelUpBadgeFlashed.
+    static func loadGameCompleteBadgeFlashed() -> Bool {
+        defaults.bool(forKey: UserDefaultsKey.gameCompleteBadgeFlashed)
+    }
+    static func saveGameCompleteBadgeFlashed() {
+        defaults.set(true, forKey: UserDefaultsKey.gameCompleteBadgeFlashed)
     }
 
     /// Gates TitleScene's "바로 시작하기" — locked until the player has opened
@@ -217,9 +281,11 @@ enum Store {
 
     /// Gates the Tailor Status HUD's ✨ level-up badge's attention-getting
     /// flash — it should flash a few times only the first time it appears
-    /// (the first BackRoomScene load after Magic.points crosses 150), then
-    /// just sit there statically on every load after, mirroring
-    /// tailorHandoffShown's one-shot pattern.
+    /// (the first BackRoomScene load after Magic.points crosses 500, or
+    /// immediately for Ana's era, which unlocks the badge by identity —
+    /// see BackRoomScene.updateLevelUpBadge()), then just sit there
+    /// statically on every load after, mirroring tailorHandoffShown's
+    /// one-shot pattern.
     static func loadLevelUpBadgeFlashed() -> Bool {
         defaults.bool(forKey: UserDefaultsKey.levelUpBadgeFlashed)
     }
@@ -254,3 +320,69 @@ enum Store {
         clearSelectedCustomer()
     }
 }
+
+// MARK: - Progression invariants (DEBUG only)
+
+#if DEBUG
+extension Store {
+
+    private static let progressLog = OSLog(subsystem: "com.annyeongbirdie.thepurrfectstitch",
+                                           category: "Progress")
+
+    /// Consistency check over the story-progression flags.
+    ///
+    /// These flags encode one ordered progression -- collect four relics, finish
+    /// the quest, hand the shop to Ana, reach the ending -- but they are stored
+    /// as independent values, so nothing structurally prevents a combination the
+    /// game's own logic treats as impossible. Added 2026-09-10 after exactly such
+    /// a combination reached a device playtest: Ana as the working tailor with an
+    /// empty relic set, which makes uncollected relics respawn in her dungeons.
+    /// It arrived through the then-unguarded SettingsScene debug shortcut (now
+    /// corner-gated), and because collecting the respawned relic repairs the
+    /// state, the corruption was both silent and self-healing -- so it could not
+    /// be reproduced. This turns that whole class of state into a loud failure at
+    /// the moment gameplay first trusts it.
+    ///
+    /// ⚠️ Every check here is keyed on `tailorHandoffShown`, never on
+    /// `currentTailor` alone. BackRoomScene's `#if DEBUG` roster-cycle shortcut
+    /// deliberately sets the tailor independently of the story flags, so
+    /// "currentTailor is Ana" is not on its own a violation while that shortcut
+    /// exists -- asserting on it would fire on every use of the fastest route to
+    /// Ana and train the alarm to be ignored. Once the debug shortcuts come out
+    /// (step 1 of the economy calibration pass), the stricter predicate becomes
+    /// available and this comment is the note to revisit it.
+    ///
+    /// Compiled out of release builds entirely. If a trap mid-playtest proves
+    /// disruptive during the outstanding on-device verification pass, drop the
+    /// `assertionFailure` and keep the `os_log` -- the log line alone still
+    /// records the violation, with the same message.
+    static func assertProgressInvariants(_ context: String) {
+        let relics       = loadCollectedRelics()
+        let relicTotal   = DungeonItem.allCases.count
+        let questDone    = loadRelicQuestComplete()
+        let handoffShown = loadTailorHandoffShown()
+        let gameDone     = loadGameComplete()
+
+        var violations: [String] = []
+
+        if questDone && relics.count != relicTotal {
+            violations.append("relicQuestComplete is set but \(relics.count)/\(relicTotal) relics are collected")
+        }
+        if handoffShown && !questDone {
+            violations.append("tailorHandoffShown is set but relicQuestComplete is not")
+        }
+        if handoffShown && relics.count != relicTotal {
+            violations.append("the handoff to Ana has happened but \(relics.count)/\(relicTotal) relics are collected -- uncollected relics will respawn in her dungeons")
+        }
+        if gameDone && !handoffShown {
+            violations.append("gameComplete is set but tailorHandoffShown is not")
+        }
+
+        guard !violations.isEmpty else { return }
+
+        let message = "Progression invariant violated at \(context): " + violations.joined(separator: "; ")
+        os_log("%{public}@", log: progressLog, type: .fault, message)
+        assertionFailure(message)
+    }
+}
+#endif

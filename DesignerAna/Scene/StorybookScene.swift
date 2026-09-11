@@ -3,9 +3,13 @@
 //  DesignerAna
 //
 //  The 📖 storybook scene — accessed from the nav strip in FrontShopScene.
-//  Shows a table of contents followed by five readable chapters: the kingdom,
-//  the royal family, the economy, the workshop & its dungeon relics, and the
-//  cast of characters featured in the game.
+//  Shows a table of contents followed by six readable chapters: the kingdom,
+//  the royal family, the economy, the workshop & its dungeon relics, every
+//  narrative scene in story order (chapter 5 — replaced "장면 다시 보기" in
+//  Phase 7b's task 9; page 0 is the game's mandatory opening, watched
+//  automatically on first launch, and every later page unlocks as the
+//  player naturally reaches it in play), and the cast of characters
+//  featured in the game.
 //
 
 import SpriteKit
@@ -31,10 +35,11 @@ class StorybookScene: SKScene {
         /// thumbnail mode) and a circular portrait badge is overlaid at the
         /// lower-right corner of the illustration.
         var replayPortraitAsset: String? = nil
-        /// If set, an action button with this label is rendered on the right page.
-        /// The string is the scene class name used by launchActionScene().
-        var actionButtonLabel: String? = nil
-        var actionSceneName:   String? = nil
+        /// True for a story beat the player hasn't reached yet — rendered
+        /// greyed with a 🔒 illustration and a generic "???" title, no play
+        /// button (task 9b). Built via lockedStoryPage() rather than set
+        /// directly on a real page.
+        var isLocked: Bool = false
     }
 
     private struct Chapter {
@@ -43,9 +48,66 @@ class StorybookScene: SKScene {
         let pages:    [Page]
     }
 
+    /// Per-page unlock condition for the unified story chapter (task 9b) —
+    /// pure and internal (not private) specifically so it's unit-testable
+    /// without instantiating the scene itself, the same reasoning as
+    /// AuroraChamberScene.closingLine(forMagicPoints:). Page 0 is the
+    /// opening; 1-3 are TailorChoice/Aurora/PrincessAna, which fire
+    /// together as one sequence once all four relics are collected, so
+    /// they share one flag; 4 is the tailor handoff; 5 is the Estelle
+    /// epilogue (task 7), unlocked once the game is actually complete —
+    /// replaying the ending only makes sense after you've already reached
+    /// it. `pageIndex` is intentionally the only routing input (not e.g. an
+    /// enum case per scene) so this stays a trivial table to extend — an
+    /// out-of-range index safely returns false.
+    static func storyChapterPageUnlocked(pageIndex: Int,
+                                          hasSeenOpening: Bool,
+                                          relicQuestComplete: Bool,
+                                          tailorHandoffShown: Bool,
+                                          kingQueenSceneShown: Bool,
+                                          gameComplete: Bool) -> Bool {
+        switch pageIndex {
+        case 0: return hasSeenOpening
+        case 1, 2, 3: return relicQuestComplete
+        case 4: return tailorHandoffShown
+        case 5: return kingQueenSceneShown
+        case 6: return gameComplete
+        default: return false
+        }
+    }
+
+    /// A page for a story beat the player hasn't reached yet — greyed, with
+    /// a 🔒 illustration and a generic "???" title, no play button (task
+    /// 9b). Static so it can be called from `chapters`' own property
+    /// initializer, which runs before `self` is available for instance
+    /// methods. Mirrors, in spirit, the veiled Rose "???" mystery-character
+    /// page in the cast chapter — a different mechanism (that one hides a
+    /// narrative spoiler; this one gates unreached progression), but the
+    /// same "???" visual language a child already recognises from there.
+    private static func lockedStoryPage() -> Page {
+        Page(
+            illustrationAsset: nil,
+            illustrationEmoji: "🔒",
+            pageTitle: "???",
+            pageBody:
+                "아직 만나보지 못한 이야기예요.\n\n" +
+                "계속 진행하다 보면 언젠가 볼 수 있을 거예요...",
+            isLocked: true
+        )
+    }
+
     // ── Content ───────────────────────────────────────────────────────────────
 
     private let chapters: [Chapter] = {
+        // Captured once so the unified story chapter's seven pages (below)
+        // can route through the pure, tested storyChapterPageUnlocked(_:)
+        // rather than each re-reading Store directly.
+        let hasSeenOpening     = Store.loadHasSeenOpening()
+        let relicQuestComplete = Store.loadRelicQuestComplete()
+        let tailorHandoffShown = Store.loadTailorHandoffShown()
+        let kingQueenShown     = Store.loadKingQueenSceneShown()
+        let gameComplete       = Store.loadGameComplete()
+
         return [
 
             // ── 1. World Introduction (merged: world + creator lore) ──────
@@ -175,23 +237,27 @@ class StorybookScene: SKScene {
                         pageTitle: "냥을 쓰는 방법",
                         pageBody:
                             "냥은 재봉사 가게에서 옷을 주문할 때 써요.\n\n" +
-                            "드레스 50냥 · 바지 40냥 · 셔츠 30냥\n\n" +
+                            "드레스 60냥 · 바지 45냥 · 셔츠 45냥\n\n" +
                             "지갑 💰 아이콘을 누르면 퀴즈를 풀어서 냥을 벌 수 있어요. " +
-                            "정답 하나당 +15냥!\n\n" +
+                            "정답 하나당 +5냥!\n\n" +
                             "던전 보물 상자에서도 냥이 나온답니다! 🪙"
                     ),
+                    // Updated 2026-09-09 — used to describe only Daphne's
+                    // wizard magic, written before Ana's fairy magic existed
+                    // in the dungeons (Phase 7b). Now covers both traditions.
                     Page(
                         illustrationAsset: nil,
                         illustrationEmoji: "✨",
                         pageTitle: "마력이란?",
                         pageBody:
                             "마력은 마법을 쓸 수 있는 고양이들의 특별한 힘이에요.\n\n" +
-                            "재봉사 다프네는 스승인 오로라에게 마법을 배웠기 때문에, " +
-                            "던전에서 마력을 쌓아나갈 수 있답니다.\n\n" +
-                            "던전 보물 상자를 열면 마력이 쑥쑥 올라가요. " +
-                            "작업실 곳곳에 숨겨진 발바닥 흔적을 찾아도 마력이 조금씩 늘어난답니다. 🐾\n\n" +
-                            "마력이 높을수록 다프네가 더 강한 마법사로 성장한다는 걸 " +
-                            "마법사 오로라가 알아차린다고 해요. ⭐"
+                            "재봉사 다프네는 마법사 오로라에게 배운 마법사의 마력을, " +
+                            "아나 공주는 요정 대모 플로라에게 배운 요정의 마법을 갖고 있어요. " +
+                            "배우는 곳도, 색깔도 다르답니다 (다프네는 반짝이는 금빛✨, " +
+                            "아나는 은은한 초록빛🍀).\n\n" +
+                            "던전 보물 상자를 열거나, 작업실 곳곳에 숨겨진 발바닥 흔적을 " +
+                            "찾으면 마력이 조금씩 늘어나요. 🐾\n\n" +
+                            "마력이 높아질수록 재봉사는 더 강한 마법사로 성장한대요!"
                     )
                 ]
             ),
@@ -210,9 +276,7 @@ class StorybookScene: SKScene {
                             "이 가게는 겉에서 보면 평범해 보이지만, " +
                             "뒤쪽 작업실로 들어가면 놀라운 일이 기다리고 있어요.\n\n" +
                             "멋진 옷을 만들기 위해서는 용감한 재봉사가 필요하답니다!",
-                        replayPortraitAsset: "Portrait_Polaris",
-                        actionButtonLabel: "새로운 재봉사 고용",
-                        actionSceneName:   "DaphneBecomesTailorScene"
+                        replayPortraitAsset: "Portrait_Polaris"
                     ),
                     Page(
                         illustrationAsset: "Backroom_Background_Wide",
@@ -288,34 +352,84 @@ class StorybookScene: SKScene {
                 ]
             ),
 
-            // ── 5. Scene Replay (unlocked after relic quest complete) ────────
+            // ── 5. Story — every narrative scene, in story order ─────────
+            // Replaced "장면 다시 보기" (Phase 7b, task 9). This is now a
+            // required chapter, not an optional replay reel: page 0 is the
+            // game's opening, watched automatically on first launch (see
+            // SettingsScene.transitionToFrontShop()), and every other page
+            // unlocks in the order the player naturally reaches it in play.
+            // Chapter title/emoji are proposals — owner's call to rename.
+            // All seven pages exist as of 2026-09-10 (KingQueenScene, task 8,
+            // was the last to land).
             Chapter(
-                title:    "장면 다시 보기",
-                tocEmoji: "🎬",
+                title:    "이야기 장면",
+                tocEmoji: "📜",
                 pages: [
-                    Page(
+                    // 0 — the opening. Unlocks the moment it's actually been
+                    // shown rather than on some other proxy flag, so a
+                    // player who opens the storybook before ever picking a
+                    // customer sees it locked too.
+                    storyChapterPageUnlocked(pageIndex: 0, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
+                        illustrationAsset: "Tailorshop_Background",
+                        illustrationEmoji: nil,
+                        pageTitle: "새로운 재봉사 고용",
+                        pageBody:
+                            "가게 주인 폴라리스가 마법사 오로라의 조수, 다프네를 " +
+                            "재봉사로 맞이하는 장면이에요.\n\n" +
+                            "다프네는 어쩌다 이 가게에서 일하게 되었을까요?\n\n" +
+                            "이야기의 처음으로 돌아가 다시 볼 수 있어요. 🧵",
+                        replaySceneName: "DaphneBecomesTailorScene",
+                        replayPortraitAsset: "Portrait_Daphne"
+                    ) : lockedStoryPage(),
+
+                    // 1 — RelicDeductionScene (renamed from TailorChoiceScene
+                    // 2026-09-09 — the old A/B branch is gone, Aurora is now
+                    // mandatory), AuroraChamberScene and PrincessAnaScene fire
+                    // together as one sequence once all four relics are
+                    // collected, so they share the same unlock condition
+                    // (matches the old chapter-level lock this replaces).
+                    storyChapterPageUnlocked(pageIndex: 1, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
                         illustrationAsset: "WizardAssistant_Dungeon",
                         illustrationEmoji: nil,
-                        pageTitle: "재봉사의 선택",
+                        pageTitle: "재봉사의 결심",
                         pageBody:
-                            "보물들을 앞에 두고 다프네가 고민하는 장면이에요.\n\n" +
-                            "오로라 선생님을 먼저 찾아가거나, 곧장 성으로 갈 수도 있어요.\n\n" +
-                            "이번엔 어떤 선택을 해볼까요? 🤔",
-                        replaySceneName: "TailorChoiceScene",
+                            "보물들을 앞에 두고 다프네가 결심하는 장면이에요.\n\n" +
+                            "오로라 선생님을 찾아가 도움을 구하기로 해요.\n\n" +
+                            "다시 한번 그 순간을 봐보세요. 💭",
+                        replaySceneName: "RelicDeductionScene",
                         replayPortraitAsset: "Portrait_Daphne"
-                    ),
-                    Page(
+                    ) : lockedStoryPage(),
+
+                    // 2
+                    storyChapterPageUnlocked(pageIndex: 2, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
                         illustrationAsset: "Wizard_Chamber",
                         illustrationEmoji: nil,
                         pageTitle: "마법사 오로라의 방",
                         pageBody:
                             "오로라의 방에서 펼쳐지는 따뜻한 재회와 수수께끼예요.\n\n" +
-                            "오로라 루트를 선택했을 때만 볼 수 있는 장면이랍니다.\n\n" +
                             "수수께끼를 다시 풀어보세요! ✨",
                         replaySceneName: "AuroraChamberScene",
                         replayPortraitAsset: "Portrait_Aurora"
-                    ),
-                    Page(
+                    ) : lockedStoryPage(),
+
+                    // 3
+                    storyChapterPageUnlocked(pageIndex: 3, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
                         illustrationAsset: "PrincessAna_Room",
                         illustrationEmoji: nil,
                         pageTitle: "아나 공주의 비밀",
@@ -325,7 +439,79 @@ class StorybookScene: SKScene {
                             "다시 한번 그 감동을 느껴보세요. 🌹",
                         replaySceneName: "PrincessAnaScene",
                         replayPortraitAsset: "Portrait_Ana"
-                    ),
+                    ) : lockedStoryPage(),
+
+                    // 4 — TailorHandoffScene. New entry; this scene had no
+                    // storybook page at all before task 9. Title is a
+                    // proposal — owner's call.
+                    storyChapterPageUnlocked(pageIndex: 4, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
+                        illustrationAsset: "Tailorshop_Background",
+                        illustrationEmoji: nil,
+                        pageTitle: "새로운 재봉사, 아나",
+                        pageBody:
+                            "다프네가 다시 오로라의 제자로 돌아가고, " +
+                            "아나 공주가 새로운 재봉사가 되어주기로 하는 장면이에요.\n\n" +
+                            "재봉사 가게에도, 던전에도 새로운 이야기가 시작돼요. ✨",
+                        replaySceneName: "TailorHandoffScene",
+                        replayPortraitAsset: "Portrait_Ana"
+                    ) : lockedStoryPage(),
+
+                    // 5 — KingQueenScene (task 8). New entry, inserted
+                    // between the handoff (page 4, ~1000 마력) and the
+                    // epilogue (now page 6, 3000 마력) since that's exactly
+                    // where it falls chronologically — it fires at 1500
+                    // 마력, partway through Ana's era. Unlocks once the
+                    // scene has actually played, same one-shot pattern as
+                    // every other page here.
+                    storyChapterPageUnlocked(pageIndex: 5, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
+                        illustrationAsset: "PrincessAna_Room",
+                        illustrationEmoji: nil,
+                        pageTitle: "부모님의 저녁 대화",
+                        pageBody:
+                            "아나 공주의 방에서, 왕과 왕비님이 두 딸의 " +
+                            "요즘 근황을 이야기하는 장면이에요.\n\n" +
+                            "딸들이 어디서 무얼 하는지, 부모님은 알고 계실까요? 👑",
+                        replaySceneName: "KingQueenScene",
+                        replayPortraitAsset: "Portrait_Queen"
+                    ) : lockedStoryPage(),
+
+                    // 6 — EstelleEpilogueScene, the v1 ending (task 7).
+                    // Unlocks once the game is actually complete — this is
+                    // what task 8's frozen-HUD free play looks like from the
+                    // storybook side. Title is a proposal — owner's call.
+                    // Thumbnail is the closing backdrop (Gwanghwamun_Square)
+                    // with Estelle's own portrait badge — she's the scene's
+                    // actual subject (Acts 2-3 are entirely hers), now that
+                    // real art for her exists (updated 2026-09-10; this used
+                    // to badge Ana instead, since Estelle's portrait was
+                    // still a placeholder at the time). ⚠️ Page index moved
+                    // 5→6 the same day the King/Queen page (above) was
+                    // inserted before it — see StorybookScenePageUnlockTests
+                    // and EstelleEpilogueScene.replayReturnPage, both updated
+                    // in the same commit.
+                    storyChapterPageUnlocked(pageIndex: 6, hasSeenOpening: hasSeenOpening,
+                                              relicQuestComplete: relicQuestComplete,
+                                              tailorHandoffShown: tailorHandoffShown,
+                                              kingQueenSceneShown: kingQueenShown,
+                                              gameComplete: gameComplete) ? Page(
+                        illustrationAsset: "Gwanghwamun_Square",
+                        illustrationEmoji: nil,
+                        pageTitle: "에스텔의 새로운 세상",
+                        pageBody:
+                            "아나 공주의 마력이 문을 열고, 저 너머 살아있는 " +
+                            "에스텔 공주를 보여줘요.\n\n" +
+                            "하지만 그 문은... 들어갈 수 있는 문이 아니었어요. 🌸",
+                        replaySceneName: "EstelleEpilogueScene",
+                        replayPortraitAsset: "Portrait_Estelle_Human"
+                    ) : lockedStoryPage(),
                 ]
             ),
 
@@ -573,27 +759,25 @@ class StorybookScene: SKScene {
         let colH   = btnH + CGFloat(chapters.count - 1) * gap
         let startY = colH / 2 - btnH / 2 - 10   // slight downward nudge from centre
 
-        // Replay chapter (🎬) is locked until the relic quest is complete.
-        let replayUnlocked = Store.loadRelicQuestComplete()
-
+        // Every chapter is enterable from the ToC now (Phase 7b, task 9) —
+        // the old "whole replay chapter locked until relics complete"
+        // treatment is gone along with the 🎬 chapter it applied to.
+        // Individual unreached STORY PAGES within the story chapter lock
+        // per-page instead (see Page.isLocked / lockedStoryPage()).
         for (i, ch) in chapters.enumerated() {
-            let isLocked = ch.tocEmoji == "🎬" && !replayUnlocked
             let btn = SKShapeNode(rectOf: CGSize(width: btnW, height: btnH), cornerRadius: 12)
-            btn.fillColor   = isLocked ? UIColor(red: 0.78, green: 0.52, blue: 0.33, alpha: 0.35)
-                                       : brownMid
+            btn.fillColor   = brownMid
             btn.strokeColor = brownLight
             btn.lineWidth   = 2
             btn.position    = CGPoint(x: 0, y: startY - CGFloat(i) * gap)
             btn.zPosition   = 3
-            btn.name        = isLocked ? "lockedChapterBtn_\(i)" : "chapterBtn_\(i)"
+            btn.name        = "chapterBtn_\(i)"
             content.addChild(btn)
 
             let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-            lbl.text = isLocked
-                ? "🔒  \(i + 1). \(ch.title)"
-                : "\(ch.tocEmoji)  \(i + 1). \(ch.title)"
+            lbl.text                    = "\(ch.tocEmoji)  \(i + 1). \(ch.title)"
             lbl.fontSize                = 19
-            lbl.fontColor               = isLocked ? UIColor(white: 1, alpha: 0.50) : .white
+            lbl.fontColor               = .white
             lbl.horizontalAlignmentMode = .center
             lbl.verticalAlignmentMode   = .center
             lbl.name = btn.name
@@ -637,10 +821,26 @@ class StorybookScene: SKScene {
             let sprite = SKSpriteNode(imageNamed: assetName)
             let scale: CGFloat
             if page.replayPortraitAsset != nil {
-                // Replay thumbnail: scale landscape background to fit left-page width.
+                // Replay thumbnail: aspect-fit within a fixed bounding box
+                // (width AND height), not just fit-to-width. Bug found and
+                // fixed 2026-09-09: Tailorshop_Background/Backroom_Background
+                // were generated earlier than this game's other backdrops
+                // and never got their aspect ratio standardized to match
+                // (~1690×931 and ~1536×1024 vs. every later backdrop's
+                // ~1847×851) — fitting only to width let their squarer
+                // aspect ratio render visibly taller than every sibling page
+                // in the story chapter. Fitting to whichever of width/height
+                // is more constraining makes every thumbnail's *size*
+                // consistent regardless of the source art's aspect ratio,
+                // so this can't recur the next time a backdrop is generated
+                // at a slightly different ratio — fixing the two existing
+                // images would only have fixed this one instance of it.
                 let leftPageW = size.width * 0.41
-                let nativeW   = sprite.texture?.size().width ?? 100
-                scale = nativeW > 0 ? leftPageW / nativeW : 1.0
+                let nativeW   = sprite.texture?.size().width  ?? 100
+                let nativeH   = sprite.texture?.size().height ?? 100
+                let scaleByWidth  = nativeW > 0 ? leftPageW  / nativeW : 1.0
+                let scaleByHeight = nativeH > 0 ? illuTargetH / nativeH : 1.0
+                scale = min(scaleByWidth, scaleByHeight)
             } else {
                 let nativeH = sprite.texture?.size().height ?? 100
                 scale = nativeH > 0 ? illuTargetH / nativeH : 1.0
@@ -677,6 +877,7 @@ class StorybookScene: SKScene {
             emojiLbl.horizontalAlignmentMode = .center
             emojiLbl.position  = CGPoint(x: leftCX, y: 0)
             emojiLbl.zPosition = 3
+            if page.isLocked { emojiLbl.alpha = 0.45 }
             content.addChild(emojiLbl)
         }
 
@@ -697,11 +898,11 @@ class StorybookScene: SKScene {
         tagLbl.zPosition = 3
         content.addChild(tagLbl)
 
-        // Page title
+        // Page title — greyed for a locked/unreached story page (task 9b).
         let titleLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
         titleLbl.text                  = page.pageTitle
         titleLbl.fontSize              = 19
-        titleLbl.fontColor             = brownDark
+        titleLbl.fontColor             = page.isLocked ? UIColor(white: 0.45, alpha: 0.75) : brownDark
         titleLbl.horizontalAlignmentMode = .left
         titleLbl.verticalAlignmentMode   = .top
         titleLbl.numberOfLines           = 2
@@ -710,11 +911,13 @@ class StorybookScene: SKScene {
         titleLbl.zPosition = 3
         content.addChild(titleLbl)
 
-        // Body text
+        // Body text — greyed for a locked/unreached story page (task 9b).
         let bodyLbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Regular")
         bodyLbl.text                   = page.pageBody
         bodyLbl.fontSize               = 15
-        bodyLbl.fontColor              = UIColor(red: 0.20, green: 0.10, blue: 0.00, alpha: 1.0)
+        bodyLbl.fontColor              = page.isLocked
+            ? UIColor(white: 0.45, alpha: 0.65)
+            : UIColor(red: 0.20, green: 0.10, blue: 0.00, alpha: 1.0)
         bodyLbl.horizontalAlignmentMode  = .left
         bodyLbl.verticalAlignmentMode    = .top
         bodyLbl.numberOfLines            = 0
@@ -727,11 +930,6 @@ class StorybookScene: SKScene {
         // ── Replay play button (only on replay-chapter pages) ────────────
         if let sceneName = page.replaySceneName {
             addReplayButton(sceneName: sceneName, to: content)
-        }
-
-        // ── Action button (e.g. "새로운 재봉사 고용") ───────────────────────
-        if let label = page.actionButtonLabel, let sceneName = page.actionSceneName {
-            addActionButton(label: label, sceneName: sceneName, to: content)
         }
 
         // ── Navigation controls ────────────────────────────────────────────
@@ -951,75 +1149,65 @@ class StorybookScene: SKScene {
         btn.addChild(lbl)
     }
 
-    /// Adds a warm-gold action button (e.g. "새로운 재봉사 고용") on the right page.
-    private func addActionButton(label: String, sceneName: String, to node: SKNode) {
-        let btnW: CGFloat = min(size.width * 0.38, 180)
-        let btn = SKShapeNode(rectOf: CGSize(width: btnW, height: 50), cornerRadius: 14)
-        // Warm amber-gold to echo Daphne's tailor-gold colour signature
-        btn.fillColor   = UIColor(red: 0.88, green: 0.62, blue: 0.20, alpha: 1.0)
-        btn.strokeColor = UIColor(red: 0.65, green: 0.42, blue: 0.05, alpha: 1.0)
-        btn.lineWidth   = 2
-        btn.position    = CGPoint(x: size.width * 0.225, y: -size.height * 0.14)
-        btn.zPosition   = 10
-        btn.name        = "actionBtn_\(sceneName)"
-        node.addChild(btn)
-
-        let lbl = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
-        lbl.text                    = "🧵  \(label)"
-        lbl.fontSize                = 15
-        lbl.fontColor               = .white
-        lbl.verticalAlignmentMode   = .center
-        lbl.horizontalAlignmentMode = .center
-        lbl.name = "actionBtn_\(sceneName)"
-        btn.addChild(lbl)
-    }
-
     /// Launches the requested scene in replay mode (scene returns to StorybookScene on exit).
     private func launchReplayScene(_ sceneName: String) {
         guard let view = self.view else { return }
         let t = SKTransition.crossFade(withDuration: 0.5)
 
-        // Chapter index 4 = "장면 다시 보기". Page indices match the order of the pages
-        // in that chapter: 0 = TailorChoice, 1 = Aurora, 2 = Princess Ana.
+        // Chapter index 4 = the unified story chapter (task 9). Page indices
+        // match the order of the pages in that chapter: 0 = the opening,
+        // 1 = RelicDeduction, 2 = Aurora, 3 = Princess Ana, 4 = TailorHandoff,
+        // 5 = KingQueenScene (task 8), 6 = the Estelle epilogue (task 7).
         switch sceneName {
-        case "TailorChoiceScene":
-            let scene = TailorChoiceScene()
+        case "DaphneBecomesTailorScene":
+            let scene = DaphneBecomesTailorScene()
+            scene.scaleMode        = .resizeFill
+            scene.isReplayMode     = true
+            scene.replayReturnPage = 0
+            view.presentScene(scene, transition: t)
+
+        case "RelicDeductionScene":
+            let scene = RelicDeductionScene()
             scene.scaleMode      = .resizeFill
             scene.isReplayMode   = true
-            scene.replayReturnPage = 0
+            scene.replayReturnPage = 1
             view.presentScene(scene, transition: t)
 
         case "AuroraChamberScene":
             let scene = AuroraChamberScene()
             scene.scaleMode      = .resizeFill
             scene.isReplayMode   = true
-            scene.replayReturnPage = 1
+            scene.replayReturnPage = 2
             view.presentScene(scene, transition: t)
 
         case "PrincessAnaScene":
             let scene = PrincessAnaScene()
             scene.scaleMode      = .resizeFill
             scene.isReplayMode   = true
-            scene.replayReturnPage = 2
+            scene.replayReturnPage = 3
             view.presentScene(scene, transition: t)
 
-        default:
-            break
-        }
-    }
-
-    /// Launches a non-replay action scene (scene returns to StorybookScene when done).
-    private func launchActionScene(_ sceneName: String) {
-        guard let view = self.view else { return }
-        let t = SKTransition.crossFade(withDuration: 0.5)
-
-        switch sceneName {
-        case "DaphneBecomesTailorScene":
-            let scene = DaphneBecomesTailorScene()
+        case "TailorHandoffScene":
+            let scene = TailorHandoffScene()
             scene.scaleMode        = .resizeFill
-            scene.returnChapterIndex = 3   // Chapter 4 "묘한 옷공방과 던전"
-            scene.returnPageIndex    = 0   // page 0 "재봉사 가게"
+            scene.isReplayMode     = true
+            scene.replayReturnPage = 4
             view.presentScene(scene, transition: t)
+
+        case "KingQueenScene":
+            let scene = KingQueenScene()
+            scene.scaleMode        = .resizeFill
+            scene.isReplayMode     = true
+            scene.replayReturnPage = 5
+            view.presentScene(scene, transition: t)
+
+        case "EstelleEpilogueScene":
+            let scene = EstelleEpilogueScene()
+            scene.scaleMode        = .resizeFill
+            scene.isReplayMode     = true
+            scene.replayReturnPage = 6
+            view.presentScene(scene, transition: t)
+
         default:
             break
         }
@@ -1033,8 +1221,9 @@ class StorybookScene: SKScene {
 
         #if DEBUG
         // Temporary dev shortcut: triple-tap the ToC's top-right corner to
-        // unlock chapter 5 (장면 다시보기) without completing the relic quest.
-        // The dungeon boss fight needs two simultaneous buttons, which the
+        // unlock the story chapter's TailorChoice/Aurora/PrincessAna pages
+        // (chapter 4, pages 1-3) without completing the relic quest. The
+        // dungeon boss fight needs two simultaneous buttons, which the
         // simulator can't do — this is the only way to preview that story
         // content pre-physical-device testing. Remove once the relics quest
         // ships and can be tested normally.
@@ -1094,13 +1283,6 @@ class StorybookScene: SKScene {
                 launchReplayScene(sceneName)
                 return
 
-            // Action scene launch buttons (e.g. DaphneBecomesTailorScene)
-            case _ where name.hasPrefix("actionBtn_"):
-                SoundManager.shared.play("sfx_button_tap.mp3")
-                let sceneName = String(name.dropFirst("actionBtn_".count))
-                launchActionScene(sceneName)
-                return
-
             // Inactive arrow — absorb without playing a sound
             case _ where name.hasPrefix("noop"):
                 return
@@ -1113,12 +1295,39 @@ class StorybookScene: SKScene {
 
     // MARK: - Scene transition ─────────────────────────────────────────────────
 
+    // Bug fix (found 2026-09-09 on a fresh-install device playthrough): this
+    // used to present FrontShopScene unconditionally. StorybookScene is
+    // reachable straight from TitleScene's "이야기 소개" — before the
+    // first-launch picker or the mandatory opening ever run — so "← 가게"
+    // let a brand-new player skip both entirely and land in the shop with
+    // whatever avatar ProfileManager.selectedIndex defaults to (index 0),
+    // never having chosen a customer. Mirrors TitleScene.goToShop()'s exact
+    // three-way check (updated the same day for the Read > Watch > Pick
+    // reorder): a returning player goes straight to the shop; a brand-new
+    // player watches the opening first (which itself hands off to the
+    // picker); a player who's seen the opening but has no customer
+    // selected (e.g. after 새 손님) goes straight to the picker.
     private func transitionToFrontShop() {
         guard let view = self.view else { return }
-        let scene = FrontShopScene(size: self.size)
-        scene.scaleMode        = .resizeFill
-        scene.suppressEntryBell = true
-        let transition = SKTransition.crossFade(withDuration: 0.5)
-        view.presentScene(scene, transition: transition)
+
+        if Store.loadSelectedCustomer() != nil {
+            let scene = FrontShopScene(size: self.size)
+            scene.scaleMode         = .resizeFill
+            scene.suppressEntryBell = true
+            let transition = SKTransition.crossFade(withDuration: 0.5)
+            view.presentScene(scene, transition: transition)
+        } else if !Store.loadHasSeenOpening() {
+            let opening = DaphneBecomesTailorScene(size: self.size)
+            opening.scaleMode = .resizeFill
+            opening.isFirstPlayOpening = true
+            let transition = SKTransition.crossFade(withDuration: 0.5)
+            view.presentScene(opening, transition: transition)
+        } else {
+            let settings = SettingsScene(size: self.size)
+            settings.scaleMode = .resizeFill
+            settings.isFirstLaunchPicker = true
+            let transition = SKTransition.crossFade(withDuration: 0.5)
+            view.presentScene(settings, transition: transition)
+        }
     }
 }

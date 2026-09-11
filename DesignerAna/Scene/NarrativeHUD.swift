@@ -320,6 +320,44 @@ class NarrativeHUD: SKNode {
         textLabel.isHidden        = false
         advanceIndicator.isHidden = false
     }
+
+    // MARK: - Public API — title slates
+
+    /// A full-screen dark slate with centered text that fades in, holds,
+    /// then fades out — signals that the hosting scene is structurally
+    /// different from the normal run of narrative scenes (the opening, the
+    /// v1 ending). Shared here rather than duplicated per-scene since both
+    /// EstelleEpilogueScene and DaphneBecomesTailorScene need the identical
+    /// visual/timing, and both already own a NarrativeHUD instance. Sits
+    /// above everything else the HUD draws (zPosition 100 vs. the dialogue
+    /// panel's 20 and portraits' 25) so it fully covers the scene while up.
+    /// Calls `completion` once fully faded out and removed.
+    func showTitleSlate(text: String, holdDuration: TimeInterval = 1.6, completion: @escaping () -> Void) {
+        let dim = SKShapeNode(rectOf: CGSize(width: sceneSize.width, height: sceneSize.height))
+        dim.fillColor   = UIColor.black.withAlphaComponent(0.80)
+        dim.strokeColor = .clear
+        dim.zPosition   = 100
+        dim.alpha       = 0
+        addChild(dim)
+
+        let label = SKLabelNode(fontNamed: "AppleSDGothicNeo-Bold")
+        label.text                    = text
+        label.fontSize                = 24
+        label.fontColor               = UIColor(red: 0.96, green: 0.92, blue: 0.82, alpha: 1.0)
+        label.numberOfLines           = 0
+        label.preferredMaxLayoutWidth = sceneSize.width * 0.7
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode   = .center
+        label.zPosition               = 1
+        dim.addChild(label)
+
+        dim.run(.sequence([
+            .fadeAlpha(to: 1.0, duration: 0.5),
+            .wait(forDuration: holdDuration),
+            .fadeOut(withDuration: 0.5),
+            .removeFromParent()
+        ])) { completion() }
+    }
 }
 
 // MARK: - PortraitContainer (file-private)
